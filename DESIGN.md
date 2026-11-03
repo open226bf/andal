@@ -381,7 +381,7 @@ Deux formes appartiennent au monde du livre: le **dos** (rayon `4px 6px 6px 4px`
 ## Components
 
 ### L'étagère des dos
-Une colonne `shelf` de 64px: logo (carnet au signet moutarde `#F2B33D`), dos empilés (écart 6px, retrait gauche 12px), puis « Nouveau volume » (bouton icône 36px à bordure pointillée 1.5px) et l'avatar du compte.
+Une colonne `shelf` de 64px: logo « Appui » (deux dos penchés l'un contre l'autre forment le A, le signet moutarde `#F2B33D` en fait la barre; encre `currentColor`, favicon clair et sombre), dos empilés (écart 6px, retrait gauche 12px), puis « Nouveau volume » (bouton icône 36px à bordure pointillée 1.5px) et l'avatar du compte.
 - **Dos:** 38px de large, hauteur propre au volume (`--h`, 124 à 150px dans la maquette), fond `vol`, texte `vol-on`, numéro du volume en haut (700, 0.75rem), titre vertical.
 - **Survol:** glisse de 5px vers la droite avec l'ombre Tiré.
 - **Courant** (`aria-current="true"`): tiré de 14px, élargi à 42px, ombre Tiré, au-dessus des autres.
