@@ -5,6 +5,7 @@ import { Link, useNavigate } from '@tanstack/react-router';
 import { useState, type DragEvent } from 'react';
 import { api, canEdit, errorMessage, useProjects, useProjectSpecs, type Tree, type TreePage } from '../lib/api';
 import { age } from '../lib/format';
+import { t } from '../lib/i18n';
 import { useTogglePin } from '../lib/volumes';
 import { descendants, PageDialogs, PageMenu, type PageDialog } from './PageActions';
 import { VolumeSettingsDialog } from './VolumeDialogs';
@@ -131,7 +132,11 @@ export function Sommaire({ tree, currentPageId, onSearch }: { tree: Tree; curren
                     setDragging({ page, excluded: new Set([page.id, ...descendants(tree, page.id).map((p) => p.id)]) });
                   }}
                   onDragEnd={endDrag}
-                  aria-label={`${page.number} ${page.title}${page.restricted ? ', restreinte' : ''}, ${accessLabel(level).toLowerCase()}`}
+                  aria-label={
+                    page.restricted
+                      ? t('{number} {title}, restreinte, {access}', { number: page.number, title: page.title, access: t(accessLabel(level)).toLowerCase() })
+                      : `${page.number} ${page.title}, ${t(accessLabel(level)).toLowerCase()}`
+                  }
                 >
                   <span className="num">{page.number}</span>
                   <span className="label">{page.title}</span>
@@ -161,11 +166,11 @@ export function Sommaire({ tree, currentPageId, onSearch }: { tree: Tree; curren
   };
 
   return (
-    <nav className="toc" aria-label="Sommaire du volume">
+    <nav className="toc" aria-label={t('Sommaire du volume')}>
       <div className="toc-top">
         <button type="button" className="search-btn" onClick={onSearch}>
           <MagnifyingGlassIcon size={18} aria-hidden />
-          Rechercher
+          {t('Rechercher')}
           <kbd>⌘K</kbd>
         </button>
       </div>
@@ -178,20 +183,20 @@ export function Sommaire({ tree, currentPageId, onSearch }: { tree: Tree; curren
               type="button"
               className="icon-btn sm"
               aria-pressed={shelved.pinned}
-              aria-label={`Épingler ${tree.project.name} sur l’étagère`}
-              title={shelved.pinned ? 'Sur votre étagère: cliquer pour l’en retirer' : 'Poser sur votre étagère'}
+              aria-label={t('Épingler {name} sur l’étagère', { name: tree.project.name })}
+              title={shelved.pinned ? t('Sur votre étagère: cliquer pour l’en retirer') : t('Poser sur votre étagère')}
               onClick={() => togglePin(shelved).catch((err: unknown) => setError(errorMessage(err)))}
             >
               <PushPinIcon size={18} weight={shelved.pinned ? 'fill' : 'regular'} aria-hidden />
             </button>
           )}
           {writer && (
-            <button type="button" className="icon-btn sm" aria-label="Nouvelle page au premier niveau" title="Nouvelle page" onClick={() => setDialog({ kind: 'create', parent: null })}>
+            <button type="button" className="icon-btn sm" aria-label={t('Nouvelle page au premier niveau')} title={t('Nouvelle page')} onClick={() => setDialog({ kind: 'create', parent: null })}>
               <PlusIcon size={18} aria-hidden />
             </button>
           )}
           {tree.project.canManage && (
-            <button type="button" className="icon-btn sm" aria-label={`Réglages du volume ${tree.project.name}`} title="Réglages du volume" onClick={() => setSettingsOpen(true)}>
+            <button type="button" className="icon-btn sm" aria-label={t('Réglages du volume {name}', { name: tree.project.name })} title={t('Réglages du volume')} onClick={() => setSettingsOpen(true)}>
               <GearSixIcon size={18} aria-hidden />
             </button>
           )}
@@ -222,19 +227,19 @@ export function Sommaire({ tree, currentPageId, onSearch }: { tree: Tree; curren
               endDrag();
             }}
           >
-            Déposer ici : fin du volume
+            {t('Déposer ici : fin du volume')}
           </div>
         )}
       </div>
       <VolumeSpecs projectId={tree.project.id} />
       <div className="toc-foot">
-        <AccessMark level="write" /> écrire
-        <AccessMark level="comment" /> commenter
-        <AccessMark level="read" /> lire
+        <AccessMark level="write" /> {t('écrire')}
+        <AccessMark level="comment" /> {t('commenter')}
+        <AccessMark level="read" /> {t('lire')}
         {writer && (
           <button type="button" className="ghost toc-trash" onClick={() => setDialog({ kind: 'trash' })}>
             <TrashIcon size={15} aria-hidden />
-            Corbeille
+            {t('Corbeille')}
           </button>
         )}
       </div>
@@ -272,7 +277,7 @@ function VolumeSpecs({ projectId }: { projectId: string }) {
   if (!specs.data?.specs.length) return null;
   return (
     <section className="toc-specs" aria-labelledby="toc-specs-title">
-      <h2 id="toc-specs-title">Specs API</h2>
+      <h2 id="toc-specs-title">{t('Specs API')}</h2>
       <ul>
         {specs.data.specs.map((s) => (
           <li key={s.id}>

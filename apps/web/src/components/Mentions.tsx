@@ -1,6 +1,7 @@
 import { Avatar } from '@andal/ui';
 import { Fragment, useId, useRef, useState, type KeyboardEvent, type TextareaHTMLAttributes } from 'react';
 import { useMentionable, type Mentionable, type ThreadComment } from '../lib/api';
+import { t, tn } from '../lib/i18n';
 import { fold } from './Picker';
 
 /** Le même motif que le serveur (packages/db/src/mentions.ts): le @ ouvre un mot. */
@@ -92,7 +93,7 @@ export function MentionTextarea({ pageId, value, onValueChange, onKeyDown, ...re
         onKeyDown={keyDown}
       />
       {open && (
-        <ul className="mention-list" id={listId} role="listbox" aria-label="Personnes à citer">
+        <ul className="mention-list" id={listId} role="listbox" aria-label={t('Personnes à citer')}>
           {matches.map((p, i) => (
             <li
               key={p.id}
@@ -149,8 +150,11 @@ export function CommentBody({ comment }: { comment: ThreadComment }) {
 /** Après l'envoi: les personnes citées qui ne lisent pas la page n'ont rien reçu. */
 export function unreachableNotice(names: string[]): string | null {
   if (names.length === 0) return null;
-  const list = names.length === 1 ? names[0] : `${names.slice(0, -1).join(', ')} et ${names.at(-1)}`;
-  return names.length === 1
-    ? `${list} ne peut pas lire cette page : cette personne n’a pas été prévenue.`
-    : `${list} ne peuvent pas lire cette page : ces personnes n’ont pas été prévenues.`;
+  const list = names.length === 1 ? names[0] : t('{names} et {last}', { names: names.slice(0, -1).join(', '), last: names.at(-1) });
+  return tn(
+    names.length,
+    '{names} ne peut pas lire cette page : cette personne n’a pas été prévenue.',
+    '{names} ne peuvent pas lire cette page : ces personnes n’ont pas été prévenues.',
+    { names: list },
+  );
 }

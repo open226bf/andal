@@ -4,6 +4,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import type { Editor } from '@tiptap/react';
 import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react';
 import { api, errorMessage, publishSpec, useProjectSpecs, useSpecOperations, type LiveOperation, type SpecOperationRef, type SpecSummary } from '../lib/api';
+import { t, tn } from '../lib/i18n';
 import { FormError } from './AuthCard';
 
 const fold = (value: string) => value.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
@@ -58,7 +59,7 @@ export function SpecDialog({ editor, open, onOpenChange, projectId }: { editor: 
         .focus()
         .insertContent({
           type: 'openapi',
-          attrs: { specId: target.id, operationKey: operation.key, specFile: target.name, specVersion: null, operation: live.operation, caption: `${operation.summary || operation.key}, spec ${target.name}.` },
+          attrs: { specId: target.id, operationKey: operation.key, specFile: target.name, specVersion: null, operation: live.operation, caption: t('{summary}, spec {name}.', { summary: operation.summary || operation.key, name: target.name }) },
         })
         .run();
     } catch (err) {
@@ -78,13 +79,13 @@ export function SpecDialog({ editor, open, onOpenChange, projectId }: { editor: 
             <>
               <div className="pop-head">
                 <Dialog.Title asChild>
-                  <h2>Opération d'une spec OpenAPI</h2>
+                  <h2>{t("Opération d'une spec OpenAPI")}</h2>
                 </Dialog.Title>
               </div>
               <div className="spec-pick">
                 {error && <FormError>{error}</FormError>}
                 {specs.data?.specs.length ? (
-                  <ul className="spec-list" aria-label="Specs du volume">
+                  <ul className="spec-list" aria-label={t('Specs du volume')}>
                     {specs.data.specs.map((s) => (
                       <li key={s.id}>
                         <button type="button" onClick={() => setSpec(s)}>
@@ -92,7 +93,7 @@ export function SpecDialog({ editor, open, onOpenChange, projectId }: { editor: 
                           <span>
                             <b>{s.title}</b>
                             <small>
-                              {s.name} · v{s.label || s.sequence} · {s.operationCount} opération{s.operationCount > 1 ? 's' : ''}
+                              {s.name} · v{s.label || s.sequence} · {tn(s.operationCount, '{n} opération', '{n} opérations')}
                             </small>
                           </span>
                         </button>
@@ -100,14 +101,14 @@ export function SpecDialog({ editor, open, onOpenChange, projectId }: { editor: 
                     ))}
                   </ul>
                 ) : (
-                  <p className="dialog-text">{specs.isLoading ? 'Chargement…' : 'Ce volume n’a pas encore de spec. Envoyez la vôtre (YAML ou JSON, OpenAPI 3) ou publiez-la depuis la CI.'}</p>
+                  <p className="dialog-text">{specs.isLoading ? t('Chargement…') : t('Ce volume n’a pas encore de spec. Envoyez la vôtre (YAML ou JSON, OpenAPI 3) ou publiez-la depuis la CI.')}</p>
                 )}
                 {specs.data?.canPublish && (
                   <>
                     <input ref={file} type="file" hidden accept=".yaml,.yml,.json,application/yaml,application/json" onChange={(e) => e.target.files?.[0] && void upload(e.target.files[0])} />
                     <button type="button" className="btn-line sm" disabled={pending} onClick={() => file.current?.click()}>
                       <UploadSimpleIcon size={16} aria-hidden />
-                      {pending ? 'Envoi…' : 'Envoyer une spec'}
+                      {pending ? t('Envoi…') : t('Envoyer une spec')}
                     </button>
                   </>
                 )}
@@ -141,9 +142,9 @@ function OperationPicker({ spec, pending, error, onBack, onPick }: { spec: SpecS
 
   return (
     <>
-      <Dialog.Title className="sr-only">Opération de {spec.title}</Dialog.Title>
+      <Dialog.Title className="sr-only">{t('Opération de {title}', { title: spec.title })}</Dialog.Title>
       <div className="spec-search">
-        <button type="button" className="icon-btn sm" aria-label="Revenir aux specs" onClick={onBack}>
+        <button type="button" className="icon-btn sm" aria-label={t('Revenir aux specs')} onClick={onBack}>
           <ArrowLeftIcon size={18} aria-hidden />
         </button>
         <input
@@ -153,8 +154,8 @@ function OperationPicker({ spec, pending, error, onBack, onPick }: { spec: SpecS
           aria-expanded
           aria-controls={listId}
           aria-activedescendant={options.length ? `${listId}-${active}` : undefined}
-          aria-label={`Opération de ${spec.title}`}
-          placeholder={`Chercher dans ${spec.title} (route, verbe, résumé)…`}
+          aria-label={t('Opération de {title}', { title: spec.title })}
+          placeholder={t('Chercher dans {title} (route, verbe, résumé)…', { title: spec.title })}
           value={query}
           onChange={(e) => {
             setQuery(e.target.value);
@@ -164,7 +165,7 @@ function OperationPicker({ spec, pending, error, onBack, onPick }: { spec: SpecS
         />
       </div>
       {error && <FormError>{error}</FormError>}
-      <ul className="search-results" role="listbox" id={listId} aria-label="Opérations" aria-busy={operations.isFetching || pending}>
+      <ul className="search-results" role="listbox" id={listId} aria-label={t('Opérations')} aria-busy={operations.isFetching || pending}>
         {options.map((op, i) => (
           <li key={op.key} id={`${listId}-${i}`} role="option" aria-selected={i === active} onMouseMove={() => setActive(i)} onClick={() => onPick(op)}>
             <span className="op-option">
@@ -178,7 +179,7 @@ function OperationPicker({ spec, pending, error, onBack, onPick }: { spec: SpecS
         ))}
         {options.length === 0 && (
           <li className="search-empty" role="presentation">
-            {operations.isLoading ? 'Chargement…' : 'Aucune opération ne correspond.'}
+            {operations.isLoading ? t('Chargement…') : t('Aucune opération ne correspond.')}
           </li>
         )}
       </ul>

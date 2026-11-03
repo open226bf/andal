@@ -1,0 +1,183 @@
+/** Composants: notes de marge, commentaires, notifications, historique, recherche et assistant, liens, specs, barre d'insertion, dialogues. */
+export default {
+  // Communs
+  Annuler: 'Cancel',
+  Fermer: 'Close',
+  Supprimer: 'Delete',
+  'Envoi…': 'Sending…',
+  'Chargement…': 'Loading…',
+
+  // MarginNotes
+  Commentaires: 'Comments',
+  'Autres commentaires': 'Other comments',
+  'Sans passage ({n})': 'Without a passage ({n})',
+  'Le texte commenté a été supprimé. Répondez, ou résolvez le fil.': 'The commented text was deleted. Reply, or resolve the thread.',
+  'Fils résolus ({n})': 'Resolved threads ({n})',
+  'Rouvrir le fil': 'Reopen thread',
+  'Résoudre le fil': 'Resolve thread',
+  'Résolu par {name}': 'Resolved by {name}',
+  Répondre: 'Reply',
+  Non: 'No',
+  'Supprimer ce commentaire': 'Delete this comment',
+  'Votre réponse': 'Your reply',
+  'Votre réponse, @ pour citer': 'Your reply, @ to mention',
+
+  // CommentComposer
+  'Commentaire publié. {warning}': 'Comment posted. {warning}',
+  'Le commentaire n’a pas pu être enregistré. Réessayez.': 'The comment couldn’t be saved. Try again.',
+  Compris: 'Got it',
+  'Nouveau commentaire': 'New comment',
+  'Votre commentaire': 'Your comment',
+  'Votre commentaire, @ pour citer': 'Your comment, @ to mention',
+  '⌘ Entrée pour envoyer': '⌘ Enter to send',
+  Commenter: 'Comment',
+
+  // Mentions
+  'Personnes à citer': 'People to mention',
+  '{names} et {last}': '{names} and {last}',
+  '{names} ne peut pas lire cette page : cette personne n’a pas été prévenue.': '{names} can’t read this page: this person wasn’t notified.',
+  '{names} ne peuvent pas lire cette page : ces personnes n’ont pas été prévenues.': '{names} can’t read this page: these people weren’t notified.',
+
+  // NotificationsButton
+  '{actor} vous a cité': '{actor} mentioned you',
+  '{actor} a répondu dans un fil que vous suivez': '{actor} replied in a thread you follow',
+  '{actor} a résolu votre fil': '{actor} resolved your thread',
+  'Notifications, {n} non lue': 'Notifications, {n} unread',
+  'Notifications, {n} non lues': 'Notifications, {n} unread',
+  Notifications: 'Notifications',
+  'Tout marquer comme lu': 'Mark all as read',
+  'Rien de neuf. Quand quelqu’un vous cite (@identifiant) ou répond dans un de vos fils, c’est ici.': 'Nothing new. When someone mentions you (@username) or replies in one of your threads, it shows up here.',
+  'Quelqu’un': 'Someone',
+  'non lue': 'unread',
+  'Aussi par email': 'Also by email',
+  'Seulement ce que vous n’avez pas lu ici dans les minutes qui suivent, regroupé en un message.': 'Only what you haven’t read here within the next few minutes, grouped into one message.',
+
+  // HistoryDialog
+  'Historique de « {number} {title} »': 'History of “{number} {title}”',
+  Versions: 'Versions',
+  actuelle: 'current',
+  'Version {n}': 'Version {n}',
+  Version: 'Version',
+  '« {title} »': '“{title}”',
+  'Restauration…': 'Restoring…',
+  'Oui, revenir à la v{version}': 'Yes, go back to v{version}',
+  'Restaurer cette version': 'Restore this version',
+  'La page reprend ce contenu pour tout le monde, pages ouvertes comprises. Rien n’est perdu : la version actuelle reste dans l’historique.':
+    'The page goes back to this content for everyone, including pages already open. Nothing is lost: the current version stays in the history.',
+  'Chargement de la version': 'Loading version',
+  '{name} et {n} autre': '{name} and {n} other',
+  '{name} et {n} autres': '{name} and {n} others',
+
+  // SearchDialog
+  'Rechercher dans la documentation': 'Search the documentation',
+  'Rechercher, ou poser une question…': 'Search, or ask a question…',
+  'Rechercher une page, un endpoint, une figure…': 'Search for a page, an endpoint, a figure…',
+  Recherche: 'Search',
+  'Demander à l’assistant: {question}': 'Ask the assistant: {question}',
+  'Volume {n}': 'Volume {n}',
+  'Aucune page lisible ne correspond.': 'No page you can read matches.',
+
+  // AskAnswer
+  'L’assistant ne répond pas pour le moment.': 'The assistant isn’t responding right now.',
+  'Revenir à la recherche': 'Back to search',
+  'L’assistant lit les pages…': 'The assistant is reading the pages…',
+  'Pages lues': 'Pages read',
+  'Réponse rédigée par {model} à partir des seules pages que vous lisez. Vérifiez dans les pages citées avant d’agir.':
+    'Answer written by {model} from only the pages you can read. Check the cited pages before acting.',
+  'le modèle': 'the model',
+
+  // LinkDialog
+  Lien: 'Link',
+  'Page ou adresse du lien': 'Page or address to link to',
+  'Chercher une page, ou coller une adresse…': 'Search for a page, or paste an address…',
+  Destinations: 'Destinations',
+  'Lien vers {target}': 'Link to {target}',
+  'Recherche…': 'Searching…',
+  'Aucune page lisible ne porte ce titre. Collez une adresse pour un lien externe.': 'No page you can read has this title. Paste an address for an external link.',
+  'Tapez quelques lettres du titre, un numéro (3.2) ou une adresse web.': 'Type a few letters of the title, a number (3.2), or a web address.',
+  'Retirer le lien': 'Remove link',
+
+  // LinkLayer
+  Ouvert: 'Open',
+  Fermé: 'Closed',
+  Fusionnée: 'Merged',
+  Brouillon: 'Draft',
+  "Chargement de l'aperçu": 'Loading preview',
+  'Modifiée le {date}': 'Updated {date}',
+  'Page introuvable, ou que vous ne lisez pas.': 'Page not found, or one you can’t read.',
+
+  // SpecDialog
+  '{summary}, spec {name}.': '{summary}, {name} spec.',
+  "Opération d'une spec OpenAPI": 'Operation from an OpenAPI spec',
+  'Specs du volume': 'Volume specs',
+  '{n} opération': '{n} operation',
+  '{n} opérations': '{n} operations',
+  'Ce volume n’a pas encore de spec. Envoyez la vôtre (YAML ou JSON, OpenAPI 3) ou publiez-la depuis la CI.': 'This volume has no spec yet. Upload yours (YAML or JSON, OpenAPI 3) or publish it from CI.',
+  'Envoyer une spec': 'Upload a spec',
+  'Opération de {title}': 'Operation from {title}',
+  'Revenir aux specs': 'Back to specs',
+  'Chercher dans {title} (route, verbe, résumé)…': 'Search {title} (route, method, summary)…',
+  Opérations: 'Operations',
+  'Aucune opération ne correspond.': 'No matching operation.',
+
+  // InsertBar
+  'Mise en forme et insertion': 'Formatting and insertion',
+  Gras: 'Bold',
+  Italique: 'Italic',
+  Intertitre: 'Heading',
+  Liste: 'List',
+  'Liste de tâches': 'Task list',
+  Citation: 'Quote',
+  'Lien (⌘K)': 'Link (⌘K)',
+  Image: 'Image',
+  Fichier: 'File',
+  Tableau: 'Table',
+  Code: 'Code',
+  Encadré: 'Callout',
+  'À retenir': 'Key point',
+  Début: 'Start',
+  Fin: 'End',
+  'Nouvelle figure.': 'New figure.',
+  'Nouveau schéma.': 'New diagram.',
+  'Ajouter une ligne en dessous': 'Add row below',
+  'Ajouter une colonne à droite': 'Add column to the right',
+  Ligne: 'Row',
+  'Supprimer la ligne': 'Delete row',
+  Colonne: 'Column',
+  'Supprimer la colonne': 'Delete column',
+  "Ligne d'en-tête": 'Header row',
+  'Supprimer le tableau': 'Delete table',
+  'Envoi de {n} fichier…': 'Uploading {n} file…',
+  'Envoi de {n} fichiers…': 'Uploading {n} files…',
+
+  // AuthCard
+  Architecture: 'Architecture',
+  Plateforme: 'Platform',
+  'API Paiements': 'Payments API',
+  Données: 'Data',
+  Runbooks: 'Runbooks',
+  Décisions: 'Decisions',
+  Sécurité: 'Security',
+  'Votre documentation technique, reliée en volumes.': 'Your technical documentation, bound into volumes.',
+  'Specs OpenAPI, diagrammes et runbooks vivent dans les pages, et chaque page dit qui peut {write} écrire, {comment} commenter et {read} lire.':
+    'OpenAPI specs, diagrams, and runbooks live in the pages, and every page shows who can {write} write, {comment} comment, and {read} read.',
+  'Libre et auto-hébergé: votre doc reste chez vous.': 'Open source and self-hosted: your docs stay with you.',
+
+  // PasswordDialog, PasswordField
+  'Le nouveau mot de passe doit faire au moins {n} caractères.': 'The new password must be at least {n} characters long.',
+  'Les deux saisies du nouveau mot de passe diffèrent.': 'The two new password entries don’t match.',
+  'Le changement a échoué. Réessayez dans un instant.': 'The change didn’t go through. Try again in a moment.',
+  'Changer le mot de passe': 'Change password',
+  'Mot de passe changé. Vos autres sessions sont fermées.': 'Password changed. Your other sessions have been signed out.',
+  'Mot de passe actuel': 'Current password',
+  'Nouveau mot de passe': 'New password',
+  "Au moins {n} caractères. Une phrase de passe fait très bien l'affaire.": 'At least {n} characters. A passphrase works just fine.',
+  'Confirmez le nouveau mot de passe': 'Confirm the new password',
+  'Enregistrement…': 'Saving…',
+  'Masquer le mot de passe': 'Hide password',
+  'Afficher le mot de passe': 'Show password',
+
+  // CopyField
+  Copié: 'Copied',
+  Copier: 'Copy',
+} satisfies Record<string, string>;

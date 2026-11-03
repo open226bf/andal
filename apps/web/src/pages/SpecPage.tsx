@@ -9,6 +9,7 @@ import { api, errorMessage, publishSpec, useMe, useProjects, useSpec, useSpecDoc
 import { date } from '../lib/format';
 import { loadRedoc, redocTheme } from '../lib/redoc';
 import { usePaletteVersion } from '../lib/theme';
+import { t, tn, tx } from '../lib/i18n';
 
 /** Section Redoc d'une opération (« POST /oauth/token »), pour y arriver directement depuis une page. */
 function sectionFor(doc: Record<string, unknown>, key: string): string | null {
@@ -53,7 +54,7 @@ export function SpecPage({ specId, version, op }: { specId: string; version?: nu
     if (cloth) document.documentElement.dataset.vol = cloth;
   }, [cloth]);
   useEffect(() => {
-    if (spec.data) document.title = `${spec.data.title} · Specs API · ${spec.data.project.shortName} · Andal`;
+    if (spec.data) document.title = `${spec.data.title} · ${t('Specs API')} · ${spec.data.project.shortName} · Andal`;
   }, [spec.data]);
 
   useEffect(() => {
@@ -83,7 +84,7 @@ export function SpecPage({ specId, version, op }: { specId: string; version?: nu
           element,
           (error) => {
             if (!alive) return;
-            if (error) setRedocError(error instanceof Error ? error.message : 'Redoc ne lit pas cette spec.');
+            if (error) setRedocError(error instanceof Error ? error.message : t('Redoc ne lit pas cette spec.'));
             else setReady(true);
           },
         );
@@ -98,10 +99,10 @@ export function SpecPage({ specId, version, op }: { specId: string; version?: nu
     return (
       <main className="missing-page">
         <BookOpenTextIcon size={28} aria-hidden />
-        <h1>Spec introuvable</h1>
-        <p>Cette spec a été supprimée, ou elle appartient à un volume que vous ne lisez pas.</p>
+        <h1>{t('Spec introuvable')}</h1>
+        <p>{t('Cette spec a été supprimée, ou elle appartient à un volume que vous ne lisez pas.')}</p>
         <Link to="/" className="btn-line">
-          Retour à la bibliothèque
+          {t('Retour à la bibliothèque')}
         </Link>
       </main>
     );
@@ -119,12 +120,12 @@ export function SpecPage({ specId, version, op }: { specId: string; version?: nu
           <div className="band-vol">
             <span className="band-title">{project.shortName}</span>
           </div>
-          <nav className="crumbs" aria-label="Fil d'Ariane">
+          <nav className="crumbs" aria-label={t("Fil d'Ariane")}>
             <Link to="/v/$slug" params={{ slug: project.slug }}>
               {project.name}
             </Link>
             <CaretRightIcon size={14} aria-hidden />
-            <span>Specs API</span>
+            <span>{t('Specs API')}</span>
             <CaretRightIcon size={14} aria-hidden />
             <span aria-current="page">{spec.data.name}</span>
           </nav>
@@ -160,7 +161,7 @@ function SpecBar({ spec, current, onVersion }: { spec: SpecDetail; current: numb
     try {
       const result = await publishSpec(spec.project.id, picked, spec.name);
       await queryClient.invalidateQueries({ queryKey: ['specs'] });
-      setStatus(result.unchanged ? { tone: 'ok', text: 'Identique à la dernière version: rien de nouveau.' } : { tone: 'ok', text: `Version ${result.label || result.sequence} publiée.` });
+      setStatus(result.unchanged ? { tone: 'ok', text: t('Identique à la dernière version: rien de nouveau.') } : { tone: 'ok', text: t('Version {version} publiée.', { version: result.label || result.sequence }) });
       if (!result.unchanged) onVersion(result.sequence);
     } catch (err) {
       setStatus({ tone: 'err', text: errorMessage(err) });
@@ -175,12 +176,12 @@ function SpecBar({ spec, current, onVersion }: { spec: SpecDetail; current: numb
       <div className="spec-id">
         <h1>{spec.title}</h1>
         <label className="spec-version">
-          <span className="sr-only">Version</span>
+          <span className="sr-only">{t('Version')}</span>
           <select value={current} onChange={(e) => onVersion(Number(e.target.value))}>
             {spec.versions.map((v) => (
               <option key={v.sequence} value={v.sequence}>
-                {v.label ? `v${v.label}` : `n° ${v.sequence}`} · {date(v.createdAt)}
-                {v.sequence === latest?.sequence ? ' · dernière' : ''}
+                {v.label ? `v${v.label}` : t('n° {n}', { n: v.sequence })} · {date(v.createdAt)}
+                {v.sequence === latest?.sequence ? ` · ${t('dernière')}` : ''}
               </option>
             ))}
           </select>
@@ -192,11 +193,11 @@ function SpecBar({ spec, current, onVersion }: { spec: SpecDetail; current: numb
             <input ref={file} type="file" hidden accept=".yaml,.yml,.json,application/yaml,application/json" onChange={(e) => e.target.files?.[0] && void publish(e.target.files[0])} />
             <button type="button" className="btn-line sm" disabled={pending} onClick={() => file.current?.click()}>
               <UploadSimpleIcon size={16} aria-hidden />
-              Publier une version
+              {t('Publier une version')}
             </button>
             <button type="button" className="btn-line sm" aria-expanded={ciOpen} onClick={() => setCiOpen((o) => !o)}>
               <TerminalWindowIcon size={16} aria-hidden />
-              Depuis la CI
+              {t('Depuis la CI')}
             </button>
           </>
         )}
@@ -204,13 +205,17 @@ function SpecBar({ spec, current, onVersion }: { spec: SpecDetail; current: numb
           <button
             type="button"
             className="icon-btn sm"
-            aria-label={`Supprimer la spec ${spec.name}`}
-            title="Supprimer la spec"
+            aria-label={t('Supprimer la spec {name}', { name: spec.name })}
+            title={t('Supprimer la spec')}
             onClick={() =>
               setConfirm({
-                title: `Supprimer la spec ${spec.name} ?`,
-                body: `Ses ${spec.versions.length} version${spec.versions.length > 1 ? 's' : ''} disparaissent. Les pages qui citent ses opérations gardent la copie qu'elles avaient.`,
-                action: 'Supprimer',
+                title: t('Supprimer la spec {name} ?', { name: spec.name }),
+                body: tn(
+                  spec.versions.length,
+                  "Ses {n} version disparaissent. Les pages qui citent ses opérations gardent la copie qu'elles avaient.",
+                  "Ses {n} versions disparaissent. Les pages qui citent ses opérations gardent la copie qu'elles avaient.",
+                ),
+                action: t('Supprimer'),
                 run: async () => {
                   await api(`/specs/${spec.id}`, { method: 'DELETE' });
                   await queryClient.invalidateQueries({ queryKey: ['specs'] });
@@ -230,12 +235,10 @@ function SpecBar({ spec, current, onVersion }: { spec: SpecDetail; current: numb
       )}
       {ciOpen && (
         <div className="spec-ci">
-          <p>
-            Avec un jeton d'API (portée écriture) dans <code>ANDAL_TOKEN</code>, la CI publie à chaque version. Republier la même spec ne crée pas de version.
-          </p>
+          <p>{tx("Avec un jeton d'API (portée écriture) dans {env}, la CI publie à chaque version. Republier la même spec ne crée pas de version.", { env: <code>ANDAL_TOKEN</code> })}</p>
           <div className="spec-cmd">
             <pre>{command}</pre>
-            <button type="button" className="icon-btn sm" aria-label="Copier la commande" title="Copier" onClick={() => void navigator.clipboard?.writeText(command)}>
+            <button type="button" className="icon-btn sm" aria-label={t('Copier la commande')} title={t('Copier')} onClick={() => void navigator.clipboard?.writeText(command)}>
               <CopyIcon size={16} aria-hidden />
             </button>
           </div>

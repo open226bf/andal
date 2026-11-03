@@ -2,6 +2,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useCallback } from 'react';
 import { fold } from '../components/Picker';
 import { api, type ProjectSummary, type Rayon } from './api';
+import { intlLocale } from './i18n';
 
 export type VolumeSort = 'number' | 'name' | 'activity';
 
@@ -14,7 +15,7 @@ export function matchesVolume(volume: ProjectSummary, query: string): boolean {
 
 export function sortVolumes(volumes: ProjectSummary[], sort: VolumeSort): ProjectSummary[] {
   const sorted = [...volumes];
-  if (sort === 'name') sorted.sort((a, b) => a.name.localeCompare(b.name, 'fr', { sensitivity: 'base' }));
+  if (sort === 'name') sorted.sort((a, b) => a.name.localeCompare(b.name, intlLocale, { sensitivity: 'base' }));
   else if (sort === 'activity') sorted.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
   else sorted.sort((a, b) => a.volumeNumber - b.volumeNumber);
   return sorted;

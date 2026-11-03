@@ -3,6 +3,7 @@ import * as Popover from '@radix-ui/react-popover';
 import { useState, type FormEvent } from 'react';
 import { api, canEdit, errorMessage, useTrash, type Tree, type TreePage } from '../lib/api';
 import { date, relative } from '../lib/format';
+import { t, tn } from '../lib/i18n';
 import { FormError } from './AuthCard';
 import { ConfirmDialog, Modal } from './Dialog';
 
@@ -52,7 +53,7 @@ export function PageMenu({
   return (
     <Popover.Root open={open} onOpenChange={setOpen}>
       <Popover.Trigger asChild>
-        <button type="button" className="node-menu" aria-label={`Actions pour ${page.number} ${page.title}`}>
+        <button type="button" className="node-menu" aria-label={t('Actions pour {number} {title}', { number: page.number, title: page.title })}>
           <DotsThreeIcon size={18} weight="bold" aria-hidden />
         </button>
       </Popover.Trigger>
@@ -60,27 +61,27 @@ export function PageMenu({
         <Popover.Content className="pop menu" side="right" align="start" sideOffset={6} collisionPadding={16}>
           <button type="button" className="menu-item" onClick={run(() => onDialog({ kind: 'create', parent: page }))}>
             <FilePlusIcon size={18} aria-hidden />
-            Ajouter une sous-page
+            {t('Ajouter une sous-page')}
           </button>
           <button type="button" className="menu-item" onClick={run(() => onDialog({ kind: 'rename', page }))}>
             <PencilSimpleIcon size={18} aria-hidden />
-            Renommer
+            {t('Renommer')}
           </button>
           <button type="button" className="menu-item" disabled={!previous} onClick={run(() => previous && onMove(previous.id))}>
             <ArrowUpIcon size={18} aria-hidden />
-            Monter
+            {t('Monter')}
           </button>
           <button type="button" className="menu-item" disabled={isLast} onClick={run(() => onMove(nextButOne?.id ?? null))}>
             <ArrowDownIcon size={18} aria-hidden />
-            Descendre
+            {t('Descendre')}
           </button>
           <button type="button" className="menu-item" onClick={run(() => onDialog({ kind: 'move', page }))}>
             <ArrowsDownUpIcon size={18} aria-hidden />
-            Déplacer sous…
+            {t('Déplacer sous…')}
           </button>
           <button type="button" className="menu-item danger" onClick={run(() => onDialog({ kind: 'delete', page }))}>
             <TrashIcon size={18} aria-hidden />
-            Mettre à la corbeille
+            {t('Mettre à la corbeille')}
           </button>
         </Popover.Content>
       </Popover.Portal>
@@ -109,24 +110,25 @@ export function PageDialogs({
   const title =
     dialog?.kind === 'create'
       ? dialog.parent
-        ? `Nouvelle page sous « ${dialog.parent.number} ${dialog.parent.title} »`
-        : 'Nouvelle page'
+        ? t('Nouvelle page sous « {number} {title} »', { number: dialog.parent.number, title: dialog.parent.title })
+        : t('Nouvelle page')
       : dialog?.kind === 'rename'
-        ? `Renommer « ${dialog.page.number} ${dialog.page.title} »`
+        ? t('Renommer « {number} {title} »', { number: dialog.page.number, title: dialog.page.title })
         : dialog?.kind === 'move'
-          ? `Déplacer « ${dialog.page.number} ${dialog.page.title} »`
+          ? t('Déplacer « {number} {title} »', { number: dialog.page.number, title: dialog.page.title })
           : dialog?.kind === 'trash'
-            ? `Corbeille de ${tree.project.shortName}`
+            ? t('Corbeille de {name}', { name: tree.project.shortName })
             : '';
 
   if (dialog?.kind === 'delete') {
     const count = descendants(tree, dialog.page.id).length;
+    const gone = t('Elle disparaît du sommaire et de la recherche pour tout le monde. Vous pourrez la restaurer depuis la corbeille du volume, avec ses commentaires.');
     return (
       <ConfirmDialog
         confirmation={{
-          title: `Mettre « ${dialog.page.number} ${dialog.page.title} » à la corbeille ?`,
-          body: `${count > 0 ? `Ses ${count} sous-page${count > 1 ? 's' : ''} aussi. ` : ''}Elle disparaît du sommaire et de la recherche pour tout le monde. Vous pourrez la restaurer depuis la corbeille du volume, avec ses commentaires.`,
-          action: 'Mettre à la corbeille',
+          title: t('Mettre « {number} {title} » à la corbeille ?', { number: dialog.page.number, title: dialog.page.title }),
+          body: count > 0 ? `${tn(count, 'Sa sous-page aussi.', 'Ses {n} sous-pages aussi.')} ${gone}` : gone,
+          action: t('Mettre à la corbeille'),
           run: async () => {
             await api(`/pages/${dialog.page.id}`, { method: 'DELETE' });
             onDeleted(dialog.page);
@@ -141,8 +143,8 @@ export function PageDialogs({
     <Modal open={dialog !== null} onOpenChange={(open) => !open && onClose()} title={title}>
       {dialog?.kind === 'create' && (
         <TitleForm
-          submitLabel="Créer la page"
-          hint={dialog.parent ? 'Elle hérite des restrictions de sa page parente.' : 'Elle prend les droits du volume.'}
+          submitLabel={t('Créer la page')}
+          hint={dialog.parent ? t('Elle hérite des restrictions de sa page parente.') : t('Elle prend les droits du volume.')}
           onSubmit={async ({ title: name }) => {
             const { id } = await api<{ id: string }>(`/projects/${tree.project.id}/pages`, { method: 'POST', body: JSON.stringify({ title: name, parentId: dialog.parent?.id ?? null }) });
             await onChanged();
@@ -153,7 +155,7 @@ export function PageDialogs({
       {dialog?.kind === 'rename' && (
         <TitleForm
           initial={dialog.page.title}
-          submitLabel="Renommer"
+          submitLabel={t('Renommer')}
           onSubmit={async ({ title: name }) => {
             await api(`/pages/${dialog.page.id}`, { method: 'PATCH', body: JSON.stringify({ title: name }) });
             await onChanged();
@@ -196,7 +198,7 @@ function TitleForm({ initial = '', submitLabel, hint, onSubmit }: { initial?: st
     <form className="dialog-body" onSubmit={(e) => void submit(e)}>
       {error && <FormError>{error}</FormError>}
       <div className="field">
-        <label htmlFor="page-title">Titre</label>
+        <label htmlFor="page-title">{t('Titre')}</label>
         <input id="page-title" className="input" required autoFocus maxLength={120} value={value} onChange={(e) => setValue(e.target.value)} onFocus={(e) => e.currentTarget.select()} />
       </div>
       {hint && <p className="form-hint">{hint}</p>}
@@ -229,9 +231,9 @@ function MoveForm({ tree, page, onSubmit }: { tree: Tree; page: TreePage; onSubm
     <form className="dialog-body" onSubmit={(e) => void submit(e)}>
       {error && <FormError>{error}</FormError>}
       <div className="field">
-        <label htmlFor="move-parent">Placer sous</label>
+        <label htmlFor="move-parent">{t('Placer sous')}</label>
         <select id="move-parent" className="input" value={parent} onChange={(e) => setParent(e.target.value)}>
-          {canEdit(tree.project.role) && <option value="">Premier niveau du volume</option>}
+          {canEdit(tree.project.role) && <option value="">{t('Premier niveau du volume')}</option>}
           {options.map((p) => (
             <option key={p.id} value={p.id}>
               {'  '.repeat(p.number.split('.').length - 1)}
@@ -240,9 +242,9 @@ function MoveForm({ tree, page, onSubmit }: { tree: Tree; page: TreePage; onSubm
           ))}
         </select>
       </div>
-      <p className="form-hint">Elle se range à la fin de sa nouvelle section, avec ses sous-pages. Monter et Descendre ajustent ensuite sa place.</p>
+      <p className="form-hint">{t('Elle se range à la fin de sa nouvelle section, avec ses sous-pages. Monter et Descendre ajustent ensuite sa place.')}</p>
       <button type="submit" className="btn-ink" disabled={pending || parent === (page.parentId ?? '')}>
-        Déplacer
+        {t('Déplacer')}
       </button>
     </form>
   );
@@ -267,30 +269,32 @@ function TrashList({ projectId, onRestored }: { projectId: string; onRestored: (
       await trash.refetch();
     }
   };
-  if (trash.isPending) return <div className="dialog-body doc-skeleton" aria-busy="true" aria-label="Chargement de la corbeille"><span /><span /></div>;
-  if (trash.isError) return <div className="dialog-body"><FormError>{errorMessage(trash.error, 'Impossible de charger la corbeille.')}</FormError></div>;
+  if (trash.isPending) return <div className="dialog-body doc-skeleton" aria-busy="true" aria-label={t('Chargement de la corbeille')}><span /><span /></div>;
+  if (trash.isError) return <div className="dialog-body"><FormError>{errorMessage(trash.error, t('Impossible de charger la corbeille.'))}</FormError></div>;
   return (
     <div className="dialog-body">
       {error && <FormError>{error}</FormError>}
       {trash.data.length === 0 ? (
-        <p className="dialog-text">La corbeille est vide.</p>
+        <p className="dialog-text">{t('La corbeille est vide.')}</p>
       ) : (
         <ul className="trash-list">
           {trash.data.map((entry) =>
             purging === entry.id ? (
               <li key={entry.id} className="trash-confirm">
                 <span>
-                  <b>Supprimer « {entry.title} » définitivement ?</b>
+                  <b>{t('Supprimer « {title} » définitivement ?', { title: entry.title })}</b>
                   <small>
-                    {entry.subpages > 0 ? `Ses ${entry.subpages} sous-page${entry.subpages > 1 ? 's' : ''}, ses` : 'Ses'} commentaires et son historique disparaissent aussi. C’est sans retour.
+                    {entry.subpages > 0
+                      ? tn(entry.subpages, 'Sa sous-page, ses commentaires et son historique disparaissent aussi. C’est sans retour.', 'Ses {n} sous-pages, ses commentaires et son historique disparaissent aussi. C’est sans retour.')
+                      : t('Ses commentaires et son historique disparaissent aussi. C’est sans retour.')}
                   </small>
                 </span>
                 <span className="trash-actions">
                   <button type="button" className="btn-line sm" disabled={pending !== null} onClick={() => setPurging(null)}>
-                    Annuler
+                    {t('Annuler')}
                   </button>
                   <button type="button" className="btn-danger sm" disabled={pending !== null} onClick={() => void act(entry.id, () => api(`/pages/${entry.id}/purge`, { method: 'DELETE' }))}>
-                    {pending === entry.id ? 'Suppression…' : 'Supprimer'}
+                    {pending === entry.id ? t('Suppression…') : t('Supprimer')}
                   </button>
                 </span>
               </li>
@@ -299,17 +303,16 @@ function TrashList({ projectId, onRestored }: { projectId: string; onRestored: (
                 <span>
                   <b>{entry.title}</b>
                   <small>
-                    {entry.subpages > 0 && `avec ${entry.subpages} sous-page${entry.subpages > 1 ? 's' : ''} · `}
-                    {entry.parent ? `sous « ${entry.parent.title} »${entry.parent.deleted ? ' (à la corbeille)' : ''} · ` : ''}
-                    {entry.deletedBy ? `par ${entry.deletedBy}, ` : ''}
-                    {relative(entry.deletedAt)}
+                    {entry.subpages > 0 && `${tn(entry.subpages, 'avec {n} sous-page', 'avec {n} sous-pages')} · `}
+                    {entry.parent ? `${entry.parent.deleted ? t('sous « {title} » (à la corbeille)', { title: entry.parent.title }) : t('sous « {title} »', { title: entry.parent.title })} · ` : ''}
+                    {entry.deletedBy ? t('par {name}, {when}', { name: entry.deletedBy, when: relative(entry.deletedAt) }) : relative(entry.deletedAt)}
                   </small>
-                  <small>Supprimée définitivement le {date(entry.purgeAt)}</small>
+                  <small>{t('Supprimée définitivement le {date}', { date: date(entry.purgeAt) })}</small>
                 </span>
                 <span className="trash-actions">
                   {entry.canPurge && (
-                    <button type="button" className="ghost danger" disabled={pending !== null} onClick={() => setPurging(entry.id)} aria-label={`Supprimer définitivement ${entry.title}`}>
-                      Supprimer
+                    <button type="button" className="ghost danger" disabled={pending !== null} onClick={() => setPurging(entry.id)} aria-label={t('Supprimer définitivement {title}', { title: entry.title })}>
+                      {t('Supprimer')}
                     </button>
                   )}
                   <button
@@ -323,7 +326,7 @@ function TrashList({ projectId, onRestored }: { projectId: string; onRestored: (
                       })
                     }
                   >
-                    {pending === entry.id ? 'Restauration…' : 'Restaurer'}
+                    {pending === entry.id ? t('Restauration…') : t('Restaurer')}
                   </button>
                 </span>
               </li>
@@ -331,7 +334,7 @@ function TrashList({ projectId, onRestored }: { projectId: string; onRestored: (
           )}
         </ul>
       )}
-      {trash.data.length > 0 && <p className="form-hint">Une page restaurée revient à la fin de sa section, avec ses sous-pages et ses commentaires. Les autres sont supprimées définitivement à la date indiquée.</p>}
+      {trash.data.length > 0 && <p className="form-hint">{t('Une page restaurée revient à la fin de sa section, avec ses sous-pages et ses commentaires. Les autres sont supprimées définitivement à la date indiquée.')}</p>}
     </div>
   );
 }

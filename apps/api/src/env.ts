@@ -21,6 +21,25 @@ function required(name: string): string {
   return value;
 }
 
+function int(name: string, fallback: number): number {
+  const value = Number(process.env[name]);
+  return Number.isInteger(value) && value > 0 ? value : fallback;
+}
+
+/**
+ * Proxys dont l'API croit l'en-tête X-Forwarded-For (syntaxe de proxy-addr):
+ * par défaut la machine et les réseaux privés, où vit le Caddy du compose.
+ * Sans cela, n'importe qui pourrait se donner l'adresse IP de son choix et
+ * contourner les freins par adresse.
+ */
+function trustProxyFromEnv(): boolean | number | string {
+  const value = process.env.TRUST_PROXY?.trim();
+  if (!value) return 'loopback,uniquelocal';
+  if (value === 'true' || value === 'false') return value === 'true';
+  if (/^\d+$/.test(value)) return Number(value);
+  return value;
+}
+
 const issuer = process.env.OIDC_ISSUER?.trim();
 
 export const config = {
@@ -41,6 +60,10 @@ export const config = {
         label: process.env.OIDC_LABEL?.trim() || 'SSO',
         /** Crée un compte à la première connexion d'une identité inconnue. Sinon, seuls les comptes existants peuvent entrer. */
         autoCreate: flag('OIDC_AUTO_CREATE', false),
+        /** Claim qui porte les groupes de la personne (« groups »): ses groupes Andal SSO suivent à chaque connexion. Vide: pas de synchro. */
+        groupsClaim: process.env.OIDC_GROUPS_CLAIM?.trim() || null,
+        /** Scope à demander en plus pour recevoir ce claim (Okta: « groups »). */
+        groupsScope: process.env.OIDC_GROUPS_SCOPE?.trim() || null,
         /** HTTP n'est toléré qu'en développement (Keycloak local). */
         allowHttp: !production && issuer.startsWith('http://'),
       }
@@ -60,6 +83,13 @@ export const config = {
   storage: storageConfigFromEnv(),
   /** Taille maximale d'un fichier envoyé, en octets. */
   uploadMaxBytes: Math.max(1, Number(process.env.UPLOAD_MAX_MB ?? 25)) * 1024 * 1024,
+  trustProxy: trustProxyFromEnv(),
+  /**
+   * Limite de débit par minute: lectures et écritures d'une session, d'un jeton
+   * d'API ou du jeton SCIM; requêtes sans session, par adresse IP.
+   * RATE_LIMIT=false la coupe (une passerelle en amont s'en charge déjà).
+   */
+  rateLimit: flag('RATE_LIMIT', true) ? { reads: int('RATE_LIMIT_READS', 600), writes: int('RATE_LIMIT_WRITES', 120), anonymous: int('RATE_LIMIT_ANONYMOUS', 120) } : null,
   /** Adresse d'écoute: 127.0.0.1 en dev, 0.0.0.0 dans un conteneur. */
   host: process.env.HOST?.trim() || '127.0.0.1',
   /** Webhooks vers le réseau interne (Mattermost sur le LAN, tests): désactivé par défaut, contre le SSRF. */

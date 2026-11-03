@@ -4,6 +4,7 @@ import { useNavigate } from '@tanstack/react-router';
 import { useState, type CSSProperties, type FormEvent } from 'react';
 import { api, errorMessage, useArchivedVolumes, useRayons, type Cloth, type ProjectSummary, type Tree } from '../lib/api';
 import { relative } from '../lib/format';
+import { t, tn, tx } from '../lib/i18n';
 import { spineHeight } from '../lib/volumes';
 import { GitSyncPanel } from './GitSyncPanel';
 import { FormError } from './AuthCard';
@@ -11,12 +12,12 @@ import { Modal } from './Dialog';
 
 /** Les six toiles de l'étagère. Leur nom de code vient des premiers volumes; on montre leur couleur. */
 export const CLOTHS: { cloth: Cloth; label: string }[] = [
-  { cloth: 'paiements', label: 'Sarcelle' },
-  { cloth: 'identite', label: 'Indigo' },
-  { cloth: 'plateforme', label: 'Bleu' },
-  { cloth: 'mobile', label: 'Framboise' },
-  { cloth: 'design', label: 'Brique' },
-  { cloth: 'donnees', label: 'Ocre' },
+  { cloth: 'paiements', label: t('Sarcelle') },
+  { cloth: 'identite', label: t('Indigo') },
+  { cloth: 'plateforme', label: t('Bleu') },
+  { cloth: 'mobile', label: t('Framboise') },
+  { cloth: 'design', label: t('Brique') },
+  { cloth: 'donnees', label: t('Ocre') },
 ];
 
 const NAME_MAX = 80;
@@ -67,34 +68,34 @@ function VolumeForm({ initial, number, submitLabel, onSubmit }: { initial: Volum
       {error && <FormError>{error}</FormError>}
       <div className="volume-fields">
         <div className="field">
-          <label htmlFor="volume-name">Nom</label>
-          <input id="volume-name" className="input" required autoFocus maxLength={NAME_MAX} value={values.name} onChange={(e) => set({ name: e.target.value })} placeholder="Plateforme Paiements" />
+          <label htmlFor="volume-name">{t('Nom')}</label>
+          <input id="volume-name" className="input" required autoFocus maxLength={NAME_MAX} value={values.name} onChange={(e) => set({ name: e.target.value })} placeholder={t('Plateforme Paiements')} />
         </div>
         <div className="field">
-          <label htmlFor="volume-short">Nom court</label>
+          <label htmlFor="volume-short">{t('Nom court')}</label>
           <input
             id="volume-short"
             className="input"
             maxLength={SHORT_MAX + 10}
             value={values.shortName}
             onChange={(e) => set({ shortName: e.target.value })}
-            placeholder={name.slice(0, SHORT_MAX) || 'Paiements'}
+            placeholder={name.slice(0, SHORT_MAX) || t('Paiements')}
             aria-describedby="volume-short-hint"
             aria-invalid={tooLong || undefined}
           />
           <p id="volume-short-hint" className={`form-hint${tooLong ? ' bad' : ''}`}>
-            {tooLong ? `Trop long pour le dos du volume: ${spine.length} caractères sur ${SHORT_MAX}.` : 'Écrit sur le dos du volume, dans l’étagère. Le nom par défaut.'}
+            {tooLong ? t('Trop long pour le dos du volume: {count} caractères sur {max}.', { count: spine.length, max: SHORT_MAX }) : t('Écrit sur le dos du volume, dans l’étagère. Le nom par défaut.')}
           </p>
         </div>
         <div className="field">
           <label htmlFor="volume-description">
-            Description <span className="optional">facultative</span>
+            {t('Description')} <span className="optional">{t('facultative')}</span>
           </label>
-          <textarea id="volume-description" className="input" rows={2} maxLength={DESCRIPTION_MAX} value={values.description} onChange={(e) => set({ description: e.target.value })} placeholder="Ce que l’on trouve dans ce volume, et pour qui." />
+          <textarea id="volume-description" className="input" rows={2} maxLength={DESCRIPTION_MAX} value={values.description} onChange={(e) => set({ description: e.target.value })} placeholder={t('Ce que l’on trouve dans ce volume, et pour qui.')} />
         </div>
         <RayonField value={values.rayonId} onChange={(rayonId) => set({ rayonId })} />
         <fieldset className="field swatches">
-          <legend>Toile</legend>
+          <legend>{t('Toile')}</legend>
           <div className="swatch-row">
             {CLOTHS.map(({ cloth, label }) => (
               <label key={cloth} className="swatch" data-vol={cloth} title={label}>
@@ -112,7 +113,7 @@ function VolumeForm({ initial, number, submitLabel, onSubmit }: { initial: Volum
         </span>
       </div>
       <button type="submit" className="btn-ink" disabled={pending || !name || tooLong || unchanged}>
-        {pending ? 'Un instant…' : submitLabel}
+        {pending ? t('Un instant…') : submitLabel}
       </button>
     </form>
   );
@@ -125,10 +126,10 @@ function RayonField({ value, onChange }: { value: string; onChange: (rayonId: st
   return (
     <div className="field">
       <label htmlFor="volume-rayon">
-        Rayon <span className="optional">dans la bibliothèque</span>
+        {t('Rayon')} <span className="optional">{t('dans la bibliothèque')}</span>
       </label>
       <select id="volume-rayon" className="input" value={value} onChange={(e) => onChange(e.target.value)}>
-        <option value="">Hors rayon</option>
+        <option value="">{t('Hors rayon')}</option>
         {rayons.data.map((r) => (
           <option key={r.id} value={r.id}>
             {r.name}
@@ -145,12 +146,12 @@ export function NewVolumeDialog({ open, onOpenChange, projects }: { open: boolea
   const navigate = useNavigate();
   const next = Math.max(0, ...projects.map((p) => p.volumeNumber)) + 1;
   return (
-    <Modal open={open} onOpenChange={onOpenChange} title="Nouveau volume">
+    <Modal open={open} onOpenChange={onOpenChange} title={t('Nouveau volume')}>
       {open && (
         <VolumeForm
           initial={{ name: '', shortName: '', description: '', cloth: freeCloth(projects), rayonId: '' }}
           number={next}
-          submitLabel="Créer le volume"
+          submitLabel={t('Créer le volume')}
           onSubmit={async (values) => {
             const created = await api<{ slug: string; firstPageId: string }>('/projects', { method: 'POST', body: JSON.stringify(values) });
             await queryClient.invalidateQueries({ queryKey: ['projects'] });
@@ -182,16 +183,14 @@ function DeleteVolume({ volume, onDeleted }: { volume: { id: string; shortName: 
   };
   return (
     <form className="danger-zone" onSubmit={(e) => void submit(e)}>
-      <p className="dialog-text">Pages, sous-pages, commentaires, historique et droits disparaissent avec le volume. C’est sans retour.</p>
+      <p className="dialog-text">{t('Pages, sous-pages, commentaires, historique et droits disparaissent avec le volume. C’est sans retour.')}</p>
       {error && <FormError>{error}</FormError>}
       <div className="field">
-        <label htmlFor={`delete-${volume.id}`}>
-          Tapez <b>{volume.shortName}</b> pour confirmer
-        </label>
+        <label htmlFor={`delete-${volume.id}`}>{tx('Tapez {name} pour confirmer', { name: <b>{volume.shortName}</b> })}</label>
         <input id={`delete-${volume.id}`} className="input" autoComplete="off" value={confirm} onChange={(e) => setConfirm(e.target.value)} />
       </div>
       <button type="submit" className="btn-danger" disabled={pending || confirm.trim() !== volume.shortName}>
-        {pending ? 'Suppression…' : 'Supprimer définitivement'}
+        {pending ? t('Suppression…') : t('Supprimer définitivement')}
       </button>
     </form>
   );
@@ -230,12 +229,12 @@ export function VolumeSettingsDialog({ tree, open, onOpenChange }: { tree: Tree;
   };
 
   return (
-    <Modal open={open} onOpenChange={close} title={`Réglages de « ${project.name} »`}>
+    <Modal open={open} onOpenChange={close} title={t('Réglages de « {name} »', { name: project.name })}>
       {open && !project.archived && (
         <VolumeForm
           initial={{ name: project.name, shortName: project.shortName === project.name ? '' : project.shortName, description: project.description ?? '', cloth: project.cloth, rayonId: project.rayonId ?? '' }}
           number={project.volumeNumber}
-          submitLabel="Enregistrer"
+          submitLabel={t('Enregistrer')}
           onSubmit={async (values) => {
             await api(`/projects/${project.id}`, { method: 'PATCH', body: JSON.stringify(values) });
             await refresh();
@@ -248,10 +247,10 @@ export function VolumeSettingsDialog({ tree, open, onOpenChange }: { tree: Tree;
         {error && <FormError>{error}</FormError>}
         {project.archived ? (
           <>
-            <p className="dialog-text">Ce volume est archivé: hors de l’étagère et de la recherche, ses pages se lisent mais ne se modifient plus. Le désarchiver le remet en service tel quel.</p>
+            <p className="dialog-text">{t('Ce volume est archivé: hors de l’étagère et de la recherche, ses pages se lisent mais ne se modifient plus. Le désarchiver le remet en service tel quel.')}</p>
             <button type="button" className="btn-ink" disabled={pending} onClick={() => void toggleArchive()}>
               <ArrowCounterClockwiseIcon size={18} aria-hidden />
-              Désarchiver le volume
+              {t('Désarchiver le volume')}
             </button>
             {project.canDelete && (
               <DeleteVolume
@@ -267,21 +266,21 @@ export function VolumeSettingsDialog({ tree, open, onOpenChange }: { tree: Tree;
         ) : confirming ? (
           <div className="inline-confirm">
             <p className="dialog-text">
-              <b>Archiver « {project.shortName} » ?</b> Il quitte l’étagère et la recherche, et ses pages passent en lecture seule pour tout le monde, pages ouvertes comprises. Vous pourrez le désarchiver.
+              <b>{t('Archiver « {name} » ?', { name: project.shortName })}</b> {t('Il quitte l’étagère et la recherche, et ses pages passent en lecture seule pour tout le monde, pages ouvertes comprises. Vous pourrez le désarchiver.')}
             </p>
             <div className="dialog-actions">
               <button type="button" className="btn-line" onClick={() => setConfirming(false)}>
-                Annuler
+                {t('Annuler')}
               </button>
               <button type="button" className="btn-danger" disabled={pending} onClick={() => void toggleArchive()}>
-                {pending ? 'Archivage…' : 'Archiver'}
+                {pending ? t('Archivage…') : t('Archiver')}
               </button>
             </div>
           </div>
         ) : (
           <button type="button" className="ghost danger archive-btn" onClick={() => setConfirming(true)}>
             <ArchiveIcon size={16} aria-hidden />
-            Archiver le volume…
+            {t('Archiver le volume…')}
           </button>
         )}
       </div>
@@ -312,18 +311,18 @@ export function ArchivesDialog({ open, onOpenChange }: { open: boolean; onOpenCh
   };
 
   return (
-    <Modal open={open} onOpenChange={onOpenChange} title="Volumes archivés">
+    <Modal open={open} onOpenChange={onOpenChange} title={t('Volumes archivés')}>
       <div className="dialog-body">
         {error && <FormError>{error}</FormError>}
         {archives.isPending ? (
-          <div className="doc-skeleton" aria-busy="true" aria-label="Chargement des archives">
+          <div className="doc-skeleton" aria-busy="true" aria-label={t('Chargement des archives')}>
             <span />
             <span />
           </div>
         ) : archives.isError ? (
-          <FormError>{errorMessage(archives.error, 'Impossible de charger les archives.')}</FormError>
+          <FormError>{errorMessage(archives.error, t('Impossible de charger les archives.'))}</FormError>
         ) : archives.data.length === 0 ? (
-          <p className="dialog-text">Aucun volume archivé parmi ceux que vous administrez.</p>
+          <p className="dialog-text">{t('Aucun volume archivé parmi ceux que vous administrez.')}</p>
         ) : (
           <ul className="archive-list">
             {archives.data.map((v) => (
@@ -331,12 +330,10 @@ export function ArchivesDialog({ open, onOpenChange }: { open: boolean; onOpenCh
                 <div className="archive-row">
                   <span className="vol-swatch" data-vol={v.cloth} aria-hidden />
                   <span className="archive-text">
-                    <b>
-                      Vol. {v.volumeNumber} · {v.name}
-                    </b>
+                    <b>{t('Vol. {vol} · {name}', { vol: v.volumeNumber, name: v.name })}</b>
                     <small>
-                      {v.pageCount} page{v.pageCount > 1 ? 's' : ''} · archivé {v.archivedBy ? `par ${v.archivedBy}, ` : ''}
-                      {relative(v.archivedAt)}
+                      {tn(v.pageCount, '{n} page', '{n} pages')} ·{' '}
+                      {v.archivedBy ? t('archivé par {name}, {when}', { name: v.archivedBy, when: relative(v.archivedAt) }) : t('archivé {when}', { when: relative(v.archivedAt) })}
                     </small>
                   </span>
                   <span className="trash-actions">
@@ -348,15 +345,15 @@ export function ArchivesDialog({ open, onOpenChange }: { open: boolean; onOpenCh
                         void navigate({ to: '/v/$slug', params: { slug: v.slug } });
                       }}
                     >
-                      Ouvrir
+                      {t('Ouvrir')}
                     </button>
                     {v.canDelete && (
                       <button type="button" className="ghost danger" aria-expanded={deleting === v.id} onClick={() => setDeleting(deleting === v.id ? null : v.id)}>
-                        Supprimer…
+                        {t('Supprimer…')}
                       </button>
                     )}
                     <button type="button" className="btn-line sm" disabled={pending !== null} onClick={() => void unarchive(v.id)}>
-                      {pending === v.id ? 'Un instant…' : 'Désarchiver'}
+                      {pending === v.id ? t('Un instant…') : t('Désarchiver')}
                     </button>
                   </span>
                 </div>

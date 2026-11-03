@@ -18,9 +18,17 @@
 		reverse_proxy api:3001
 	}
 
-	# Collaboration temps réel (WebSocket).
+	# Collaboration temps réel (WebSocket). Les instances collab se synchronisent
+	# entre elles par Valkey: `--scale collab=3` suffit, Caddy les retrouve par le DNS.
 	handle_path /collab* {
-		reverse_proxy collab:3002
+		reverse_proxy {
+			dynamic a {
+				name collab
+				port 3002
+				refresh 10s
+			}
+			lb_policy least_conn
+		}
 	}
 
 	# Éditeur draw.io auto-hébergé, ouvert dans une iframe de même origine.

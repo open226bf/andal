@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { api, ApiError, type Cloth } from './api';
+import { locale } from './i18n';
 
 export interface AskSource {
   n: number;
@@ -19,7 +20,7 @@ export async function askStream(question: string, handlers: { onSources: (s: Ask
   const response = await fetch('/api/ask', {
     method: 'POST',
     credentials: 'same-origin',
-    headers: { 'content-type': 'application/json', accept: 'text/event-stream' },
+    headers: { 'content-type': 'application/json', accept: 'text/event-stream', 'accept-language': locale },
     body: JSON.stringify({ question }),
     signal,
   });

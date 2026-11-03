@@ -25,6 +25,7 @@
     "kysely": "^0.28.0",
     "nodemailer": "^10.3.1",
     "openid-client": "^6.8.8",
+    "qrcode": "1.5.4",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.0",
     "yaml": "^2.9.1"
@@ -32,6 +33,7 @@
   "devDependencies": {
     "@types/node": "^22.15.0",
     "@types/nodemailer": "^8.0.2",
+    "@types/qrcode": "1.5.5",
     "typescript": "~5.9.2"
   }
 }

@@ -7,6 +7,7 @@ import { Link, useNavigate } from '@tanstack/react-router';
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { api, type Me, type ProjectSummary } from '../lib/api';
 import { roleLabel } from '../lib/format';
+import { t, tn } from '../lib/i18n';
 import { spineHeight, volumeLink } from '../lib/volumes';
 import { Logo } from './Logo';
 import { NotificationsButton } from './NotificationsButton';
@@ -43,14 +44,14 @@ export function Shelf({ projects, current, me, library = false }: { projects: Pr
   };
 
   return (
-    <aside className="shelf" aria-label="Volumes">
-      <a className="logo" href="/" aria-label="Andal, bibliothèque">
+    <aside className="shelf" aria-label={t('Volumes')}>
+      <a className="logo" href="/" aria-label={t('Andal, bibliothèque')}>
         <Logo />
       </a>
-      <Link to="/" className="shelf-library" aria-current={library ? 'page' : undefined} aria-label={`Bibliothèque: les ${projects.length} volumes`} title="Bibliothèque: tous les volumes">
+      <Link to="/" className="shelf-library" aria-current={library ? 'page' : undefined} aria-label={tn(projects.length, 'Bibliothèque: {n} volume', 'Bibliothèque: les {n} volumes')} title={t('Bibliothèque: tous les volumes')}>
         <BooksIcon size={20} aria-hidden />
       </Link>
-      <div className="spines" role="list" aria-label="Votre étagère" ref={spines}>
+      <div className="spines" role="list" aria-label={t('Votre étagère')} ref={spines}>
         {shelved.map((p) => (
           <Spine key={p.id} volume={p} current={p.slug === current} />
         ))}
@@ -61,7 +62,7 @@ export function Shelf({ projects, current, me, library = false }: { projects: Pr
           </>
         )}
         {member && (
-          <button type="button" className="spine-add" aria-label="Nouveau volume" title="Nouveau volume" onClick={() => setNewOpen(true)}>
+          <button type="button" className="spine-add" aria-label={t('Nouveau volume')} title={t('Nouveau volume')} onClick={() => setNewOpen(true)}>
             <PlusIcon size={18} aria-hidden />
           </button>
         )}
@@ -72,7 +73,7 @@ export function Shelf({ projects, current, me, library = false }: { projects: Pr
         <NotificationsButton />
         <Popover.Root open={menuOpen} onOpenChange={setMenuOpen}>
           <Popover.Trigger asChild>
-            <button type="button" aria-label={`Compte de ${me.user.name}`}>
+            <button type="button" aria-label={t('Compte de {name}', { name: me.user.name })}>
               <Avatar initials={me.user.initials} color={me.user.color} size={32} />
             </button>
           </Popover.Trigger>
@@ -83,12 +84,12 @@ export function Shelf({ projects, current, me, library = false }: { projects: Pr
                 <small>
                   {me.user.username ?? me.user.email} · {roleLabel(me.user.workspaceRole)}
                 </small>
-                <small>{me.auth.method === 'oidc' ? 'Connecté par SSO' : 'Connecté par mot de passe'}</small>
+                <small>{me.auth.method === 'oidc' ? t('Connecté par SSO') : t('Connecté par mot de passe')}</small>
               </div>
               {canManageAccounts(me.user.workspaceRole as WorkspaceRole) && (
                 <Link to="/admin" className="menu-item" onClick={() => setMenuOpen(false)}>
                   <UsersThreeIcon size={18} aria-hidden />
-                  Administration de l’espace
+                  {t('Administration de l’espace')}
                 </Link>
               )}
               {member && (
@@ -101,16 +102,16 @@ export function Shelf({ projects, current, me, library = false }: { projects: Pr
                   }}
                 >
                   <ArchiveIcon size={18} aria-hidden />
-                  Volumes archivés
+                  {t('Volumes archivés')}
                 </button>
               )}
               <Link to="/compte" className="menu-item" onClick={() => setMenuOpen(false)}>
                 <ShieldCheckIcon size={18} aria-hidden />
-                Mon compte: sécurité, jetons d’API
+                {t('Mon compte: sécurité, jetons d’API')}
               </Link>
               <button type="button" className="menu-item" onClick={() => void logout()}>
                 <SignOutIcon size={18} aria-hidden />
-                Se déconnecter
+                {t('Se déconnecter')}
               </button>
             </Popover.Content>
           </Popover.Portal>
@@ -131,8 +132,12 @@ function Spine({ volume, current, visiting = false }: { volume: ProjectSummary; 
       data-vol={volume.cloth}
       data-visiting={visiting || undefined}
       aria-current={current ? 'true' : undefined}
-      aria-label={`Volume ${volume.volumeNumber}, ${volume.name}${visiting ? ', pas sur votre étagère' : ''}`}
-      title={visiting ? `${volume.name}: ouvert, mais pas sur votre étagère` : volume.name}
+      aria-label={
+        visiting
+          ? t('Volume {number}, {name}, pas sur votre étagère', { number: volume.volumeNumber, name: volume.name })
+          : t('Volume {number}, {name}', { number: volume.volumeNumber, name: volume.name })
+      }
+      title={visiting ? t('{name}: ouvert, mais pas sur votre étagère', { name: volume.name }) : volume.name}
       style={{ '--h': spineHeight(volume.shortName) } as CSSProperties}
       onClick={() => void navigate(volumeLink(volume))}
     >

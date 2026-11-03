@@ -7,28 +7,29 @@ import { CopyField } from '../components/CopyField';
 import { ConfirmDialog, Modal, type Confirmation } from '../components/Dialog';
 import { api, errorMessage, useProjects, useWebhookDeliveries, useWebhooks, type Webhook, type WebhookKind } from '../lib/api';
 import { dateTime, relative } from '../lib/format';
+import { t, tn } from '../lib/i18n';
 
 const KINDS: Record<WebhookKind, { label: string; help: string }> = {
-  slack: { label: 'Slack ou Mattermost', help: 'Collez l’URL d’un « Incoming Webhook » du canal. Chaque événement y arrive en une phrase, avec le lien.' },
-  teams: { label: 'Microsoft Teams', help: 'Collez l’URL d’un flux Workflows « Publier sur un canal quand une requête webhook est reçue ». Le message arrive en carte.' },
-  generic: { label: 'Webhook signé (JSON)', help: 'Pour vos propres services: un JSON par événement, signé HMAC-SHA256 dans X-Andal-Signature.' },
+  slack: { label: t('Slack ou Mattermost'), help: t('Collez l’URL d’un « Incoming Webhook » du canal. Chaque événement y arrive en une phrase, avec le lien.') },
+  teams: { label: 'Microsoft Teams', help: t('Collez l’URL d’un flux Workflows « Publier sur un canal quand une requête webhook est reçue ». Le message arrive en carte.') },
+  generic: { label: t('Webhook signé (JSON)'), help: t('Pour vos propres services: un JSON par événement, signé HMAC-SHA256 dans X-Andal-Signature.') },
 };
 
 const EVENTS: Record<string, string> = {
-  'page.created': 'Page créée',
-  'page.updated': 'Page modifiée (une fois par rafale)',
-  'page.deleted': 'Page mise à la corbeille',
-  'comment.created': 'Nouveau commentaire',
-  'spec.published': 'Spec OpenAPI publiée',
+  'page.created': t('Page créée'),
+  'page.updated': t('Page modifiée (une fois par rafale)'),
+  'page.deleted': t('Page mise à la corbeille'),
+  'comment.created': t('Nouveau commentaire'),
+  'spec.published': t('Spec OpenAPI publiée'),
 };
 
 /** Statut du dernier envoi, en mots et en couleur. */
 function DeliveryStatus({ delivery }: { delivery: Webhook['lastDelivery'] }) {
-  if (!delivery) return <span className="hook-state">Aucun envoi pour l’instant</span>;
+  if (!delivery) return <span className="hook-state">{t('Aucun envoi pour l’instant')}</span>;
   const ok = delivery.status !== null && delivery.status >= 200 && delivery.status < 300;
   return (
     <span className={`hook-state ${ok ? 'ok' : 'err'}`} title={dateTime(delivery.at)}>
-      {ok ? `Dernier envoi réussi ${relative(delivery.at)}` : `Dernier envoi en échec ${relative(delivery.at)}: ${delivery.error ?? delivery.status}`}
+      {ok ? t('Dernier envoi réussi {when}', { when: relative(delivery.at) }) : t('Dernier envoi en échec {when}: {error}', { when: relative(delivery.at), error: delivery.error ?? delivery.status })}
     </span>
   );
 }
@@ -47,15 +48,16 @@ export function IntegrationsSection() {
   const [revealed, setRevealed] = useState<Set<string>>(new Set());
   const refresh = () => queryClient.invalidateQueries({ queryKey: ['admin', 'webhooks'] });
 
-  if (hooks.isPending) return <div className="doc-skeleton" aria-busy="true" aria-label="Chargement des intégrations"><span /><span /><span /></div>;
-  if (hooks.isError) return <FormError>{errorMessage(hooks.error, 'Impossible de charger les intégrations.')}</FormError>;
+  if (hooks.isPending) return <div className="doc-skeleton" aria-busy="true" aria-label={t('Chargement des intégrations')}><span /><span /><span /></div>;
+  if (hooks.isError) return <FormError>{errorMessage(hooks.error, t('Impossible de charger les intégrations.'))}</FormError>;
   const list = hooks.data.webhooks;
+  const activeCount = list.filter((h) => h.active).length;
 
   const test = async (hook: Webhook) => {
-    setNotice({ id: hook.id, tone: 'ok', text: 'Envoi du test…' });
+    setNotice({ id: hook.id, tone: 'ok', text: t('Envoi du test…') });
     try {
       const result = await api<{ status: number | null; error: string | null; durationMs: number }>(`/admin/webhooks/${hook.id}/test`, { method: 'POST' });
-      setNotice(result.error ? { id: hook.id, tone: 'err', text: `Échec: ${result.error}` } : { id: hook.id, tone: 'ok', text: `Reçu: HTTP ${result.status}, en ${result.durationMs} ms.` });
+      setNotice(result.error ? { id: hook.id, tone: 'err', text: t('Échec: {error}', { error: result.error }) } : { id: hook.id, tone: 'ok', text: t('Reçu: HTTP {status}, en {ms} ms.', { status: result.status, ms: result.durationMs }) });
     } catch (err) {
       setNotice({ id: hook.id, tone: 'err', text: errorMessage(err) });
     }
@@ -75,20 +77,20 @@ export function IntegrationsSection() {
     <>
       <div className="admin-head">
         <div>
-          <h1 className="doc-title">Intégrations</h1>
+          <h1 className="doc-title">{t('Intégrations')}</h1>
           <p className="admin-count">
-            {list.length === 0 ? 'Aucune intégration' : `${list.filter((h) => h.active).length} active${list.filter((h) => h.active).length > 1 ? 's' : ''} sur ${list.length}`}
+            {list.length === 0 ? t('Aucune intégration') : tn(activeCount, '{n} active sur {total}', '{n} actives sur {total}', { total: list.length })}
           </p>
         </div>
         <button type="button" className="btn-ink" onClick={() => setCreateOpen(true)}>
           <PlusIcon size={18} aria-hidden />
-          Nouvelle intégration
+          {t('Nouvelle intégration')}
         </button>
       </div>
       {list.length === 0 ? (
         <div className="hooks-empty">
           <BroadcastIcon size={28} aria-hidden />
-          <p>Prévenez un canal Slack, Mattermost ou Teams quand une page est créée, modifiée ou commentée, ou quand la CI publie une spec. Les pages sous restriction de lecture ne sont jamais annoncées.</p>
+          <p>{t('Prévenez un canal Slack, Mattermost ou Teams quand une page est créée, modifiée ou commentée, ou quand la CI publie une spec. Les pages sous restriction de lecture ne sont jamais annoncées.')}</p>
         </div>
       ) : (
         <ul className="hooks">
@@ -98,22 +100,22 @@ export function IntegrationsSection() {
                 <div className="hook-title">
                   <b>{hook.name}</b>
                   <span className="hook-kind">{KINDS[hook.kind].label}</span>
-                  {!hook.active && <span className="badge-off">En pause</span>}
+                  {!hook.active && <span className="badge-off">{t('En pause')}</span>}
                 </div>
                 <code className="hook-url">{hook.url.replace(/^https?:\/\//, '').replace(/(.{48}).+/, '$1…')}</code>
                 <p className="hook-scope">
-                  {hook.project ? `Volume ${hook.project.name}` : 'Tout l’espace'} · {hook.events.map((e) => EVENTS[e] ?? e).join(', ')}
+                  {hook.project ? t('Volume {name}', { name: hook.project.name }) : t('Tout l’espace')} · {hook.events.map((e) => EVENTS[e] ?? e).join(', ')}
                 </p>
                 <DeliveryStatus delivery={hook.lastDelivery} />
                 {notice?.id === hook.id && (notice.tone === 'ok' ? <FormOk>{notice.text}</FormOk> : <FormError>{notice.text}</FormError>)}
                 {hook.secret && (
                   <div className="hook-secret">
-                    <span>Clé de signature</span>
+                    <span>{t('Clé de signature')}</span>
                     {revealed.has(hook.id) ? (
-                      <CopyField label="Clé de signature" value={hook.secret} />
+                      <CopyField label={t('Clé de signature')} value={hook.secret} />
                     ) : (
                       <button type="button" className="btn-line sm" onClick={() => setRevealed(new Set([...revealed, hook.id]))}>
-                        Afficher
+                        {t('Afficher')}
                       </button>
                     )}
                   </div>
@@ -122,26 +124,26 @@ export function IntegrationsSection() {
               <div className="hook-actions">
                 <button type="button" className="btn-line sm" onClick={() => void test(hook)}>
                   <PaperPlaneTiltIcon size={16} aria-hidden />
-                  Tester
+                  {t('Tester')}
                 </button>
                 <button type="button" className="btn-line sm" onClick={() => setJournal(hook)}>
                   <ListMagnifyingGlassIcon size={16} aria-hidden />
-                  Journal
+                  {t('Envois')}
                 </button>
                 <button type="button" className="btn-line sm" onClick={() => void toggle(hook)}>
-                  {hook.active ? 'Mettre en pause' : 'Réactiver'}
+                  {hook.active ? t('Mettre en pause') : t('Réactiver')}
                 </button>
                 {hook.secret && (
                   <button
                     type="button"
                     className="icon-btn sm"
-                    aria-label={`Renouveler la clé de ${hook.name}`}
-                    title="Renouveler la clé"
+                    aria-label={t('Renouveler la clé de {name}', { name: hook.name })}
+                    title={t('Renouveler la clé')}
                     onClick={() =>
                       setConfirm({
-                        title: `Renouveler la clé de « ${hook.name} » ?`,
-                        body: 'L’ancienne clé cesse aussitôt de valoir: le service destinataire doit vérifier avec la nouvelle.',
-                        action: 'Renouveler',
+                        title: t('Renouveler la clé de « {name} » ?', { name: hook.name }),
+                        body: t('L’ancienne clé cesse aussitôt de valoir: le service destinataire doit vérifier avec la nouvelle.'),
+                        action: t('Renouveler'),
                         run: async () => {
                           await api(`/admin/webhooks/${hook.id}/rotate`, { method: 'POST' });
                           setRevealed(new Set([...revealed, hook.id]));
@@ -156,13 +158,13 @@ export function IntegrationsSection() {
                 <button
                   type="button"
                   className="icon-btn sm"
-                  aria-label={`Supprimer ${hook.name}`}
-                  title="Supprimer"
+                  aria-label={t('Supprimer {name}', { name: hook.name })}
+                  title={t('Supprimer')}
                   onClick={() =>
                     setConfirm({
-                      title: `Supprimer « ${hook.name} » ?`,
-                      body: 'Plus aucun événement ne partira vers cette adresse. Son journal disparaît aussi.',
-                      action: 'Supprimer',
+                      title: t('Supprimer « {name} » ?', { name: hook.name }),
+                      body: t('Plus aucun événement ne partira vers cette adresse. Son journal disparaît aussi.'),
+                      action: t('Supprimer'),
                       run: async () => {
                         await api(`/admin/webhooks/${hook.id}`, { method: 'DELETE' });
                         await refresh();
@@ -212,11 +214,11 @@ function CreateWebhook({ open, onOpenChange, events, onCreated }: { open: boolea
   };
 
   return (
-    <Modal open={open} onOpenChange={onOpenChange} title="Nouvelle intégration">
+    <Modal open={open} onOpenChange={onOpenChange} title={t('Nouvelle intégration')}>
       <form className="dialog-body" onSubmit={(e) => void submit(e)}>
         {error && <FormError>{error}</FormError>}
         <div className="field">
-          <label htmlFor="hook-kind">Destination</label>
+          <label htmlFor="hook-kind">{t('Destination')}</label>
           <select id="hook-kind" className="input select" value={kind} onChange={(e) => setKind(e.target.value as WebhookKind)}>
             {(Object.keys(KINDS) as WebhookKind[]).map((k) => (
               <option key={k} value={k}>
@@ -227,17 +229,17 @@ function CreateWebhook({ open, onOpenChange, events, onCreated }: { open: boolea
           <p className="field-help">{KINDS[kind].help}</p>
         </div>
         <div className="field">
-          <label htmlFor="hook-url">Adresse du webhook</label>
+          <label htmlFor="hook-url">{t('Adresse du webhook')}</label>
           <input id="hook-url" className="input" type="url" required placeholder="https://hooks.slack.com/services/…" value={url} onChange={(e) => setUrl(e.target.value)} />
         </div>
         <div className="field">
-          <label htmlFor="hook-name">Nom</label>
-          <input id="hook-name" className="input" required maxLength={80} placeholder="Canal #paiements" value={name} onChange={(e) => setName(e.target.value)} />
+          <label htmlFor="hook-name">{t('Nom')}</label>
+          <input id="hook-name" className="input" required maxLength={80} placeholder={t('Canal #paiements')} value={name} onChange={(e) => setName(e.target.value)} />
         </div>
         <div className="field">
-          <label htmlFor="hook-volume">Volumes</label>
+          <label htmlFor="hook-volume">{t('Volumes')}</label>
           <select id="hook-volume" className="input select" value={projectId} onChange={(e) => setProjectId(e.target.value)}>
-            <option value="">Tout l’espace</option>
+            <option value="">{t('Tout l’espace')}</option>
             {(projects.data ?? []).map((p) => (
               <option key={p.id} value={p.id}>
                 {p.name}
@@ -246,7 +248,7 @@ function CreateWebhook({ open, onOpenChange, events, onCreated }: { open: boolea
           </select>
         </div>
         <fieldset className="field hook-events">
-          <legend>Événements</legend>
+          <legend>{t('Événements')}</legend>
           {events.map((e) => (
             <label key={e} className="check">
               <input
@@ -264,9 +266,9 @@ function CreateWebhook({ open, onOpenChange, events, onCreated }: { open: boolea
           ))}
         </fieldset>
         <div className="dialog-actions">
-          <Dialog.Close className="btn-line">Annuler</Dialog.Close>
+          <Dialog.Close className="btn-line">{t('Annuler')}</Dialog.Close>
           <button type="submit" className="btn-ink" disabled={pending || chosen.size === 0}>
-            Créer
+            {t('Créer')}
           </button>
         </div>
       </form>
@@ -277,15 +279,15 @@ function CreateWebhook({ open, onOpenChange, events, onCreated }: { open: boolea
 function DeliveriesDialog({ hook, onClose }: { hook: Webhook | null; onClose: () => void }) {
   const deliveries = useWebhookDeliveries(hook?.id ?? null);
   return (
-    <Modal open={hook !== null} onOpenChange={(open) => !open && onClose()} title={`Journal · ${hook?.name ?? ''}`}>
+    <Modal open={hook !== null} onOpenChange={(open) => !open && onClose()} title={t('Journal · {name}', { name: hook?.name ?? '' })}>
       <div className="dialog-body">
         {deliveries.data?.length ? (
           <table className="roster deliveries">
             <thead>
               <tr>
-                <th scope="col">Quand</th>
-                <th scope="col">Événement</th>
-                <th scope="col">Résultat</th>
+                <th scope="col">{t('Quand')}</th>
+                <th scope="col">{t('Événement')}</th>
+                <th scope="col">{t('Résultat')}</th>
               </tr>
             </thead>
             <tbody>
@@ -296,7 +298,7 @@ function DeliveriesDialog({ hook, onClose }: { hook: Webhook | null; onClose: ()
                     <td title={dateTime(d.at)}>{relative(d.at)}</td>
                     <td>
                       <code>{d.event}</code>
-                      {d.attempt > 1 && <small> · tentative {d.attempt}</small>}
+                      {d.attempt > 1 && <small> · {t('tentative {n}', { n: d.attempt })}</small>}
                     </td>
                     <td className={ok ? 'ok' : 'err'}>
                       {ok ? `HTTP ${d.status}` : (d.error ?? `HTTP ${d.status}`)}
@@ -308,9 +310,9 @@ function DeliveriesDialog({ hook, onClose }: { hook: Webhook | null; onClose: ()
             </tbody>
           </table>
         ) : (
-          <p className="dialog-text">{deliveries.isPending ? 'Chargement…' : 'Aucun envoi pour l’instant. « Tester » en envoie un.'}</p>
+          <p className="dialog-text">{deliveries.isPending ? t('Chargement…') : t('Aucun envoi pour l’instant. « Tester » en envoie un.')}</p>
         )}
-        <p className="field-help">Un envoi en échec (réseau, 5xx, 429) est réessayé 5 fois, de 30 secondes à 8 minutes d’intervalle.</p>
+        <p className="field-help">{t('Un envoi en échec (réseau, 5xx, 429) est réessayé 5 fois, de 30 secondes à 8 minutes d’intervalle.')}</p>
       </div>
     </Modal>
   );

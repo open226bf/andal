@@ -8,7 +8,7 @@
  * le fichier a disparu. Les liens relatifs entre fichiers deviennent des liens
  * entre pages; les images du dépôt sont envoyées comme pièces jointes.
  */
-import { COLLAB_CHANNEL, collabReplyKey, isPrivateAddress, linkSpecBlocks, ltreeLabel, sniffImage, type CollabCommand, type Database, type Storage } from '@andal/db';
+import { collabBroadcast, collabWrite, isPrivateAddress, linkSpecBlocks, ltreeLabel, sniffImage, type Database, type Storage } from '@andal/db';
 import { sameDoc, validateDoc, type JSONContent } from '@andal/editor';
 import { fromMarkdown } from '@andal/editor/markdown';
 import type { Queue } from 'bullmq';
@@ -183,14 +183,7 @@ async function entries(root: string, files: string[]): Promise<Entry[]> {
 /** Envoie la commande « replace » au serveur collab et attend sa réponse. */
 async function replaceLive(valkey: Redis, pageId: string, content: JSONContent, userId: string | null): Promise<string> {
   const requestId = randomUUID();
-  const waiter = valkey.duplicate();
-  try {
-    await valkey.publish(COLLAB_CHANNEL, JSON.stringify({ op: 'replace', requestId, pageId, content, userId } satisfies CollabCommand));
-    const reply = await waiter.blpop(collabReplyKey(requestId), 15);
-    return reply?.[1] ?? 'timeout';
-  } finally {
-    waiter.disconnect();
-  }
+  return collabWrite(valkey, { op: 'replace', requestId, pageId, content, userId }, 15);
 }
 
 export async function syncRepository(ctx: GitSyncContext, syncId: string, options: { force?: boolean } = {}): Promise<GitSyncResult | null> {
@@ -298,8 +291,8 @@ export async function syncRepository(ctx: GitSyncContext, syncId: string, option
     }
 
     await db.updateTable('git_syncs').set({ last_commit: commit, last_synced_at: new Date(), last_error: result.errors.length ? result.errors.slice(0, 5).join(' · ') : null }).where('id', '=', sync.id).execute();
-    await ctx.valkey.publish(COLLAB_CHANNEL, JSON.stringify({ op: 'tree', requestId: randomUUID() } satisfies CollabCommand));
-    if (gone.length) await ctx.valkey.publish(COLLAB_CHANNEL, JSON.stringify({ op: 'access', requestId: randomUUID() } satisfies CollabCommand));
+    await collabBroadcast(ctx.valkey, { op: 'tree', requestId: randomUUID() });
+    if (gone.length) await collabBroadcast(ctx.valkey, { op: 'access', requestId: randomUUID() });
     return result;
   } catch (error) {
     await db.updateTable('git_syncs').set({ last_error: (error instanceof Error ? error.message : String(error)).slice(0, 500), last_synced_at: new Date() }).where('id', '=', sync.id).execute();

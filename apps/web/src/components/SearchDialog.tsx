@@ -4,6 +4,7 @@ import { Link } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
 import { useProjects, useSearch } from '../lib/api';
 import { useAskStatus } from '../lib/ask';
+import { t, tx } from '../lib/i18n';
 import { matchesVolume, volumeLink } from '../lib/volumes';
 import { AskAnswer } from './AskAnswer';
 
@@ -46,7 +47,7 @@ export function SearchDialog({ open, onOpenChange }: { open: boolean; onOpenChan
       <Dialog.Portal>
         <Dialog.Overlay className="overlay" />
         <Dialog.Content className="pop search-dialog" aria-describedby={undefined}>
-          <Dialog.Title className="sr-only">Rechercher dans la documentation</Dialog.Title>
+          <Dialog.Title className="sr-only">{t('Rechercher dans la documentation')}</Dialog.Title>
           {asked ? (
             <AskAnswer question={asked} model={assistant.data?.model ?? null} onBack={() => setAsked(null)} onOpen={() => onOpenChange(false)} />
           ) : (
@@ -54,7 +55,7 @@ export function SearchDialog({ open, onOpenChange }: { open: boolean; onOpenChan
               <input
                 className="search-input"
                 autoFocus
-                placeholder={assistant.data?.enabled ? 'Rechercher, ou poser une question…' : 'Rechercher une page, un endpoint, une figure…'}
+                placeholder={assistant.data?.enabled ? t('Rechercher, ou poser une question…') : t('Rechercher une page, un endpoint, une figure…')}
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
                 onKeyDown={(e) => {
@@ -64,7 +65,7 @@ export function SearchDialog({ open, onOpenChange }: { open: boolean; onOpenChan
                     setAsked(q.trim());
                   }
                 }}
-                aria-label="Recherche"
+                aria-label={t('Recherche')}
               />
               {(volumes.length > 0 || debounced.trim().length > 1 || canAsk) && (
                 <ul className="search-results" aria-busy={isFetching}>
@@ -72,9 +73,7 @@ export function SearchDialog({ open, onOpenChange }: { open: boolean; onOpenChan
                     <li>
                       <button type="button" className="search-ask" onClick={() => setAsked(q.trim())}>
                         <SparkleIcon size={18} aria-hidden />
-                        <span>
-                          Demander à l’assistant: <b>{q.trim()}</b>
-                        </span>
+                        <span>{tx('Demander à l’assistant: {question}', { question: <b>{q.trim()}</b> })}</span>
                         <kbd>{q.trim().endsWith('?') ? '↵' : '⇧↵'}</kbd>
                       </button>
                     </li>
@@ -84,13 +83,13 @@ export function SearchDialog({ open, onOpenChange }: { open: boolean; onOpenChan
                       <Link {...volumeLink(v)} onClick={() => onOpenChange(false)} data-vol={v.cloth} className="search-volume">
                         <span className="vol-swatch" aria-hidden />
                         <span>
-                          {v.name} <small className="text-ink-3">· Volume {v.volumeNumber}</small>
+                          {v.name} <small className="text-ink-3">· {t('Volume {n}', { n: v.volumeNumber })}</small>
                         </span>
                         {v.description && <span className="snippet">{v.description}</span>}
                       </Link>
                     </li>
                   ))}
-                  {debounced.trim().length > 1 && data?.length === 0 && <li className="search-empty">Aucune page lisible ne correspond.</li>}
+                  {debounced.trim().length > 1 && data?.length === 0 && <li className="search-empty">{t('Aucune page lisible ne correspond.')}</li>}
                   {debounced.trim().length > 1 && data?.map((hit) => (
                     <li key={hit.id}>
                       <Link to="/v/$slug/$pageId" params={{ slug: hit.project.slug, pageId: hit.id }} onClick={() => onOpenChange(false)} data-vol={hit.project.cloth}>

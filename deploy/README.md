@@ -1,17 +1,19 @@
-# Déployer Andal
+# Deploying Andal
 
-Un serveur Linux avec Docker suffit : Caddy obtient le certificat TLS, sert l'interface, et relaie l'API, la collaboration temps réel et draw.io sur le même domaine. Postgres, Valkey et RustFS tournent à côté, chacun avec son volume.
+[Français](README.fr.md) · **English**
+
+A Linux server with Docker is all you need: Caddy obtains the TLS certificate, serves the UI, and proxies the API, real-time collaboration and draw.io on the same domain. Postgres, Valkey and RustFS run alongside, each with its own volume.
 
 ```
-navigateur ──HTTPS──▶ web (Caddy) ──▶ /api      api      ─┐
-                                   ──▶ /collab   collab   ─┼─▶ postgres, valkey, rustfs
-                                   ──▶ /drawio   drawio    │
-                                                 worker   ─┘   (indexation, emails, purges, webhooks, synchro Git)
+browser ──HTTPS──▶ web (Caddy) ──▶ /api      api      ─┐
+                                ──▶ /collab   collab   ─┼─▶ postgres, valkey, rustfs
+                                ──▶ /drawio   drawio    │
+                                              worker   ─┘   (indexing, emails, purges, webhooks, Git sync)
 ```
 
-## Installer
+## Install
 
-Prérequis : Docker 24 ou plus avec le plugin compose, un nom de domaine qui pointe vers le serveur, les ports 80 et 443 ouverts.
+Requirements: Docker 24 or later with the compose plugin, a domain name pointing to the server, and ports 80 and 443 open.
 
 ```bash
 git clone https://github.com/open226bf/andal.git && cd andal
@@ -21,29 +23,29 @@ git clone https://github.com/open226bf/andal.git && cd andal
 cp deploy/.env.example deploy/.env
 ```
 
-Remplissez `deploy/.env` : `ANDAL_DOMAIN`, et un secret fort pour `POSTGRES_PASSWORD` et `S3_SECRET_KEY` (`openssl rand -base64 32`). Pour les emails, renseignez `SMTP_URL` et `MAIL_FROM`.
+Fill in `deploy/.env`: `ANDAL_DOMAIN`, and a strong secret for `POSTGRES_PASSWORD` and `S3_SECRET_KEY` (`openssl rand -base64 32`). For email, set `SMTP_URL` and `MAIL_FROM`.
 
 ```bash
 docker compose -f deploy/compose.yaml --env-file deploy/.env up -d
 ```
 
-Au démarrage, le service `migrate` met la base à jour puis s'arrête ; l'API, le serveur collab et le worker attendent qu'il ait réussi. Le bucket de fichiers est créé au premier démarrage de l'API.
+On startup, the `migrate` service updates the database and then exits; the API, the collab server and the worker wait for it to succeed. The file bucket is created the first time the API starts.
 
-Pour construire les images sur place plutôt que de les télécharger, ajoutez `--build`.
+To build the images locally instead of pulling them, add `--build`.
 
-## Premier compte
+## First account
 
-Le premier compte créé devient propriétaire de l'espace :
+The first account created becomes the workspace owner:
 
 ```bash
 docker compose -f deploy/compose.yaml --env-file deploy/.env exec api andal user add
 ```
 
-Les suivants s'invitent depuis l'administration, par email.
+Further accounts are invited by email from Administration.
 
-## Sauvegarder
+## Backups
 
-Deux choses à sauvegarder : la base et les fichiers.
+There are two things to back up: the database and the files.
 
 ```bash
 docker compose -f deploy/compose.yaml --env-file deploy/.env exec -T postgres pg_dump -U andal -Fc andal > andal-$(date +%F).dump
@@ -53,15 +55,15 @@ docker compose -f deploy/compose.yaml --env-file deploy/.env exec -T postgres pg
 docker run --rm -v andal_files:/data:ro -v "$PWD":/backup alpine tar czf /backup/andal-fichiers-$(date +%F).tgz -C /data .
 ```
 
-Restaurer la base dans une installation neuve (services arrêtés sauf postgres) :
+To restore the database into a fresh installation (all services stopped except postgres):
 
 ```bash
-docker compose -f deploy/compose.yaml --env-file deploy/.env exec -T postgres pg_restore -U andal -d andal --clean --if-exists < andal-AAAA-MM-JJ.dump
+docker compose -f deploy/compose.yaml --env-file deploy/.env exec -T postgres pg_restore -U andal -d andal --clean --if-exists < andal-YYYY-MM-DD.dump
 ```
 
-## Mettre à jour
+## Upgrading
 
-Fixez `ANDAL_VERSION` sur la nouvelle étiquette (ou gardez `latest`), puis :
+Set `ANDAL_VERSION` to the new tag (or keep `latest`), then:
 
 ```bash
 docker compose -f deploy/compose.yaml --env-file deploy/.env pull
@@ -71,21 +73,24 @@ docker compose -f deploy/compose.yaml --env-file deploy/.env pull
 docker compose -f deploy/compose.yaml --env-file deploy/.env up -d
 ```
 
-Les migrations passent toutes seules avant le redémarrage des services. Sauvegardez avant une mise à jour majeure.
+Migrations run automatically before the services restart. Back up before a major upgrade.
 
-## Variantes
+## Variants
 
-- **S3 externe** (MinIO, Garage, Scaleway, R2…) : renseignez `S3_ENDPOINT`, `S3_REGION`, `S3_BUCKET` et les clés, puis supprimez le service `rustfs` du compose.
-- **SSO** : `OIDC_ISSUER`, `OIDC_CLIENT_ID`, `OIDC_CLIENT_SECRET`. L'URL de retour à déclarer chez le fournisseur est `https://<ANDAL_DOMAIN>/api/auth/callback`.
-- **Essai local** à côté d'autres services : `ANDAL_DOMAIN=localhost`, `HTTP_PORT=58880`, `HTTPS_PORT=58443`, `ANDAL_ORIGIN=https://localhost:58443`. Caddy signe alors avec sa propre autorité locale : le navigateur demande d'accepter le certificat.
-- **Derrière un autre reverse proxy** : publiez seulement le port 80 du service `web` et laissez le proxy terminer TLS ; `ANDAL_ORIGIN` reste l'adresse publique en `https://`. Laissez passer les réponses en flux (`text/event-stream`) sans tampon : l'assistant répond ainsi.
-- **Assistant** : `AI_PROVIDER=anthropic` et `AI_API_KEY` pour Claude ; `AI_PROVIDER=openai`, `AI_BASE_URL` et `AI_MODEL` pour un modèle compatible OpenAI, local compris (Ollama sur l'hôte : `AI_BASE_URL=http://host.docker.internal:11434/v1`, avec `extra_hosts: ["host.docker.internal:host-gateway"]` sur le service `api`). Les admins peuvent aussi le régler dans l'interface.
-- **Aperçus GitHub et Jira** : `GITHUB_TOKEN` (lecture seule suffit), `JIRA_BASE_URL`, `JIRA_EMAIL`, `JIRA_API_TOKEN`.
-- **Webhooks vers le réseau interne** (Mattermost sur le LAN, par exemple) : `WEBHOOK_ALLOW_PRIVATE=true`. Par défaut, Andal refuse d'appeler une adresse privée, pour qu'un webhook ne serve pas à sonder le réseau du serveur.
-- **Synchro Git** : le worker clone les dépôts en `https://` ; il lui faut une sortie vers la forge (GitHub, GitLab, Gitea…). Pour une synchro à chaque push, la forge doit joindre `https://<ANDAL_DOMAIN>/api/git/hooks/…`.
+- **External S3** (MinIO, Garage, Scaleway, R2, …): set `S3_ENDPOINT`, `S3_REGION`, `S3_BUCKET` and the keys, then remove the `rustfs` service from the compose file.
+- **SSO**: `OIDC_ISSUER`, `OIDC_CLIENT_ID`, `OIDC_CLIENT_SECRET`. The redirect URI to register with the provider is `https://<ANDAL_DOMAIN>/api/auth/callback`. To keep the provider's groups in sync on every sign-in: `OIDC_GROUPS_CLAIM=groups` (plus `OIDC_GROUPS_SCOPE=groups` for Okta).
+- **SCIM** (accounts and groups pushed by Okta, Entra ID, …): create the token in Administration → Directory, and register `https://<ANDAL_DOMAIN>/api/scim/v2` with the provider.
+- **Multiple collab instances**: `docker compose -f deploy/compose.yaml --env-file deploy/.env up -d --scale collab=3`. They sync through Valkey; Caddy finds them through DNS and spreads the WebSockets across them.
+- **Local trial** alongside other services: `ANDAL_DOMAIN=localhost`, `HTTP_PORT=58880`, `HTTPS_PORT=58443`, `ANDAL_ORIGIN=https://localhost:58443`. Caddy then signs with its own local authority, so the browser asks you to accept the certificate.
+- **Behind another reverse proxy**: publish only port 80 of the `web` service and let the proxy terminate TLS; `ANDAL_ORIGIN` stays the public `https://` address. If that proxy is not on a private network, put its address in `TRUST_PROXY`; otherwise every request will appear to come from it (and share the same per-address rate limit). Let streamed responses (`text/event-stream`) through without buffering: that is how the assistant answers.
+- **Assistant**: `AI_PROVIDER=anthropic` and `AI_API_KEY` for Claude; `AI_PROVIDER=openai`, `AI_BASE_URL` and `AI_MODEL` for an OpenAI-compatible model, including a local one (Ollama on the host: `AI_BASE_URL=http://host.docker.internal:11434/v1`, with `extra_hosts: ["host.docker.internal:host-gateway"]` on the `api` service). Admins can also configure it in the UI.
+- **GitHub and Jira previews**: `GITHUB_TOKEN` (read-only is enough), `JIRA_BASE_URL`, `JIRA_EMAIL`, `JIRA_API_TOKEN`.
+- **Webhooks to the internal network** (Mattermost on the LAN, for example): `WEBHOOK_ALLOW_PRIVATE=true`. By default, Andal refuses to call a private address, so that a webhook cannot be used to probe the server's network.
+- **Git sync**: the worker clones repositories over `https://`, so it needs outbound access to the Git host (GitHub, GitLab, Gitea, …). For a sync on every push, the Git host must be able to reach `https://<ANDAL_DOMAIN>/api/git/hooks/…`.
 
-## Sécurité
+## Security
 
-- Seul Caddy est exposé ; les autres services n'ont aucun port publié.
-- Cookies de session `Secure` et `HttpOnly`, CSP stricte sur l'interface, fichiers envoyés servis sous `CSP: sandbox`.
-- Les secrets ne vivent que dans `deploy/.env`, jamais dans les images. Les jetons d'API ne sont gardés qu'en empreinte ; les clés de l'assistant et les jetons des dépôts restent côté serveur, jamais renvoyés au navigateur.
+- Only Caddy is exposed; the other services publish no ports.
+- Rate limiting on the whole API (`RATE_LIMIT_*`), with dedicated limits on sign-in and two-factor authentication; the API trusts `X-Forwarded-For` only from `TRUST_PROXY`.
+- `Secure` and `HttpOnly` session cookies, strict CSP on the UI, uploaded files served under `CSP: sandbox`.
+- Secrets live only in `deploy/.env`, never in the images. API tokens are stored only as hashes; assistant keys and repository tokens stay on the server and are never sent back to the browser.

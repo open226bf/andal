@@ -13,8 +13,12 @@
       "secret": "calepin-oidc-dev-secret",
       "standardFlowEnabled": true,
       "directAccessGrantsEnabled": false,
-      "redirectUris": ["http://localhost:5173/api/auth/callback"],
-      "webOrigins": ["http://localhost:5173"],
+      "redirectUris": [
+        "http://localhost:5173/api/auth/callback"
+      ],
+      "webOrigins": [
+        "http://localhost:5173"
+      ],
       "attributes": {
         "pkce.code.challenge.method": "S256",
         "post.logout.redirect.uris": "http://localhost:5173/*"
@@ -43,7 +47,17 @@
       "enabled": true,
       "firstName": "Thomas",
       "lastName": "R.",
-      "credentials": [{ "type": "password", "value": "calepin-demo-2026", "temporary": false }]
+      "credentials": [
+        {
+          "type": "password",
+          "value": "calepin-demo-2026",
+          "temporary": false
+        }
+      ],
+      "groups": [
+        "/Astreinte",
+        "/Équipe Paiements"
+      ]
     },
     {
       "username": "inconnu",
@@ -52,7 +66,21 @@
       "enabled": true,
       "firstName": "Personne",
       "lastName": "Inconnue",
-      "credentials": [{ "type": "password", "value": "calepin-demo-2026", "temporary": false }]
+      "credentials": [
+        {
+          "type": "password",
+          "value": "calepin-demo-2026",
+          "temporary": false
+        }
+      ]
+    }
+  ],
+  "groups": [
+    {
+      "name": "Astreinte"
+    },
+    {
+      "name": "Équipe Paiements"
     }
   ]
 }

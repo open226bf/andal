@@ -1,6 +1,6 @@
 import { canManageAccounts, type WorkspaceRole } from '@andal/authz';
 import { Avatar } from '@andal/ui';
-import { CaretRightIcon, DotsThreeIcon, KeyIcon, ProhibitIcon, UserPlusIcon, ArrowCounterClockwiseIcon, XIcon } from '@phosphor-icons/react';
+import { CaretRightIcon, DotsThreeIcon, KeyIcon, ProhibitIcon, ShieldSlashIcon, SignOutIcon, UserPlusIcon, ArrowCounterClockwiseIcon, XIcon } from '@phosphor-icons/react';
 import * as Dialog from '@radix-ui/react-dialog';
 import * as Popover from '@radix-ui/react-popover';
 import { useQueryClient } from '@tanstack/react-query';
@@ -12,9 +12,12 @@ import { Shelf } from '../components/Shelf';
 import { api, errorMessage, useAccounts, useMe, useProjects, type AdminInvitation, type AdminUser, type LinkResult } from '../lib/api';
 import { GroupsSection } from './GroupsSection';
 import { AssistantSection } from './AssistantSection';
+import { AuditSection } from './AuditSection';
+import { DirectorySection } from './DirectorySection';
 import { IntegrationsSection } from './IntegrationsSection';
 import { ConfirmDialog, Modal, type Confirmation } from '../components/Dialog';
 import { relative, ROLE_HELP, roleLabel, until } from '../lib/format';
+import { t, tn } from '../lib/i18n';
 
 
 interface Issued {
@@ -25,16 +28,16 @@ interface Issued {
   linkText: string;
 }
 
-const SECTIONS = { comptes: 'Comptes', groupes: 'Groupes', integrations: 'Intégrations', assistant: 'Assistant' } as const;
+const SECTIONS = { comptes: t('Comptes'), groupes: t('Groupes'), annuaire: t('Annuaire'), journal: t('Journal'), integrations: t('Intégrations'), assistant: t('Assistant') } as const;
 
-/** Administration de l'espace (comptes, groupes): réservée aux propriétaires et admins. */
+/** Administration de l'espace (comptes, groupes, annuaire, journal, intégrations, assistant): réservée aux propriétaires et admins. */
 export function AdminPage({ section }: { section: keyof typeof SECTIONS }) {
   const me = useMe();
   const projects = useProjects();
   const allowed = me.data ? canManageAccounts(me.data.user.workspaceRole as WorkspaceRole) : false;
 
   useEffect(() => {
-    document.title = `${SECTIONS[section]} · Administration · Andal`;
+    document.title = t('{section} · Administration · Andal', { section: SECTIONS[section] });
   }, [section]);
 
   if (!me.data || !projects.data) return null;
@@ -46,10 +49,10 @@ export function AdminPage({ section }: { section: keyof typeof SECTIONS }) {
       <main className="main">
         <header className="band band-admin">
           <div className="band-vol">
-            <span className="band-title">Administration</span>
+            <span className="band-title">{t('Administration')}</span>
           </div>
-          <nav className="crumbs" aria-label="Fil d'Ariane">
-            <Link to="/">Documentation</Link>
+          <nav className="crumbs" aria-label={t("Fil d'Ariane")}>
+            <Link to="/">{t('Documentation')}</Link>
             <CaretRightIcon size={14} aria-hidden />
             <span aria-current="page">{SECTIONS[section]}</span>
           </nav>
@@ -58,24 +61,42 @@ export function AdminPage({ section }: { section: keyof typeof SECTIONS }) {
           <div className="admin-sheet">
             {allowed ? (
               <>
-                <nav className="admin-tabs" aria-label="Administration">
+                <nav className="admin-tabs" aria-label={t('Administration')}>
                   <Link to="/admin" activeOptions={{ exact: true }} activeProps={{ 'aria-current': 'page' }}>
-                    Comptes
+                    {t('Comptes')}
                   </Link>
                   <Link to="/admin/groupes" activeProps={{ 'aria-current': 'page' }}>
-                    Groupes
+                    {t('Groupes')}
+                  </Link>
+                  <Link to="/admin/annuaire" activeProps={{ 'aria-current': 'page' }}>
+                    {t('Annuaire')}
+                  </Link>
+                  <Link to="/admin/journal" activeProps={{ 'aria-current': 'page' }}>
+                    {t('Journal')}
                   </Link>
                   <Link to="/admin/integrations" activeProps={{ 'aria-current': 'page' }}>
-                    Intégrations
+                    {t('Intégrations')}
                   </Link>
                   <Link to="/admin/assistant" activeProps={{ 'aria-current': 'page' }}>
-                    Assistant
+                    {t('Assistant')}
                   </Link>
                 </nav>
-                {section === 'comptes' ? <Accounts /> : section === 'groupes' ? <GroupsSection /> : section === 'integrations' ? <IntegrationsSection /> : <AssistantSection />}
+                {section === 'comptes' ? (
+                  <Accounts />
+                ) : section === 'groupes' ? (
+                  <GroupsSection />
+                ) : section === 'annuaire' ? (
+                  <DirectorySection />
+                ) : section === 'journal' ? (
+                  <AuditSection />
+                ) : section === 'integrations' ? (
+                  <IntegrationsSection />
+                ) : (
+                  <AssistantSection />
+                )}
               </>
             ) : (
-              <FormError>Cette page est réservée aux admins de l’espace.</FormError>
+              <FormError>{t('Cette page est réservée aux admins de l’espace.')}</FormError>
             )}
           </div>
         </div>
@@ -104,8 +125,8 @@ function Accounts() {
     }
   };
 
-  if (accounts.isPending) return <div className="doc-skeleton" aria-busy="true" aria-label="Chargement des comptes"><span /><span /><span /></div>;
-  if (accounts.isError) return <FormError>{errorMessage(accounts.error, 'Impossible de charger les comptes.')}</FormError>;
+  if (accounts.isPending) return <div className="doc-skeleton" aria-busy="true" aria-label={t('Chargement des comptes')}><span /><span /><span /></div>;
+  if (accounts.isError) return <FormError>{errorMessage(accounts.error, t('Impossible de charger les comptes.'))}</FormError>;
   const data = accounts.data;
   const active = data.users.filter((u) => !u.disabledAt).length;
   const pending = data.invitations.filter((i) => !i.expired).length;
@@ -114,10 +135,10 @@ function Accounts() {
     act(async () => {
       const result = await api<LinkResult>(`/admin/accounts/${user.id}/reset-password`, { method: 'POST' });
       setIssued({
-        title: `Réinitialiser le mot de passe de ${user.name}`,
+        title: t('Réinitialiser le mot de passe de {name}', { name: user.name }),
         result,
-        emailedText: `Un lien a été envoyé à ${user.email}. Il sert une fois et expire dans 24 h; l’ancien mot de passe reste valable d’ici là.`,
-        linkText: `Les emails ne partent pas de ce serveur. Transmettez ce lien à ${user.name} par un canal sûr : il sert une fois et expire dans 24 h.`,
+        emailedText: t('Un lien a été envoyé à {email}. Il sert une fois et expire dans 24 h; l’ancien mot de passe reste valable d’ici là.', { email: user.email }),
+        linkText: t('Les emails ne partent pas de ce serveur. Transmettez ce lien à {name} par un canal sûr : il sert une fois et expire dans 24 h.', { name: user.name }),
       });
     });
 
@@ -125,16 +146,16 @@ function Accounts() {
     <>
       <div className="admin-head">
         <div>
-          <h1 className="doc-title">Comptes</h1>
+          <h1 className="doc-title">{t('Comptes')}</h1>
           <p className="admin-count">
-            {active} actif{active > 1 ? 's' : ''}
-            {data.users.length > active && ` · ${data.users.length - active} désactivé${data.users.length - active > 1 ? 's' : ''}`}
-            {pending > 0 && ` · ${pending} invitation${pending > 1 ? 's' : ''} en attente`}
+            {tn(active, '{n} actif', '{n} actifs')}
+            {data.users.length > active && ` · ${tn(data.users.length - active, '{n} désactivé', '{n} désactivés')}`}
+            {pending > 0 && ` · ${tn(pending, '{n} invitation en attente', '{n} invitations en attente')}`}
           </p>
         </div>
         <button type="button" className="btn-ink" onClick={() => setInviteOpen(true)}>
           <UserPlusIcon size={18} aria-hidden />
-          Inviter
+          {t('Inviter')}
         </button>
       </div>
       {error && <FormError>{error}</FormError>}
@@ -142,12 +163,12 @@ function Accounts() {
       <table className="roster">
         <thead>
           <tr>
-            <th scope="col">Personne</th>
-            <th scope="col">Rôle</th>
-            <th scope="col">Connexion</th>
-            <th scope="col">Dernière visite</th>
+            <th scope="col">{t('Compte')}</th>
+            <th scope="col">{t('Rôle')}</th>
+            <th scope="col">{t('Connexion')}</th>
+            <th scope="col">{t('Dernière visite')}</th>
             <th scope="col">
-              <span className="sr-only">Actions</span>
+              <span className="sr-only">{t('Actions')}</span>
             </th>
           </tr>
         </thead>
@@ -160,8 +181,8 @@ function Accounts() {
                   <span>
                     <b>
                       {user.name}
-                      {user.you && <span className="you">vous</span>}
-                      {user.disabledAt && <span className="badge-off">Désactivé</span>}
+                      {user.you && <span className="you">{t('vous')}</span>}
+                      {user.disabledAt && <span className="badge-off">{t('Désactivé')}</span>}
                     </b>
                     <small>
                       {user.email}
@@ -170,11 +191,11 @@ function Accounts() {
                   </span>
                 </span>
               </td>
-              <td data-label="Rôle">
+              <td data-label={t('Rôle')}>
                 {user.manageable ? (
                   <select
                     className="input select"
-                    aria-label={`Rôle de ${user.name}`}
+                    aria-label={t('Rôle de {name}', { name: user.name })}
                     value={user.role}
                     onChange={(e) => void act(() => api(`/admin/accounts/${user.id}`, { method: 'PATCH', body: JSON.stringify({ role: e.target.value }) }))}
                   >
@@ -188,9 +209,9 @@ function Accounts() {
                   <span className="role-static">{roleLabel(user.role)}</span>
                 )}
               </td>
-              <td data-label="Connexion">{signIn(user)}</td>
-              <td data-label="Dernière visite" className="muted">
-                {user.lastLoginAt ? relative(user.lastLoginAt) : 'jamais'}
+              <td data-label={t('Connexion')}>{signIn(user)}</td>
+              <td data-label={t('Dernière visite')} className="muted">
+                {user.lastLoginAt ? relative(user.lastLoginAt) : t('jamais')}
               </td>
               <td className="actions">
                 {user.manageable && (
@@ -198,13 +219,35 @@ function Accounts() {
                     user={user}
                     canReset={data.passwordLogin && !user.disabledAt}
                     onReset={() => void resetPassword(user)}
+                    onResetMfa={
+                      user.mfa
+                        ? () =>
+                            setConfirm({
+                              title: t('Lever la double authentification de {name} ?', { name: user.name }),
+                              body: t('Pour un téléphone perdu sans code de secours. Son mot de passe suffira pour se connecter, jusqu’à ce qu’elle la réactive; un email la prévient. Vérifiez d’abord son identité par un autre canal.'),
+                              action: t('Lever'),
+                              run: () => act(() => api(`/admin/accounts/${user.id}/mfa/reset`, { method: 'POST' })),
+                            })
+                        : undefined
+                    }
+                    onCloseSessions={
+                      user.disabledAt
+                        ? undefined
+                        : () =>
+                            setConfirm({
+                              title: t('Fermer les sessions de {name} ?', { name: user.name }),
+                              body: t('Appareil perdu, départ: tous ses navigateurs devront se reconnecter, pages ouvertes comprises. Le compte reste actif.'),
+                              action: t('Fermer les sessions'),
+                              run: () => act(() => api(`/admin/accounts/${user.id}/sessions/close`, { method: 'POST' })),
+                            })
+                    }
                     onToggle={() =>
                       user.disabledAt
                         ? void act(() => api(`/admin/accounts/${user.id}/enable`, { method: 'POST' }))
                         : setConfirm({
-                            title: `Désactiver ${user.name} ?`,
-                            body: 'Cette personne ne pourra plus se connecter, et ses sessions sont fermées tout de suite. Ses pages et commentaires restent. Vous pourrez réactiver le compte.',
-                            action: 'Désactiver',
+                            title: t('Désactiver {name} ?', { name: user.name }),
+                            body: t('Cette personne ne pourra plus se connecter, et ses sessions sont fermées tout de suite. Ses pages et commentaires restent. Vous pourrez réactiver le compte.'),
+                            action: t('Désactiver'),
                             run: () => act(() => api(`/admin/accounts/${user.id}/disable`, { method: 'POST' })),
                           })
                     }
@@ -217,9 +260,9 @@ function Accounts() {
       </table>
 
       <section className="invites" aria-labelledby="invites-title">
-        <h2 id="invites-title">Invitations en attente</h2>
+        <h2 id="invites-title">{t('Invitations en attente')}</h2>
         {data.invitations.length === 0 ? (
-          <p className="muted">Aucune. Les invitations acceptées deviennent des comptes ci-dessus.</p>
+          <p className="muted">{t('Aucune. Les invitations acceptées deviennent des comptes ci-dessus.')}</p>
         ) : (
           <ul>
             {data.invitations.map((invitation) => (
@@ -234,9 +277,9 @@ function Accounts() {
                 }
                 onRevoke={() =>
                   setConfirm({
-                    title: `Révoquer l’invitation de ${invitation.email} ?`,
-                    body: 'Le lien envoyé cessera de fonctionner. Vous pourrez réinviter cette adresse plus tard.',
-                    action: 'Révoquer',
+                    title: t('Révoquer l’invitation de {email} ?', { email: invitation.email }),
+                    body: t('Le lien envoyé cessera de fonctionner. Vous pourrez réinviter cette adresse plus tard.'),
+                    action: t('Révoquer'),
                     run: () => act(() => api(`/admin/invitations/${invitation.id}`, { method: 'DELETE' })),
                   })
                 }
@@ -266,21 +309,39 @@ function Accounts() {
 
 function invitationIssued(email: string, result: LinkResult): Issued {
   return {
-    title: `Invitation pour ${email}`,
+    title: t('Invitation pour {email}', { email }),
     result,
-    emailedText: `Invitation envoyée à ${email}. Le lien expire dans 7 jours. Vous pouvez aussi le transmettre vous-même :`,
-    linkText: 'Les emails ne partent pas de ce serveur : transmettez ce lien vous-même. Il expire dans 7 jours.',
+    emailedText: t('Invitation envoyée à {email}. Le lien expire dans 7 jours. Vous pouvez aussi le transmettre vous-même :', { email }),
+    linkText: t('Les emails ne partent pas de ce serveur : transmettez ce lien vous-même. Il expire dans 7 jours.'),
   };
 }
 
-function signIn(user: AdminUser): string {
-  if (user.hasPassword && user.sso) return 'Mot de passe et SSO';
-  if (user.sso) return 'SSO';
-  if (user.hasPassword) return 'Mot de passe';
-  return 'SSO, pas encore lié';
+function signIn(user: AdminUser): ReactNode {
+  const base = user.hasPassword && user.sso ? t('Mot de passe et SSO') : user.sso ? 'SSO' : user.hasPassword ? t('Mot de passe') : t('SSO, pas encore lié');
+  return (
+    <>
+      {base}
+      {user.mfa && <span className="badge-mfa">{t('2 étapes')}</span>}
+      {user.scim && <span className="badge-scim">SCIM</span>}
+    </>
+  );
 }
 
-function UserMenu({ user, canReset, onReset, onToggle }: { user: AdminUser; canReset: boolean; onReset: () => void; onToggle: () => void }) {
+function UserMenu({
+  user,
+  canReset,
+  onReset,
+  onResetMfa,
+  onCloseSessions,
+  onToggle,
+}: {
+  user: AdminUser;
+  canReset: boolean;
+  onReset: () => void;
+  onResetMfa?: () => void;
+  onCloseSessions?: () => void;
+  onToggle: () => void;
+}) {
   const [open, setOpen] = useState(false);
   const run = (action: () => void) => () => {
     setOpen(false);
@@ -289,7 +350,7 @@ function UserMenu({ user, canReset, onReset, onToggle }: { user: AdminUser; canR
   return (
     <Popover.Root open={open} onOpenChange={setOpen}>
       <Popover.Trigger asChild>
-        <button type="button" className="icon-btn sm" aria-label={`Actions pour ${user.name}`}>
+        <button type="button" className="icon-btn sm" aria-label={t('Actions pour {name}', { name: user.name })}>
           <DotsThreeIcon size={20} weight="bold" aria-hidden />
         </button>
       </Popover.Trigger>
@@ -298,12 +359,24 @@ function UserMenu({ user, canReset, onReset, onToggle }: { user: AdminUser; canR
           {canReset && (
             <button type="button" className="menu-item" onClick={run(onReset)}>
               <KeyIcon size={18} aria-hidden />
-              Réinitialiser le mot de passe
+              {t('Réinitialiser le mot de passe')}
+            </button>
+          )}
+          {onResetMfa && (
+            <button type="button" className="menu-item" onClick={run(onResetMfa)}>
+              <ShieldSlashIcon size={18} aria-hidden />
+              {t('Lever la double authentification')}
+            </button>
+          )}
+          {onCloseSessions && (
+            <button type="button" className="menu-item" onClick={run(onCloseSessions)}>
+              <SignOutIcon size={18} aria-hidden />
+              {t('Fermer ses sessions')}
             </button>
           )}
           <button type="button" className={`menu-item${user.disabledAt ? '' : ' danger'}`} onClick={run(onToggle)}>
             {user.disabledAt ? <ArrowCounterClockwiseIcon size={18} aria-hidden /> : <ProhibitIcon size={18} aria-hidden />}
-            {user.disabledAt ? 'Réactiver le compte' : 'Désactiver le compte'}
+            {user.disabledAt ? t('Réactiver le compte') : t('Désactiver le compte')}
           </button>
         </Popover.Content>
       </Popover.Portal>
@@ -320,18 +393,18 @@ function InvitationRow({ invitation, onResend, onRevoke }: { invitation: AdminIn
           {invitation.name ? `${invitation.name} · ` : ''}
           {roleLabel(invitation.role)}
           {invitation.groups.length > 0 && ` · ${invitation.groups.join(', ')}`}
-          {invitation.invitedBy && ` · invitée par ${invitation.invitedBy}`}
+          {invitation.invitedBy && ` · ${t('invitée par {name}', { name: invitation.invitedBy })}`}
           {' · '}
-          {invitation.expired ? 'expirée' : `expire ${until(invitation.expiresAt)}`}
+          {invitation.expired ? t('expirée') : t('expire {when}', { when: until(invitation.expiresAt) })}
         </small>
       </span>
       {invitation.manageable && (
         <span className="invite-actions">
           <button type="button" className="ghost" onClick={onResend}>
-            Nouveau lien
+            {t('Nouveau lien')}
           </button>
           <button type="button" className="ghost danger" onClick={onRevoke}>
-            Révoquer
+            {t('Révoquer')}
           </button>
         </span>
       )}
@@ -356,7 +429,7 @@ function InviteDialog({
   onInvited: (email: string, result: LinkResult) => void;
 }) {
   return (
-    <Modal open={open} onOpenChange={onOpenChange} title="Inviter une personne">
+    <Modal open={open} onOpenChange={onOpenChange} title={t('Inviter une personne')}>
       {open && <InviteForm roles={roles} groups={groups} mail={mail} onInvited={onInvited} />}
     </Modal>
   );
@@ -388,17 +461,17 @@ function InviteForm({ roles, groups, mail, onInvited }: { roles: WorkspaceRole[]
     <form className="dialog-body" onSubmit={(e) => void submit(e)}>
       {error && <FormError>{error}</FormError>}
       <div className="field">
-        <label htmlFor="invite-email">Email</label>
+        <label htmlFor="invite-email">{t('Email')}</label>
         <input id="invite-email" className="input" type="email" required autoFocus value={email} onChange={(e) => setEmail(e.target.value)} />
       </div>
       <div className="field">
         <label htmlFor="invite-name">
-          Nom <span className="optional">facultatif</span>
+          {t('Nom')} <span className="optional">{t('facultatif')}</span>
         </label>
         <input id="invite-name" className="input" maxLength={80} value={name} onChange={(e) => setName(e.target.value)} />
       </div>
       <fieldset className="role-choice">
-        <legend>Rôle dans l’espace</legend>
+        <legend>{t('Rôle dans l’espace')}</legend>
         {roles.map((r) => (
           <label key={r} className="role-option">
             <input type="radio" name="invite-role" value={r} checked={role === r} onChange={() => setRole(r)} />
@@ -412,9 +485,9 @@ function InviteForm({ roles, groups, mail, onInvited }: { roles: WorkspaceRole[]
       {groups.length > 0 && (
         <fieldset className="role-choice">
           <legend>
-            Groupes <span className="optional">facultatif</span>
+            {t('Groupes')} <span className="optional">{t('facultatif')}</span>
           </legend>
-          <p className="form-hint">Ses volumes s’ouvrent dès l’inscription.</p>
+          <p className="form-hint">{t('Ses volumes s’ouvrent dès l’inscription.')}</p>
           <div className="check-grid">
             {groups.map((g) => (
               <label key={g.id} className="check">
@@ -425,9 +498,9 @@ function InviteForm({ roles, groups, mail, onInvited }: { roles: WorkspaceRole[]
           </div>
         </fieldset>
       )}
-      <p className="form-hint">{mail ? 'Un email avec le lien d’inscription part tout de suite.' : 'Ce serveur n’envoie pas d’email : vous obtiendrez un lien à transmettre.'}</p>
+      <p className="form-hint">{mail ? t('Un email avec le lien d’inscription part tout de suite.') : t('Ce serveur n’envoie pas d’email : vous obtiendrez un lien à transmettre.')}</p>
       <button type="submit" className="btn-ink" disabled={pending}>
-        {pending ? 'Envoi…' : 'Envoyer l’invitation'}
+        {pending ? t('Envoi…') : t('Envoyer l’invitation')}
       </button>
     </form>
   );
@@ -440,8 +513,8 @@ function IssuedDialog({ issued, onClose }: { issued: Issued | null; onClose: () 
       {issued && (
         <div className="dialog-body">
           {issued.result.emailed ? <FormOk>{issued.emailedText}</FormOk> : <p className="dialog-text">{issued.linkText}</p>}
-          {issued.result.link && <CopyField label="Lien à transmettre" value={issued.result.link} />}
-          <Dialog.Close className="btn-ink">Terminé</Dialog.Close>
+          {issued.result.link && <CopyField label={t('Lien à transmettre')} value={issued.result.link} />}
+          <Dialog.Close className="btn-ink">{t('Terminé')}</Dialog.Close>
         </div>
       )}
     </Modal>

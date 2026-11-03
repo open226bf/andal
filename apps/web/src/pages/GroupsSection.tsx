@@ -7,8 +7,9 @@ import { FormError } from '../components/AuthCard';
 import { Picker } from '../components/Picker';
 import { api, errorMessage, useGroups, type GroupView, type GroupsOverview } from '../lib/api';
 import { ConfirmDialog, Modal, type Confirmation } from '../components/Dialog';
+import { t, tn } from '../lib/i18n';
 
-const VOLUME_ROLE: Record<string, string> = { reader: 'lecture', commenter: 'commentaire', editor: 'écriture', admin: 'admin' };
+const VOLUME_ROLE: Record<string, string> = { reader: t('lecture'), commenter: t('commentaire'), editor: t('écriture'), admin: t('admin') };
 
 /** Groupes de l'espace: membres, volumes ouverts, pages restreintes. */
 export function GroupsSection() {
@@ -33,29 +34,29 @@ export function GroupsSection() {
     return ok;
   };
 
-  if (groups.isPending) return <div className="doc-skeleton" aria-busy="true" aria-label="Chargement des groupes"><span /><span /><span /></div>;
-  if (groups.isError) return <FormError>{errorMessage(groups.error, 'Impossible de charger les groupes.')}</FormError>;
+  if (groups.isPending) return <div className="doc-skeleton" aria-busy="true" aria-label={t('Chargement des groupes')}><span /><span /><span /></div>;
+  if (groups.isError) return <FormError>{errorMessage(groups.error, t('Impossible de charger les groupes.'))}</FormError>;
   const data = groups.data;
 
   return (
     <>
       <div className="admin-head">
         <div>
-          <h1 className="doc-title">Groupes</h1>
+          <h1 className="doc-title">{t('Groupes')}</h1>
           <p className="admin-count">
-            {data.groups.length} groupe{data.groups.length > 1 ? 's' : ''}
+            {tn(data.groups.length, '{n} groupe', '{n} groupes')}
           </p>
         </div>
         <button type="button" className="btn-ink" onClick={() => setNaming({ group: null })}>
           <PlusIcon size={18} aria-hidden />
-          Nouveau groupe
+          {t('Nouveau groupe')}
         </button>
       </div>
-      <p className="admin-intro">Un groupe ouvre des volumes à plusieurs personnes d’un coup, et sert de liste pour restreindre des pages. Ajouter ou retirer quelqu’un change ses accès aussitôt, pages ouvertes comprises.</p>
+      <p className="admin-intro">{t('Un groupe ouvre des volumes à plusieurs personnes d’un coup, et sert de liste pour restreindre des pages. Ajouter ou retirer quelqu’un change ses accès aussitôt, pages ouvertes comprises.')}</p>
       {error && <FormError>{error}</FormError>}
 
       {data.groups.length === 0 ? (
-        <p className="muted">Aucun groupe pour l’instant.</p>
+        <p className="muted">{t('Aucun groupe pour l’instant.')}</p>
       ) : (
         <div className="group-list">
           {data.groups.map((group) => (
@@ -68,12 +69,12 @@ export function GroupsSection() {
               onRename={() => setNaming({ group })}
               onDelete={() =>
                 setConfirm({
-                  title: `Supprimer le groupe ${group.name} ?`,
+                  title: t('Supprimer le groupe {name} ?', { name: group.name }),
                   body:
                     group.volumes.length > 0
-                      ? `Ses membres perdent les accès qu’il leur donnait (${group.volumes.map((v) => v.shortName).join(', ')}), sauf ceux qu’ils ont par ailleurs. Les comptes restent.`
-                      : 'Les comptes de ses membres restent; seul le groupe disparaît.',
-                  action: 'Supprimer',
+                      ? t('Ses membres perdent les accès qu’il leur donnait ({volumes}), sauf ceux qu’ils ont par ailleurs. Les comptes restent.', { volumes: group.volumes.map((v) => v.shortName).join(', ') })
+                      : t('Les comptes de ses membres restent; seul le groupe disparaît.'),
+                  action: t('Supprimer'),
                   run: async () => {
                     await act(() => api(`/admin/groups/${group.id}`, { method: 'DELETE' }));
                   },
@@ -114,6 +115,8 @@ function GroupCard({
   onRename: () => void;
   onDelete: () => void;
 }) {
+  // Un groupe du fournisseur d'identité se lit ici, il se gère là-bas.
+  const managed = group.source !== 'local';
   const inGroup = new Set(group.members.map((m) => m.id));
   const candidates = users.filter((u) => !inGroup.has(u.id)).map((u) => ({ type: 'user' as const, id: u.id, name: u.name, detail: u.email, initials: u.initials, color: u.color }));
   const count = group.members.length;
@@ -125,37 +128,43 @@ function GroupCard({
           <UsersThreeIcon size={20} />
         </span>
         <div>
-          <h2 id={`group-${group.id}`}>{group.name}</h2>
+          <h2 id={`group-${group.id}`}>
+            {group.name}
+            {managed && <span className="group-source">{group.source === 'scim' ? 'SCIM' : 'SSO'}</span>}
+          </h2>
           <p className="muted">
-            {count} personne{count > 1 ? 's' : ''}
-            {group.restrictedPages > 0 && ` · restreint ${group.restrictedPages} page${group.restrictedPages > 1 ? 's' : ''}`}
+            {tn(count, '{n} personne', '{n} personnes')}
+            {managed && ` · ${group.source === 'scim' ? t('tenu par l’annuaire (SCIM)') : t('tenu par le SSO, à chaque connexion')}`}
+            {group.restrictedPages > 0 && ` · ${tn(group.restrictedPages, 'restreint {n} page', 'restreint {n} pages')}`}
           </p>
         </div>
-        <GroupMenu name={group.name} onRename={onRename} onDelete={onDelete} />
+        {group.source === 'local' ? <GroupMenu name={group.name} onRename={onRename} onDelete={onDelete} /> : group.source === 'sso' && <GroupMenu name={group.name} onDelete={onDelete} />}
       </header>
 
-      <ul className="chips" aria-label={`Membres de ${group.name}`}>
+      <ul className="chips" aria-label={t('Membres de {name}', { name: group.name })}>
         {group.members.map((m) => (
           <li key={m.id} className="chip" data-disabled={m.disabled ? 'true' : undefined}>
             <Avatar initials={m.initials} color={m.color} size={22} />
             {m.name}
-            {m.disabled && <span className="badge-off">désactivé</span>}
-            <button type="button" className="icon-btn xs" aria-label={`Retirer ${m.name} du groupe ${group.name}`} onClick={() => void onRemove(m.id)}>
-              <XIcon size={13} aria-hidden />
-            </button>
+            {m.disabled && <span className="badge-off">{t('désactivé')}</span>}
+            {!managed && (
+              <button type="button" className="icon-btn xs" aria-label={t('Retirer {member} du groupe {group}', { member: m.name, group: group.name })} onClick={() => void onRemove(m.id)}>
+                <XIcon size={13} aria-hidden />
+              </button>
+            )}
           </li>
         ))}
       </ul>
-      <Picker entries={candidates} label={`Ajouter quelqu’un à ${group.name}`} placeholder="Ajouter quelqu’un…" onPick={(entry) => void onAdd(entry.id)} />
+      {!managed && <Picker entries={candidates} label={t('Ajouter quelqu’un à {name}', { name: group.name })} placeholder={t('Ajouter quelqu’un…')} onPick={(entry) => void onAdd(entry.id)} />}
 
       <div className="group-volumes">
         {group.volumes.length === 0 ? (
-          <span className="muted">N’ouvre aucun volume. Ajoutez-le depuis le panneau Partager d’une page du volume.</span>
+          <span className="muted">{t('N’ouvre aucun volume. Ajoutez-le depuis le panneau Partager d’une page du volume.')}</span>
         ) : (
           group.volumes.map((v) => (
             <span key={v.id} className="vol-tag" data-vol={v.cloth}>
               <span className="vol-swatch" aria-hidden />
-              Vol. {v.volumeNumber} {v.shortName} · {VOLUME_ROLE[v.role]}
+              {t('Vol. {n} {name} · {role}', { n: v.volumeNumber, name: v.shortName, role: VOLUME_ROLE[v.role] })}
             </span>
           ))
         )}
@@ -164,7 +173,7 @@ function GroupCard({
   );
 }
 
-function GroupMenu({ name, onRename, onDelete }: { name: string; onRename: () => void; onDelete: () => void }) {
+function GroupMenu({ name, onRename, onDelete }: { name: string; onRename?: () => void; onDelete: () => void }) {
   const [open, setOpen] = useState(false);
   const run = (action: () => void) => () => {
     setOpen(false);
@@ -173,19 +182,21 @@ function GroupMenu({ name, onRename, onDelete }: { name: string; onRename: () =>
   return (
     <Popover.Root open={open} onOpenChange={setOpen}>
       <Popover.Trigger asChild>
-        <button type="button" className="icon-btn sm" aria-label={`Actions pour le groupe ${name}`}>
+        <button type="button" className="icon-btn sm" aria-label={t('Actions pour le groupe {name}', { name })}>
           <DotsThreeIcon size={20} weight="bold" aria-hidden />
         </button>
       </Popover.Trigger>
       <Popover.Portal>
         <Popover.Content className="pop menu" align="end" sideOffset={6} collisionPadding={16}>
-          <button type="button" className="menu-item" onClick={run(onRename)}>
-            <PencilSimpleIcon size={18} aria-hidden />
-            Renommer
-          </button>
+          {onRename && (
+            <button type="button" className="menu-item" onClick={run(onRename)}>
+              <PencilSimpleIcon size={18} aria-hidden />
+              {t('Renommer')}
+            </button>
+          )}
           <button type="button" className="menu-item danger" onClick={run(onDelete)}>
             <TrashIcon size={18} aria-hidden />
-            Supprimer le groupe
+            {t('Supprimer le groupe')}
           </button>
         </Popover.Content>
       </Popover.Portal>
@@ -195,7 +206,7 @@ function GroupMenu({ name, onRename, onDelete }: { name: string; onRename: () =>
 
 function NameDialog({ naming, onClose, onSubmit }: { naming: { group: GroupView | null } | null; onClose: () => void; onSubmit: (name: string) => Promise<void> }) {
   return (
-    <Modal open={naming !== null} onOpenChange={(open) => !open && onClose()} title={naming?.group ? `Renommer ${naming.group.name}` : 'Nouveau groupe'}>
+    <Modal open={naming !== null} onOpenChange={(open) => !open && onClose()} title={naming?.group ? t('Renommer {name}', { name: naming.group.name }) : t('Nouveau groupe')}>
       {naming && <NameForm initial={naming.group?.name ?? ''} creating={!naming.group} onSubmit={onSubmit} />}
     </Modal>
   );
@@ -220,12 +231,12 @@ function NameForm({ initial, creating, onSubmit }: { initial: string; creating: 
     <form className="dialog-body" onSubmit={(e) => void submit(e)}>
       {error && <FormError>{error}</FormError>}
       <div className="field">
-        <label htmlFor="group-name">Nom du groupe</label>
+        <label htmlFor="group-name">{t('Nom du groupe')}</label>
         <input id="group-name" className="input" required autoFocus maxLength={60} value={name} onChange={(e) => setName(e.target.value)} />
       </div>
-      {creating && <p className="form-hint">Ajoutez ensuite ses membres, puis ouvrez-lui des volumes depuis le panneau Partager.</p>}
+      {creating && <p className="form-hint">{t('Ajoutez ensuite ses membres, puis ouvrez-lui des volumes depuis le panneau Partager.')}</p>}
       <button type="submit" className="btn-ink" disabled={pending || !name.trim()}>
-        {creating ? 'Créer le groupe' : 'Renommer'}
+        {creating ? t('Créer le groupe') : t('Renommer')}
       </button>
     </form>
   );

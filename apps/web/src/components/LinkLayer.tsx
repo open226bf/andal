@@ -5,6 +5,7 @@ import { useEffect, useRef, useState, type RefObject } from 'react';
 import { createPortal } from 'react-dom';
 import { usePagePreview, useUnfurl, type Unfurl } from '../lib/api';
 import { date } from '../lib/format';
+import { t } from '../lib/i18n';
 
 /** Lien du texte de la page (pas les boutons des figures ni les fiches de fichiers). */
 function textLink(target: EventTarget | null): HTMLAnchorElement | null {
@@ -114,7 +115,7 @@ function cardStyle(rect: DOMRect) {
   return below ? { left, top: rect.bottom + 8, width } : { left, bottom: window.innerHeight - rect.top + 8, width };
 }
 
-const GITHUB_STATE: Record<string, string> = { open: 'Ouvert', closed: 'Fermé', merged: 'Fusionnée', draft: 'Brouillon' };
+const GITHUB_STATE: Record<string, string> = { open: t('Ouvert'), closed: t('Fermé'), merged: t('Fusionnée'), draft: t('Brouillon') };
 
 /** Ticket ou pull request GitHub, ticket Jira: titre et état. Sans aperçu (privé, hors ligne), rien ne s'affiche. */
 function UnfurlCard({ url, rect, onEnter, onLeave }: { url: string; rect: DOMRect; onEnter: () => void; onLeave: () => void }) {
@@ -132,7 +133,7 @@ function UnfurlCard({ url, rect, onEnter, onLeave }: { url: string; rect: DOMRec
           <b className="unfurl-title">{data.title}</b>
           <span className="unfurl-state" data-state={data.state}>
             <RecordIcon size={10} weight="fill" aria-hidden />
-            {data.type === 'pull' ? (GITHUB_STATE[data.state] ?? data.state) : data.state === 'open' ? 'Ouvert' : 'Fermé'}
+            {data.type === 'pull' ? (GITHUB_STATE[data.state] ?? data.state) : data.state === 'open' ? t('Ouvert') : t('Fermé')}
             {data.author && <> · {data.author}</>}
           </span>
         </>
@@ -150,7 +151,7 @@ function UnfurlCard({ url, rect, onEnter, onLeave }: { url: string; rect: DOMRec
           </span>
         </>
       ) : (
-        <span className="doc-skeleton" aria-busy="true" aria-label="Chargement de l'aperçu">
+        <span className="doc-skeleton" aria-busy="true" aria-label={t("Chargement de l'aperçu")}>
           <span />
           <span />
         </span>
@@ -176,15 +177,15 @@ function PreviewCard({ id, rect, onEnter, onLeave }: { id: string; rect: DOMRect
             <span className="num">{data.number}</span> {data.title}
           </b>
           {(data.summary || data.excerpt) && <p>{data.summary || data.excerpt}</p>}
-          <small>Modifiée le {date(data.updatedAt)}</small>
+          <small>{t('Modifiée le {date}', { date: date(data.updatedAt) })}</small>
         </>
       ) : preview.isError ? (
         <p className="link-preview-missing">
           <LockSimpleIcon size={16} aria-hidden />
-          Page introuvable, ou que vous ne lisez pas.
+          {t('Page introuvable, ou que vous ne lisez pas.')}
         </p>
       ) : (
-        <span className="doc-skeleton" aria-busy="true" aria-label="Chargement de l'aperçu">
+        <span className="doc-skeleton" aria-busy="true" aria-label={t("Chargement de l'aperçu")}>
           <span />
           <span />
         </span>

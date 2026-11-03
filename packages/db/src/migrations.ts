@@ -522,6 +522,69 @@ const gitAndAi: Migration = {
   },
 };
 
+const security: Migration = {
+  async up(db) {
+    await db.schema
+      .alterTable('users')
+      .addColumn('totp_secret', 'text')
+      .addColumn('totp_enabled_at', 'timestamptz')
+      .addColumn('totp_last_step', 'bigint')
+      .addColumn('scim_external_id', 'text')
+      .addColumn('deprovisioned_at', 'timestamptz')
+      .execute();
+    await sql`create unique index users_scim_external on users (workspace_id, scim_external_id) where scim_external_id is not null`.execute(db);
+    await db.schema
+      .createTable('recovery_codes')
+      .addColumn('user_id', 'uuid', (c) => c.notNull().references('users.id').onDelete('cascade'))
+      .addColumn('code_hash', 'text', (c) => c.notNull())
+      .addColumn('used_at', 'timestamptz')
+      .addPrimaryKeyConstraint('recovery_codes_pk', ['user_id', 'code_hash'])
+      .execute();
+    await db.schema
+      .alterTable('groups')
+      .addColumn('source', 'text', (c) => c.notNull().defaultTo('local').check(sql`source in ('local', 'sso', 'scim')`))
+      .addColumn('external_id', 'text')
+      .execute();
+    await sql`create unique index groups_external on groups (workspace_id, source, external_id) where external_id is not null`.execute(db);
+    await db.schema
+      .createTable('scim_tokens')
+      .addColumn('id', 'uuid', (c) => c.primaryKey().defaultTo(sql`gen_random_uuid()`))
+      .addColumn('workspace_id', 'uuid', (c) => c.notNull().references('workspaces.id').onDelete('cascade'))
+      .addColumn('token_hash', 'text', (c) => c.notNull().unique())
+      .addColumn('prefix', 'text', (c) => c.notNull())
+      .addColumn('created_by', 'uuid', (c) => c.references('users.id').onDelete('set null'))
+      .addColumn('created_at', 'timestamptz', (c) => c.notNull().defaultTo(sql`now()`))
+      .addColumn('last_used_at', 'timestamptz')
+      .addColumn('revoked_at', 'timestamptz')
+      .execute();
+    // Filtres du journal d'audit: par personne et par action.
+    await sql`create index audit_events_actor on audit_events (workspace_id, actor_id, created_at desc)`.execute(db);
+    await sql`create index audit_events_action on audit_events (workspace_id, action, created_at desc)`.execute(db);
+  },
+  async down(db) {
+    await sql`drop index audit_events_action`.execute(db);
+    await sql`drop index audit_events_actor`.execute(db);
+    await db.schema.dropTable('scim_tokens').execute();
+    await sql`drop index groups_external`.execute(db);
+    await db.schema.alterTable('groups').dropColumn('external_id').dropColumn('source').execute();
+    await db.schema.dropTable('recovery_codes').execute();
+    await sql`drop index users_scim_external`.execute(db);
+    await db.schema.alterTable('users').dropColumn('deprovisioned_at').dropColumn('scim_external_id').dropColumn('totp_last_step').dropColumn('totp_enabled_at').dropColumn('totp_secret').execute();
+  },
+};
+
+const userLocale: Migration = {
+  async up(db) {
+    await db.schema
+      .alterTable('users')
+      .addColumn('locale', 'text', (c) => c.notNull().defaultTo('fr').check(sql`locale in ('fr', 'en')`))
+      .execute();
+  },
+  async down(db) {
+    await db.schema.alterTable('users').dropColumn('locale').execute();
+  },
+};
+
 const provider: MigrationProvider = {
   async getMigrations() {
     return {
@@ -539,6 +602,8 @@ const provider: MigrationProvider = {
       '0012_api_specs': apiSpecs,
       '0013_tokens_webhooks': tokensAndWebhooks,
       '0014_git_ai': gitAndAi,
+      '0015_security': security,
+      '0016_user_locale': userLocale,
     };
   },
 };

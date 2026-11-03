@@ -2,6 +2,7 @@ import { ArrowDownIcon, ArrowUpIcon, PencilSimpleIcon, TrashIcon } from '@phosph
 import { useQueryClient } from '@tanstack/react-query';
 import { useState, type FormEvent } from 'react';
 import { api, errorMessage, useRayons, type ProjectSummary, type Rayon } from '../lib/api';
+import { t, tn } from '../lib/i18n';
 import { FormError } from './AuthCard';
 import { Modal } from './Dialog';
 
@@ -58,10 +59,10 @@ export function RayonsDialog({ open, onOpenChange, volumes }: { open: boolean; o
           setRemoving(null);
         }
       }}
-      title="Ranger les rayons"
+      title={t('Ranger les rayons')}
     >
       <div className="dialog-body">
-        <p className="dialog-text">Les rayons rangent les volumes de la bibliothèque par domaine, dans cet ordre. Chaque admin de volume choisit le rayon du sien, dans ses réglages.</p>
+        <p className="dialog-text">{t('Les rayons rangent les volumes de la bibliothèque par domaine, dans cet ordre. Chaque admin de volume choisit le rayon du sien, dans ses réglages.')}</p>
         {error && <FormError>{error}</FormError>}
         {list.length > 0 && (
           <ol className="rayon-list">
@@ -80,12 +81,12 @@ export function RayonsDialog({ open, onOpenChange, volumes }: { open: boolean; o
               ) : removing === rayon.id ? (
                 <li key={rayon.id} className="trash-confirm">
                   <span className="rayon-name">
-                    <b>Supprimer le rayon « {rayon.name} » ?</b>
-                    <small>{count(rayon) > 0 ? `Ses ${count(rayon)} volume${count(rayon) > 1 ? 's' : ''} passent hors rayon; rien d’autre ne change.` : 'Il est vide.'}</small>
+                    <b>{t('Supprimer le rayon « {name} » ?', { name: rayon.name })}</b>
+                    <small>{count(rayon) > 0 ? tn(count(rayon), 'Son volume passe hors rayon; rien d’autre ne change.', 'Ses {n} volumes passent hors rayon; rien d’autre ne change.') : t('Il est vide.')}</small>
                   </span>
                   <span className="trash-actions">
                     <button type="button" className="btn-line sm" onClick={() => setRemoving(null)}>
-                      Annuler
+                      {t('Annuler')}
                     </button>
                     <button
                       type="button"
@@ -95,7 +96,7 @@ export function RayonsDialog({ open, onOpenChange, volumes }: { open: boolean; o
                         if (await run(() => api(`/rayons/${rayon.id}`, { method: 'DELETE' }))) setRemoving(null);
                       }}
                     >
-                      Supprimer
+                      {t('Supprimer')}
                     </button>
                   </span>
                 </li>
@@ -103,21 +104,19 @@ export function RayonsDialog({ open, onOpenChange, volumes }: { open: boolean; o
                 <li key={rayon.id}>
                   <span className="rayon-name">
                     <b>{rayon.name}</b>
-                    <small>
-                      {count(rayon)} volume{count(rayon) > 1 ? 's' : ''}
-                    </small>
+                    <small>{tn(count(rayon), '{n} volume', '{n} volumes')}</small>
                   </span>
                   <span className="trash-actions">
-                    <button type="button" className="icon-btn xs" aria-label={`Monter ${rayon.name}`} title="Monter" disabled={pending || index === 0} onClick={() => move(index, -1)}>
+                    <button type="button" className="icon-btn xs" aria-label={t('Monter {name}', { name: rayon.name })} title={t('Monter')} disabled={pending || index === 0} onClick={() => move(index, -1)}>
                       <ArrowUpIcon size={16} aria-hidden />
                     </button>
-                    <button type="button" className="icon-btn xs" aria-label={`Descendre ${rayon.name}`} title="Descendre" disabled={pending || index === list.length - 1} onClick={() => move(index, 1)}>
+                    <button type="button" className="icon-btn xs" aria-label={t('Descendre {name}', { name: rayon.name })} title={t('Descendre')} disabled={pending || index === list.length - 1} onClick={() => move(index, 1)}>
                       <ArrowDownIcon size={16} aria-hidden />
                     </button>
-                    <button type="button" className="icon-btn xs" aria-label={`Renommer ${rayon.name}`} title="Renommer" onClick={() => setEditing(rayon.id)}>
+                    <button type="button" className="icon-btn xs" aria-label={t('Renommer {name}', { name: rayon.name })} title={t('Renommer')} onClick={() => setEditing(rayon.id)}>
                       <PencilSimpleIcon size={16} aria-hidden />
                     </button>
-                    <button type="button" className="icon-btn xs danger" aria-label={`Supprimer ${rayon.name}`} title="Supprimer" onClick={() => setRemoving(rayon.id)}>
+                    <button type="button" className="icon-btn xs danger" aria-label={t('Supprimer {name}', { name: rayon.name })} title={t('Supprimer')} onClick={() => setRemoving(rayon.id)}>
                       <TrashIcon size={16} aria-hidden />
                     </button>
                   </span>
@@ -128,11 +127,11 @@ export function RayonsDialog({ open, onOpenChange, volumes }: { open: boolean; o
         )}
         <form className="rayon-add" onSubmit={(e) => void add(e)}>
           <label className="sr-only" htmlFor="rayon-new">
-            Nouveau rayon
+            {t('Nouveau rayon')}
           </label>
-          <input id="rayon-new" className="input" maxLength={40} placeholder={list.length ? 'Nouveau rayon' : 'Premier rayon, par exemple « Produits »'} value={name} onChange={(e) => setName(e.target.value)} />
+          <input id="rayon-new" className="input" maxLength={40} placeholder={list.length ? t('Nouveau rayon') : t('Premier rayon, par exemple « Produits »')} value={name} onChange={(e) => setName(e.target.value)} />
           <button type="submit" className="btn-ink" disabled={pending || !name.trim()}>
-            Ajouter
+            {t('Ajouter')}
           </button>
         </form>
       </div>
@@ -151,7 +150,7 @@ function RenameForm({ rayon, pending, onCancel, onSubmit }: { rayon: Rayon; pend
       }}
     >
       <label className="sr-only" htmlFor={`rayon-${rayon.id}`}>
-        Nouveau nom de {rayon.name}
+        {t('Nouveau nom de {name}', { name: rayon.name })}
       </label>
       <input
         id={`rayon-${rayon.id}`}
@@ -168,10 +167,10 @@ function RenameForm({ rayon, pending, onCancel, onSubmit }: { rayon: Rayon; pend
         }}
       />
       <button type="button" className="btn-line sm" onClick={onCancel}>
-        Annuler
+        {t('Annuler')}
       </button>
       <button type="submit" className="btn-ink sm" disabled={pending || !value.trim() || value.trim() === rayon.name}>
-        Renommer
+        {t('Renommer')}
       </button>
     </form>
   );

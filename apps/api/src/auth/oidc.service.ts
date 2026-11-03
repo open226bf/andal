@@ -1,10 +1,11 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { initialsOf, profileColor, suggestUsername, type Database, type User } from '@andal/db';
+import { freeUsername, initialsOf, profileColor, ssoGroupNames, suggestUsername, syncSsoGroups, type Database, type User } from '@andal/db';
 import { createHash, randomBytes } from 'node:crypto';
 import type { Redis } from 'ioredis';
 import { sql, type Kysely } from 'kysely';
 import * as oidc from 'openid-client';
 import { AuditService } from '../audit.service.js';
+import { CollabBridgeService } from '../collab-bridge.service.js';
 import { config } from '../env.js';
 import { DB, VALKEY } from '../infra.module.js';
 
@@ -30,6 +31,7 @@ export class OidcService {
     @Inject(DB) private readonly db: Kysely<Database>,
     @Inject(VALKEY) private readonly valkey: Redis,
     private readonly audit: AuditService,
+    private readonly bridge: CollabBridgeService,
   ) {}
 
   get enabled(): boolean {
@@ -64,7 +66,7 @@ export class OidcService {
     await this.valkey.set(this.flowKey(flowId), JSON.stringify(flow), 'EX', OIDC_FLOW_TTL_SECONDS);
     const url = oidc.buildAuthorizationUrl(client, {
       redirect_uri: this.redirectUri,
-      scope: 'openid email profile',
+      scope: ['openid', 'email', 'profile', config.oidc?.groupsScope].filter(Boolean).join(' '),
       code_challenge: await oidc.calculatePKCECodeChallenge(flow.verifier),
       code_challenge_method: 'S256',
       state: flow.state,
@@ -87,7 +89,42 @@ export class OidcService {
     });
     const claims = tokens.claims();
     if (!claims || !tokens.id_token) throw new Error("Jeton d'identité absent");
-    return { user: await this.resolveUser(claims), idToken: tokens.id_token, returnTo: flow.returnTo };
+    const user = await this.resolveUser(claims);
+    if (user && !user.disabled_at) await this.syncGroups(user, claims, client, tokens.access_token);
+    return { user, idToken: tokens.id_token, returnTo: flow.returnTo };
+  }
+
+  /**
+   * Avec OIDC_GROUPS_CLAIM: les groupes que nomme le fournisseur deviennent des
+   * groupes Andal tenus par le SSO, et la personne y entre (ou en sort) à chaque
+   * connexion. Le claim est lu dans le jeton d'identité, sinon dans userinfo.
+   */
+  private async syncGroups(user: User, claims: oidc.IDToken, client: oidc.Configuration, accessToken: string) {
+    const claim = config.oidc?.groupsClaim;
+    if (!claim) return;
+    let value: unknown = claims[claim];
+    if (value === undefined) {
+      try {
+        value = (await oidc.fetchUserInfo(client, accessToken, claims.sub))[claim];
+      } catch (error) {
+        console.warn('Groupes SSO: userinfo indisponible', error);
+        return;
+      }
+    }
+    // Claim absent: on ne touche à rien, plutôt que de vider les groupes sur une erreur de configuration.
+    if (value === undefined) return;
+    const result = await syncSsoGroups(this.db, user, ssoGroupNames(value));
+    if (result.added.length || result.removed.length || result.created.length) {
+      await this.audit.record({
+        workspaceId: user.workspace_id,
+        actorId: user.id,
+        action: 'auth.sso_groups_synced',
+        targetType: 'user',
+        targetId: user.id,
+        metadata: { added: result.added, removed: result.removed, created: result.created.map((g) => g.name) },
+      });
+      await this.bridge.accessChanged();
+    }
   }
 
   /**
@@ -130,7 +167,7 @@ export class OidcService {
         workspace_id: workspace.id,
         email,
         // Un identifiant, pour pouvoir être cité (@identifiant) dans les commentaires.
-        username: await this.freeUsername(workspace.id, suggestUsername(email)),
+        username: await freeUsername(this.db, workspace.id, suggestUsername(email)),
         name,
         initials: initialsOf(name),
         color: profileColor(count),
@@ -143,20 +180,6 @@ export class OidcService {
       .executeTakeFirstOrThrow();
     await this.audit.record({ workspaceId: user.workspace_id, actorId: user.id, action: 'auth.oidc_provisioned', targetType: 'user', targetId: user.id, metadata: { issuer: claims.iss } });
     return user;
-  }
-
-  /** « lea », sinon « lea-2 », « lea-3 »…: le premier identifiant libre de l'espace. */
-  private async freeUsername(workspaceId: string, base: string): Promise<string> {
-    const stem = (base.length >= 2 ? base : `compte${base}`).slice(0, 36);
-    const taken = await this.db
-      .selectFrom('users')
-      .select(sql<string>`lower(username)`.as('u'))
-      .where('workspace_id', '=', workspaceId)
-      .where(sql<string>`lower(username)`, 'like', `${stem.replace(/[%_\\]/g, '\\$&')}%`)
-      .execute();
-    const used = new Set(taken.map((t) => t.u));
-    if (!used.has(stem)) return stem;
-    for (let i = 2; ; i += 1) if (!used.has(`${stem}-${i}`)) return `${stem}-${i}`;
   }
 
   /** Adresse de déconnexion chez le fournisseur, pour fermer aussi la session SSO, puis revenir sur `after`. */

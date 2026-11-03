@@ -1,6 +1,7 @@
 import type { QueryClient } from '@tanstack/react-query';
 import { Outlet, createRootRouteWithContext, createRoute, createRouter, redirect } from '@tanstack/react-router';
 import { ApiError, api, type Me, type PagePreview, type Tree } from './lib/api';
+import { locale } from './lib/i18n';
 import { ForgotPasswordPage, InvitationPage, ResetPasswordPage } from './pages/AccountLinkPages';
 import { AccountPage } from './pages/AccountPage';
 import { AdminPage } from './pages/AdminPage';
@@ -56,13 +57,20 @@ const resetRoute = createRoute({
 
 const forgotRoute = createRoute({ getParentRoute: () => rootRoute, path: '/mot-de-passe-oublie', component: ForgotPasswordPage });
 
+let localeSynced = false;
+
 /** Tout ce qui suit demande une session: sinon, direction la connexion. */
 const appRoute = createRoute({
   getParentRoute: () => rootRoute,
   id: 'app',
   beforeLoad: async ({ context, location }) => {
     try {
-      await context.queryClient.ensureQueryData({ queryKey: ['me'], queryFn: () => api<Me>('/me') });
+      const me = await context.queryClient.ensureQueryData({ queryKey: ['me'], queryFn: () => api<Me>('/me') });
+      // La langue de l'interface, choisie ici ou à la connexion, devient celle du compte: les emails suivent.
+      if (!localeSynced) {
+        localeSynced = true;
+        if (me.user.locale !== locale) void api('/me/locale', { method: 'PUT', body: JSON.stringify({ locale }) }).catch(() => undefined);
+      }
     } catch (error) {
       if (error instanceof ApiError && error.status === 401) throw redirect({ to: '/login', search: { retour: location.pathname === '/' ? undefined : location.href } });
       throw error;
@@ -139,6 +147,8 @@ const adminRoute = createRoute({ getParentRoute: () => appRoute, path: '/admin',
 const groupsRoute = createRoute({ getParentRoute: () => appRoute, path: '/admin/groupes', component: () => <AdminPage section="groupes" /> });
 const integrationsRoute = createRoute({ getParentRoute: () => appRoute, path: '/admin/integrations', component: () => <AdminPage section="integrations" /> });
 const assistantRoute = createRoute({ getParentRoute: () => appRoute, path: '/admin/assistant', component: () => <AdminPage section="assistant" /> });
+const directoryRoute = createRoute({ getParentRoute: () => appRoute, path: '/admin/annuaire', component: () => <AdminPage section="annuaire" /> });
+const journalRoute = createRoute({ getParentRoute: () => appRoute, path: '/admin/journal', component: () => <AdminPage section="journal" /> });
 const accountRoute = createRoute({ getParentRoute: () => appRoute, path: '/compte', component: AccountPage });
 
 const routeTree = rootRoute.addChildren([
@@ -146,7 +156,7 @@ const routeTree = rootRoute.addChildren([
   invitationRoute,
   resetRoute,
   forgotRoute,
-  appRoute.addChildren([homeRoute, volumeRoute, pageRoute, pageLinkRoute, specRoute, adminRoute, groupsRoute, integrationsRoute, assistantRoute, accountRoute]),
+  appRoute.addChildren([homeRoute, volumeRoute, pageRoute, pageLinkRoute, specRoute, adminRoute, groupsRoute, integrationsRoute, assistantRoute, directoryRoute, journalRoute, accountRoute]),
 ]);
 
 export function createAppRouter(queryClient: QueryClient) {

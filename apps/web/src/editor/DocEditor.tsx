@@ -1,8 +1,9 @@
 import { HocuspocusProvider } from '@hocuspocus/provider';
-import { LockSimpleIcon, WifiSlashIcon } from '@phosphor-icons/react';
+import { LockSimpleIcon, WarningOctagonIcon, WifiSlashIcon } from '@phosphor-icons/react';
 import { useQueryClient } from '@tanstack/react-query';
 import { EditorContent, useEditor, type Editor } from '@tiptap/react';
 import { useEffect, useRef, useState } from 'react';
+import { t } from '../lib/i18n';
 import { webExtensions } from './extensions';
 
 export interface PresenceUser {
@@ -26,6 +27,9 @@ const ACCESS_CHANGED = 'access-changed';
 const NOTIFICATIONS_CHANGED = 'notifications-changed';
 /** Un sommaire a changé (page créée, renommée, déplacée): numéros compris. */
 const TREE_CHANGED = 'tree-changed';
+/** Le serveur a refusé d'enregistrer le contenu de la page (hors schéma); puis l'enregistrement repasse. */
+const SAVE_REJECTED = 'save-rejected';
+const SAVE_OK = 'save-ok';
 
 interface Props {
   pageId: string;
@@ -48,9 +52,11 @@ export function DocEditor({ pageId, user, editable, onPresence, onEditor, onThre
   const queryClient = useQueryClient();
   const [provider, setProvider] = useState<HocuspocusProvider | null>(null);
   const [status, setStatus] = useState<Status>('connecting');
+  const [rejected, setRejected] = useState(false);
 
   useEffect(() => {
     setStatus('connecting');
+    setRejected(false);
     const p = new HocuspocusProvider({
       url: collabUrl(),
       name: `page:${pageId}`,
@@ -67,6 +73,8 @@ export function DocEditor({ pageId, user, editable, onPresence, onEditor, onThre
         if (payload === TREE_CHANGED) {
           for (const key of ['page', 'tree', 'projects', 'trash']) void queryClient.invalidateQueries({ queryKey: [key] });
         }
+        if (payload === SAVE_REJECTED) setRejected(true);
+        if (payload === SAVE_OK) setRejected(false);
       },
       onStatus: ({ status: s }) => {
         if (s === 'disconnected') setStatus((prev) => (prev === 'synced' ? 'offline' : prev));
@@ -94,12 +102,22 @@ export function DocEditor({ pageId, user, editable, onPresence, onEditor, onThre
     return (
       <p className="doc-state">
         <LockSimpleIcon size={18} aria-hidden />
-        Le serveur de collaboration a refusé l'accès à cette page.
+        {t("Le serveur de collaboration a refusé l'accès à cette page.")}
       </p>
     );
   }
   if (!provider) return <Skeleton />;
-  return <CollabEditor key={pageId} pageId={pageId} provider={provider} user={user} editable={editable} synced={status !== 'connecting'} offline={status === 'offline'} onEditor={onEditor} />;
+  return (
+    <>
+      {rejected && editable && (
+        <p className="doc-state err" role="alert">
+          <WarningOctagonIcon size={18} aria-hidden />
+          {t('Le serveur n’enregistre plus cette page: la dernière modification contient un élément qu’il refuse. Annulez-la (⌘Z ou Ctrl Z); tant que ce message reste là, rien n’est sauvegardé.')}
+        </p>
+      )}
+      <CollabEditor key={pageId} pageId={pageId} provider={provider} user={user} editable={editable} synced={status !== 'connecting'} offline={status === 'offline'} onEditor={onEditor} />
+    </>
+  );
 }
 
 function CollabEditor({
@@ -125,7 +143,7 @@ function CollabEditor({
       editable: false,
       immediatelyRender: true,
       shouldRerenderOnTransaction: false,
-      editorProps: { attributes: { 'aria-label': 'Contenu de la page' } },
+      editorProps: { attributes: { 'aria-label': t('Contenu de la page') } },
     },
     [provider],
   );
@@ -144,7 +162,7 @@ function CollabEditor({
       {offline && (
         <p className="doc-state">
           <WifiSlashIcon size={18} aria-hidden />
-          Connexion perdue: les modifications seront envoyées au retour du réseau.
+          {t('Connexion perdue: les modifications seront envoyées au retour du réseau.')}
         </p>
       )}
       {!synced && <Skeleton />}
@@ -155,7 +173,7 @@ function CollabEditor({
 
 function Skeleton() {
   return (
-    <div className="doc-skeleton" aria-busy="true" aria-label="Chargement de la page">
+    <div className="doc-skeleton" aria-busy="true" aria-label={t('Chargement de la page')}>
       {Array.from({ length: 6 }, (_, i) => (
         <span key={i} />
       ))}

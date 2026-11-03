@@ -1,12 +1,14 @@
-import { BadRequestException, Body, Controller, ForbiddenException, Get, HttpCode, Inject, NotFoundException, Post, Query, Req, Res, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, Body, Controller, ForbiddenException, Get, HttpCode, Inject, NotFoundException, Post, Put, Query, Req, Res, UnauthorizedException } from '@nestjs/common';
 import {
   passwordProblem,
   PASSWORD_MAX_LENGTH,
   hashPassword,
+  LOCALES,
   sessionKey,
   spendPasswordCheck,
   verifyPassword,
   type Database,
+  type Locale,
   type User,
 } from '@andal/db';
 import type { FastifyReply, FastifyRequest } from 'fastify';
@@ -18,6 +20,7 @@ import { DB, VALKEY } from '../infra.module.js';
 import { MailService } from '../mail.service.js';
 import { type AuthContext, CurrentAuth, Public, SessionOnly } from './auth.guard.js';
 import { LoginThrottleService } from './login-throttle.service.js';
+import { MfaService } from './mfa.service.js';
 import { OIDC_FLOW_COOKIE, OIDC_FLOW_TTL_SECONDS, OidcService } from './oidc.service.js';
 import { SessionsService } from './sessions.service.js';
 
@@ -31,6 +34,8 @@ function publicUser(u: User) {
     username: u.username,
     workspaceRole: u.workspace_role,
     hasPassword: u.password_hash !== null,
+    mfa: u.totp_enabled_at !== null,
+    locale: u.locale,
   };
 }
 
@@ -54,6 +59,7 @@ export class AuthController {
     private readonly throttle: LoginThrottleService,
     private readonly oidc: OidcService,
     private readonly mail: MailService,
+    private readonly mfa: MfaService,
   ) {}
 
   /** Ce que l'écran de connexion doit proposer. */
@@ -71,6 +77,15 @@ export class AuthController {
   @Get('me')
   me(@CurrentAuth() auth: AuthContext) {
     return { user: publicUser(auth.user), auth: { method: auth.session.method } };
+  }
+
+  /** Langue de l'interface et des emails de ce compte. */
+  @Put('me/locale')
+  @HttpCode(204)
+  async setLocale(@CurrentAuth() auth: AuthContext, @Body() body: Record<string, unknown> | undefined) {
+    const locale = body?.locale;
+    if (!LOCALES.includes(locale as Locale)) throw new BadRequestException('Langue inconnue: « fr » ou « en ».');
+    await this.db.updateTable('users').set({ locale: locale as Locale }).where('id', '=', auth.user.id).execute();
   }
 
   @Public()
@@ -101,8 +116,25 @@ export class AuthController {
     // Seul qui connaît le mot de passe apprend que le compte est désactivé.
     if (user.disabled_at) throw new ForbiddenException('Ce compte est désactivé. Contactez un admin de votre espace.');
     await this.throttle.succeeded(identifier);
+    // Compte protégé: le mot de passe ne suffit pas, il faut encore le code.
+    if (this.mfa.enabledFor(user)) {
+      await this.mfa.challenge(user, reply);
+      return { mfa: true };
+    }
     await this.sessions.open(user, 'password', req, reply);
     return { user: publicUser(user) };
+  }
+
+  /** Deuxième étape: le code de l'application, ou un code de secours. */
+  @Public()
+  @Post('auth/login/mfa')
+  @HttpCode(200)
+  async loginMfa(@Body() body: Record<string, unknown> | undefined, @Req() req: FastifyRequest, @Res({ passthrough: true }) reply: FastifyReply) {
+    if (!config.passwordLogin) throw new NotFoundException();
+    const { user, used } = await this.mfa.complete(req, reply, body?.code);
+    await this.sessions.open(user, 'password', req, reply, { mfa: true });
+    const left = used === 'recovery' ? (await this.mfa.status(user)).recoveryCodesLeft : null;
+    return { user: publicUser(user), recoveryCodesLeft: left };
   }
 
   @SessionOnly()

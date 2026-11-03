@@ -15,6 +15,7 @@ import type { FastifyRequest } from 'fastify';
 import type { Redis } from 'ioredis';
 import type { Kysely } from 'kysely';
 import { DB, VALKEY } from '../infra.module.js';
+import { SessionsService } from './sessions.service.js';
 
 export interface AuthContext {
   /** Vide pour une requête faite avec un jeton d'API. */
@@ -59,6 +60,7 @@ export class AuthGuard implements CanActivate {
     private readonly reflector: Reflector,
     @Inject(DB) private readonly db: Kysely<Database>,
     @Inject(VALKEY) private readonly valkey: Redis,
+    private readonly sessions: SessionsService,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -87,6 +89,7 @@ export class AuthGuard implements CanActivate {
     }
 
     request.auth = { sessionId, session, user: loaded.user, subject: loaded.subject };
+    await this.sessions.touch(sessionId, session, request.ip);
     return true;
   }
 

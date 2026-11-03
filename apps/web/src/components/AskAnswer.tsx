@@ -3,6 +3,7 @@ import { Link } from '@tanstack/react-router';
 import { Fragment, useEffect, useRef, useState, type ReactNode } from 'react';
 import { errorMessage } from '../lib/api';
 import { askStream, type AskSource } from '../lib/ask';
+import { t } from '../lib/i18n';
 
 /** Texte en ligne: `code`, **gras**, et citations [n] qui mènent à la page citée. */
 function inline(text: string, sources: AskSource[], onOpen: () => void): ReactNode[] {
@@ -77,7 +78,7 @@ export function AskAnswer({ question, model, onBack, onOpen }: { question: strin
       .then(() => setState('done'))
       .catch((err: unknown) => {
         if (abort.signal.aborted) return;
-        setError(errorMessage(err, 'L’assistant ne répond pas pour le moment.'));
+        setError(errorMessage(err, t('L’assistant ne répond pas pour le moment.')));
         setState('error');
       });
     return () => abort.abort();
@@ -86,7 +87,7 @@ export function AskAnswer({ question, model, onBack, onOpen }: { question: strin
   return (
     <div className="ask">
       <div className="ask-head">
-        <button type="button" className="icon-btn sm" aria-label="Revenir à la recherche" onClick={onBack}>
+        <button type="button" className="icon-btn sm" aria-label={t('Revenir à la recherche')} onClick={onBack}>
           <ArrowLeftIcon size={18} aria-hidden />
         </button>
         <SparkleIcon size={18} aria-hidden />
@@ -94,7 +95,7 @@ export function AskAnswer({ question, model, onBack, onOpen }: { question: strin
       </div>
       <div className="ask-body" ref={live} aria-live="polite" aria-busy={state === 'loading' || state === 'streaming'}>
         {state === 'loading' && (
-          <span className="doc-skeleton" aria-label="L’assistant lit les pages…">
+          <span className="doc-skeleton" aria-label={t('L’assistant lit les pages…')}>
             <span />
             <span />
             <span />
@@ -105,7 +106,7 @@ export function AskAnswer({ question, model, onBack, onOpen }: { question: strin
       </div>
       {sources.length > 0 && (
         <div className="ask-sources">
-          <h3>Pages lues</h3>
+          <h3>{t('Pages lues')}</h3>
           <ol>
             {sources.map((s) => (
               <li key={s.id} data-vol={s.project.cloth}>
@@ -122,9 +123,7 @@ export function AskAnswer({ question, model, onBack, onOpen }: { question: strin
         </div>
       )}
       {state === 'done' && (
-        <p className="ask-foot">
-          Réponse rédigée par {model ?? 'le modèle'} à partir des seules pages que vous lisez. Vérifiez dans les pages citées avant d’agir.
-        </p>
+        <p className="ask-foot">{t('Réponse rédigée par {model} à partir des seules pages que vous lisez. Vérifiez dans les pages citées avant d’agir.', { model: model ?? t('le modèle') })}</p>
       )}
     </div>
   );

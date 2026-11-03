@@ -2,17 +2,19 @@ import { AccessMark } from '@andal/ui';
 import { CheckCircleIcon, WarningCircleIcon } from '@phosphor-icons/react';
 import { useEffect, type CSSProperties, type ReactNode } from 'react';
 import type { Cloth } from '../lib/api';
+import { t, tx } from '../lib/i18n';
+import { LanguageSwitch } from './LanguageSwitch';
 import { Logo } from './Logo';
 
 /** Les dos de l'étagère d'accueil: des volumes d'exemple, pas des données. */
 const SPINES: { cloth: Cloth; label: string; height: number; lean?: boolean }[] = [
-  { cloth: 'identite', label: 'Architecture', height: 236 },
-  { cloth: 'plateforme', label: 'Plateforme', height: 204 },
-  { cloth: 'paiements', label: 'API Paiements', height: 268 },
-  { cloth: 'donnees', label: 'Données', height: 188 },
-  { cloth: 'mobile', label: 'Runbooks', height: 226 },
-  { cloth: 'design', label: 'Décisions', height: 212 },
-  { cloth: 'identite', label: 'Sécurité', height: 198, lean: true },
+  { cloth: 'identite', label: t('Architecture'), height: 236 },
+  { cloth: 'plateforme', label: t('Plateforme'), height: 204 },
+  { cloth: 'paiements', label: t('API Paiements'), height: 268 },
+  { cloth: 'donnees', label: t('Données'), height: 188 },
+  { cloth: 'mobile', label: t('Runbooks'), height: 226 },
+  { cloth: 'design', label: t('Décisions'), height: 212 },
+  { cloth: 'identite', label: t('Sécurité'), height: 198, lean: true },
 ];
 
 /**
@@ -32,10 +34,13 @@ export function AuthCard({ title, documentTitle, children }: { title: string; do
           Andal
         </p>
         <div className="brand-copy">
-          <p className="brand-title">Votre documentation technique, reliée en volumes.</p>
+          <p className="brand-title">{t('Votre documentation technique, reliée en volumes.')}</p>
           <p className="brand-text">
-            Specs OpenAPI, diagrammes et runbooks vivent dans les pages, et chaque page dit qui peut <AccessMark level="write" /> écrire, <AccessMark level="comment" /> commenter et{' '}
-            <AccessMark level="read" /> lire.
+            {tx('Specs OpenAPI, diagrammes et runbooks vivent dans les pages, et chaque page dit qui peut {write} écrire, {comment} commenter et {read} lire.', {
+              write: <AccessMark level="write" />,
+              comment: <AccessMark level="comment" />,
+              read: <AccessMark level="read" />,
+            })}
           </p>
         </div>
         <div className="brand-shelf" aria-hidden>
@@ -46,9 +51,12 @@ export function AuthCard({ title, documentTitle, children }: { title: string; do
             </span>
           ))}
         </div>
-        <p className="brand-foot">Libre et auto-hébergé: votre doc reste chez vous.</p>
+        <p className="brand-foot">{t('Libre et auto-hébergé: votre doc reste chez vous.')}</p>
       </section>
       <section className="auth-pane" aria-labelledby="auth-title">
+        <div className="auth-lang">
+          <LanguageSwitch signedIn={false} />
+        </div>
         <div className="auth-form">
           <h1 id="auth-title">{title}</h1>
           {children}

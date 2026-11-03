@@ -1,7 +1,11 @@
 /** Emails transactionnels: texte brut et HTML sobre, sans image ni traceur. Partagé par l'API et le worker. */
 
+import type { Locale } from './i18n.js';
+
 export interface Mail {
   to: string;
+  /** Langue du destinataire: textes déjà traduits par l'appelant, ponctuation du texte brut. Français par défaut. */
+  locale?: Locale;
   subject: string;
   /** Paragraphes du message, dans l'ordre. */
   lines: string[];
@@ -17,7 +21,9 @@ function escapeHtml(text: string): string {
 
 export function renderMail(mail: Mail): { text: string; html: string } {
   const quotes = mail.quotes ?? [];
-  const text = [...mail.lines, ...quotes.map((q) => `> ${q.replaceAll('\n', '\n> ')}`), `${mail.action.label} : ${mail.action.url}`, mail.footer].join('\n\n');
+  // « Lien : … » en français, « Link: … » en anglais.
+  const colon = mail.locale === 'en' ? ':' : ' :';
+  const text = [...mail.lines, ...quotes.map((q) => `> ${q.replaceAll('\n', '\n> ')}`), `${mail.action.label}${colon} ${mail.action.url}`, mail.footer].join('\n\n');
   const html = [
     '<div style="font-family:system-ui,sans-serif;font-size:16px;line-height:1.5;color:#161a23;max-width:520px">',
     ...mail.lines.map((line) => `<p>${escapeHtml(line)}</p>`),

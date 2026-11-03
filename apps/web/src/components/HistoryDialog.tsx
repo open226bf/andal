@@ -9,6 +9,7 @@ import { readExtensions } from '../editor/extensions';
 import { api, canEdit, errorMessage, useVersion, useVersions, type PageDetail, type VersionAuthor } from '../lib/api';
 import { DocContext, type DocContextValue } from '../lib/doc-context';
 import { dateTime, relative } from '../lib/format';
+import { t, tn } from '../lib/i18n';
 import { FormError } from './AuthCard';
 
 /**
@@ -58,16 +59,14 @@ export function HistoryDialog({ page, open, onOpenChange, context }: { page: Pag
         <Dialog.Content className="pop dialog history" aria-describedby={undefined}>
           <div className="pop-head">
             <Dialog.Title asChild>
-              <h2>
-                Historique de « {page.number} {page.title} »
-              </h2>
+              <h2>{t('Historique de « {number} {title} »', { number: page.number, title: page.title })}</h2>
             </Dialog.Title>
-            <Dialog.Close className="icon-btn sm" aria-label="Fermer">
+            <Dialog.Close className="icon-btn sm" aria-label={t('Fermer')}>
               <XIcon size={18} aria-hidden />
             </Dialog.Close>
           </div>
           <div className="history-body">
-            <ol className="history-list" aria-label="Versions" aria-busy={versions.isPending}>
+            <ol className="history-list" aria-label={t('Versions')} aria-busy={versions.isPending}>
               {versions.data?.map((v) => (
                 <li key={v.version}>
                   <button
@@ -81,7 +80,7 @@ export function HistoryDialog({ page, open, onOpenChange, context }: { page: Pag
                   >
                     <span className="history-num">
                       v{v.version}
-                      {v.current && <span className="you">actuelle</span>}
+                      {v.current && <span className="you">{t('actuelle')}</span>}
                     </span>
                     <span className="history-when" title={dateTime(v.updatedAt)}>
                       {relative(v.updatedAt)}
@@ -91,13 +90,13 @@ export function HistoryDialog({ page, open, onOpenChange, context }: { page: Pag
                 </li>
               ))}
             </ol>
-            <section className="history-preview" aria-label={shown !== null ? `Version ${shown}` : 'Version'}>
+            <section className="history-preview" aria-label={shown !== null ? t('Version {n}', { n: shown }) : t('Version')}>
               {summary && (
                 <header className="history-head">
                   <div>
                     <b>
                       v{summary.version}
-                      {summary.title !== page.title && ` · « ${summary.title} »`}
+                      {summary.title !== page.title && ` · ${t('« {title} »', { title: summary.title })}`}
                     </b>
                     <small>
                       {dateTime(summary.createdAt)}
@@ -110,28 +109,28 @@ export function HistoryDialog({ page, open, onOpenChange, context }: { page: Pag
                     (confirming ? (
                       <span className="history-confirm">
                         <button type="button" className="btn-line sm" onClick={() => setConfirming(false)}>
-                          Annuler
+                          {t('Annuler')}
                         </button>
                         <button type="button" className="btn-ink sm" disabled={pending} onClick={() => void restore()}>
-                          {pending ? 'Restauration…' : `Oui, revenir à la v${summary.version}`}
+                          {pending ? t('Restauration…') : t('Oui, revenir à la v{version}', { version: summary.version })}
                         </button>
                       </span>
                     ) : (
                       <button type="button" className="btn-line sm" onClick={() => setConfirming(true)}>
                         <ArrowCounterClockwiseIcon size={16} aria-hidden />
-                        Restaurer cette version
+                        {t('Restaurer cette version')}
                       </button>
                     ))}
                 </header>
               )}
-              {confirming && <p className="history-note">La page reprend ce contenu pour tout le monde, pages ouvertes comprises. Rien n’est perdu : la version actuelle reste dans l’historique.</p>}
+              {confirming && <p className="history-note">{t('La page reprend ce contenu pour tout le monde, pages ouvertes comprises. Rien n’est perdu : la version actuelle reste dans l’historique.')}</p>}
               {error && <FormError>{error}</FormError>}
               {detail.data ? (
                 <DocContext.Provider value={{ ...context, editing: false }}>
                   <VersionContent key={detail.data.version} content={detail.data.content} />
                 </DocContext.Provider>
               ) : (
-                <div className="doc-skeleton" aria-busy="true" aria-label="Chargement de la version">
+                <div className="doc-skeleton" aria-busy="true" aria-label={t('Chargement de la version')}>
                   <span />
                   <span />
                   <span />
@@ -152,7 +151,7 @@ function Authors({ authors }: { authors: VersionAuthor[] }) {
       {authors.slice(0, 3).map((a) => (
         <Avatar key={a.id} initials={a.initials} color={a.color} size={20} title={a.name} />
       ))}
-      <span>{authors.length === 1 ? authors[0]!.name : `${authors[0]!.name} et ${authors.length - 1} autre${authors.length > 2 ? 's' : ''}`}</span>
+      <span>{authors.length === 1 ? authors[0]!.name : tn(authors.length - 1, '{name} et {n} autre', '{name} et {n} autres', { name: authors[0]!.name })}</span>
     </span>
   );
 }

@@ -1,11 +1,12 @@
 import { XIcon } from '@phosphor-icons/react';
 import { useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
+import { locale, t } from '../lib/i18n';
 
 /** draw.io auto-hébergé: le service drawio du docker compose en dev, `/drawio` derrière Caddy en production. */
 const DRAWIO_URL = new URL(import.meta.env.VITE_DRAWIO_URL ?? 'http://localhost:58081', window.location.origin);
 const DRAWIO_ORIGIN = DRAWIO_URL.origin;
-const EMBED = `${DRAWIO_URL.href.replace(/\/+$/, '')}/?embed=1&proto=json&spin=1&ui=min&lang=fr&saveAndExit=1&noExitBtn=0`;
+const EMBED = `${DRAWIO_URL.href.replace(/\/+$/, '')}/?embed=1&proto=json&spin=1&ui=min&lang=${locale}&saveAndExit=1&noExitBtn=0`;
 
 interface Props {
   xml: string;
@@ -34,7 +35,7 @@ export function DrawioEditor({ xml, onSave, onClose }: Props) {
       } catch {
         return;
       }
-      if (msg.event === 'init') post({ action: 'load', xml: xml || '', autosave: 0, title: 'Schéma' });
+      if (msg.event === 'init') post({ action: 'load', xml: xml || '', autosave: 0, title: t('Schéma') });
       if (msg.event === 'save' && msg.xml) {
         pendingXml.current = msg.xml;
         exitAfterExport.current = Boolean(msg.exit);
@@ -53,10 +54,10 @@ export function DrawioEditor({ xml, onSave, onClose }: Props) {
   return createPortal(
     <>
       <div className="overlay" onClick={onClose} />
-      <div className="drawio-dialog" role="dialog" aria-label="Éditeur draw.io">
+      <div className="drawio-dialog" role="dialog" aria-label={t('Éditeur draw.io')}>
         <div className="pop-head">
-          <h2>Modifier le schéma</h2>
-          <button type="button" className="icon-btn sm" aria-label="Fermer" onClick={onClose}>
+          <h2>{t('Modifier le schéma')}</h2>
+          <button type="button" className="icon-btn sm" aria-label={t('Fermer')} onClick={onClose}>
             <XIcon size={18} aria-hidden />
           </button>
         </div>

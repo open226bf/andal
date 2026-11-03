@@ -4,6 +4,7 @@ import * as ToggleGroup from '@radix-ui/react-toggle-group';
 import { Link } from '@tanstack/react-router';
 import type { PresenceUser } from '../editor/DocEditor';
 import type { PageDetail } from '../lib/api';
+import { t, tn } from '../lib/i18n';
 import { useTheme } from '../lib/theme';
 import { SharePanel } from './SharePanel';
 
@@ -22,11 +23,9 @@ export function Band({ page, editing, canEdit, presence, onMode }: Props) {
     <header className="band">
       <div className="band-vol">
         <span className="band-title">{page.project.name}</span>
-        <span className="band-meta">
-          Vol. {page.project.volumeNumber} · {page.project.pageCount} pages
-        </span>
+        <span className="band-meta">{tn(page.project.pageCount, 'Vol. {vol} · {n} page', 'Vol. {vol} · {n} pages', { vol: page.project.volumeNumber })}</span>
       </div>
-      <nav className="crumbs" aria-label="Fil d'Ariane">
+      <nav className="crumbs" aria-label={t("Fil d'Ariane")}>
         {page.breadcrumb.map((crumb) => (
           <span key={crumb.id} className="flex items-center gap-1.5">
             <Link to="/v/$slug/$pageId" params={{ slug: page.project.slug, pageId: crumb.id }}>
@@ -40,7 +39,7 @@ export function Band({ page, editing, canEdit, presence, onMode }: Props) {
         </span>
       </nav>
       <div className="band-actions">
-        <div className="presence" aria-label={`${presence.length} personne(s) sur cette page`}>
+        <div className="presence" aria-label={tn(presence.length, '{n} personne sur cette page', '{n} personnes sur cette page')}>
           {presence.slice(0, 4).map((p) => (
             <Avatar key={p.clientId} initials={initials(p.name)} color={p.color} title={p.name} />
           ))}
@@ -48,21 +47,21 @@ export function Band({ page, editing, canEdit, presence, onMode }: Props) {
         <ToggleGroup.Root
           type="single"
           className="seg"
-          aria-label="Mode de la page"
+          aria-label={t('Mode de la page')}
           value={editing ? 'edit' : 'read'}
           onValueChange={(v) => v && onMode(v === 'edit')}
         >
           <ToggleGroup.Item value="read">
             <BookOpenIcon size={16} aria-hidden />
-            Lire
+            {t('Lire')}
           </ToggleGroup.Item>
-          <ToggleGroup.Item value="edit" disabled={!canEdit} title={canEdit ? undefined : `Votre droit sur cette page: ${accessLabel(page.role === 'commenter' ? 'comment' : 'read').toLowerCase()}`}>
+          <ToggleGroup.Item value="edit" disabled={!canEdit} title={canEdit ? undefined : t('Votre droit sur cette page: {access}', { access: t(accessLabel(page.role === 'commenter' ? 'comment' : 'read')).toLowerCase() })}>
             <PencilSimpleIcon size={16} aria-hidden />
-            Modifier
+            {t('Modifier')}
           </ToggleGroup.Item>
         </ToggleGroup.Root>
         <SharePanel page={page} />
-        <button type="button" className="icon-btn on-band" onClick={toggle} aria-label={theme === 'dark' ? 'Passer en thème clair' : 'Passer en thème sombre'}>
+        <button type="button" className="icon-btn on-band" onClick={toggle} aria-label={theme === 'dark' ? t('Passer en thème clair') : t('Passer en thème sombre')}>
           {theme === 'dark' ? <SunIcon size={18} aria-hidden /> : <MoonIcon size={18} aria-hidden />}
         </button>
       </div>

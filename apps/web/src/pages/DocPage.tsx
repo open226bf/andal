@@ -18,6 +18,7 @@ import { Shelf } from '../components/Shelf';
 import { Sommaire } from '../components/Sommaire';
 import { DocEditor, type PresenceUser } from '../editor/DocEditor';
 import { DocContext } from '../lib/doc-context';
+import { t, tx } from '../lib/i18n';
 
 /** La page de doc: étagère, sommaire, bandeau du volume, colophon, éditeur et notes en marge. */
 export function DocPage({ slug, pageId, thread, edition }: { slug: string; pageId: string; thread?: string; edition?: boolean }) {
@@ -74,14 +75,14 @@ export function DocPage({ slug, pageId, thread, edition }: { slug: string; pageI
       </div>
       <main className="main">
         <div className="topbar">
-          <button type="button" className="icon-btn" aria-label="Ouvrir le sommaire" aria-expanded={navOpen} aria-controls="nav" onClick={() => setNavOpen(true)}>
+          <button type="button" className="icon-btn" aria-label={t('Ouvrir le sommaire')} aria-expanded={navOpen} aria-controls="nav" onClick={() => setNavOpen(true)}>
             <ListIcon size={20} aria-hidden />
           </button>
           <span className="topbar-vol">
             <span className="vol-swatch" aria-hidden />
             {project?.shortName}
           </span>
-          <button type="button" className="icon-btn push" aria-label="Rechercher" onClick={() => setSearchOpen(true)}>
+          <button type="button" className="icon-btn push" aria-label={t('Rechercher')} onClick={() => setSearchOpen(true)}>
             <MagnifyingGlassIcon size={20} aria-hidden />
           </button>
         </div>
@@ -93,7 +94,7 @@ export function DocPage({ slug, pageId, thread, edition }: { slug: string; pageI
         ) : (
           <div className="page">
             <div className="sheet">
-              <div className="measure doc-skeleton" aria-busy="true" aria-label="Chargement de la page">
+              <div className="measure doc-skeleton" aria-busy="true" aria-label={t('Chargement de la page')}>
                 {Array.from({ length: 6 }, (_, i) => (
                   <span key={i} />
                 ))}
@@ -185,10 +186,10 @@ function Document({
               <p className="git-note" role="note">
                 <GitBranchIcon size={18} aria-hidden />
                 <span>
-                  Cette page vient de <code>{page.git.file}</code> ({page.git.repo}). Modifiez-la dans le dépôt: la synchro suivante la mettra à jour.{' '}
+                  {tx('Cette page vient de {file} ({repo}). Modifiez-la dans le dépôt: la synchro suivante la mettra à jour.', { file: <code>{page.git.file}</code>, repo: page.git.repo })}{' '}
                   {page.git.url && (
                     <a href={page.git.url} target="_blank" rel="noopener noreferrer">
-                      Ouvrir le fichier
+                      {t('Ouvrir le fichier')}
                     </a>
                   )}
                 </span>
@@ -197,7 +198,7 @@ function Document({
             {archived && (
               <p className="archived-note" role="note">
                 <ArchiveIcon size={18} aria-hidden />
-                Volume archivé: ses pages se lisent, mais ne se modifient ni ne se commentent plus.
+                {t('Volume archivé: ses pages se lisent, mais ne se modifient ni ne se commentent plus.')}
               </p>
             )}
             <h1 className="doc-title">
@@ -217,7 +218,7 @@ function Document({
             <footer className="after">
               {page.backlinks.length > 0 && (
                 <section className="backlinks" aria-labelledby="backlinks-title">
-                  <h2 id="backlinks-title">Citée dans</h2>
+                  <h2 id="backlinks-title">{t('Citée dans')}</h2>
                   <ul>
                     {page.backlinks.map((b) => (
                       <li key={b.id} data-vol={b.project.cloth}>
@@ -232,7 +233,7 @@ function Document({
                   </ul>
                 </section>
               )}
-              <nav className="pager" aria-label="Pages voisines">
+              <nav className="pager" aria-label={t('Pages voisines')}>
                 {page.prev && (
                   <Link to="/v/$slug/$pageId" params={{ slug: page.project.slug, pageId: page.prev.id }}>
                     <ArrowLeftIcon size={18} aria-hidden />
@@ -250,7 +251,7 @@ function Document({
                   </Link>
                 )}
               </nav>
-              <p className="fiction">Démo Andal. Personnes, équipes et adresses sont fictives.</p>
+              <p className="fiction">{t('Démo Andal. Personnes, équipes et adresses sont fictives.')}</p>
             </footer>
           </div>
         </div>
@@ -285,7 +286,7 @@ function TitleField({ page }: { page: PageDetail }) {
     <>
       <input
         className="doc-title-input"
-        aria-label="Titre de la page"
+        aria-label={t('Titre de la page')}
         maxLength={120}
         value={value}
         onChange={(e) => setValue(e.target.value)}
@@ -323,7 +324,7 @@ function Missing({ error }: { error: Error }) {
         <div className="measure">
           <p className="doc-state">
             <LockSimpleIcon size={18} aria-hidden />
-            {notFound ? "Cette page n'existe pas, ou vous n'y avez pas accès." : 'La page ne répond pas. Réessayez dans un instant.'}
+            {notFound ? t("Cette page n'existe pas, ou vous n'y avez pas accès.") : t('La page ne répond pas. Réessayez dans un instant.')}
           </p>
         </div>
       </div>

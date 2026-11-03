@@ -491,6 +491,23 @@ En mode Modifier, la page reste la même et montre sa construction:
 - **Pager:** deux cartes à filet et rayon 14px, 600, numéro `vol-deep`; survol bordure `vol` et fond `vol-tint`.
 - **Touches clavier** (`kbd`): Mono 500 0.75rem, filet `rule-2` épaissi à 2px en bas, rayon 5px.
 
+### Sécurité du compte
+- **Code à usage unique:** champ Mono 500 1.375rem, interlettrage .14em, chiffres tabulaires; clavier numérique et remplissage automatique (`one-time-code`). Le code de secours prend le même champ, en texte.
+- **QR code:** carré de 200px à filet `rule`, rayon `r-l`, toujours sombre sur blanc (`#161B26` sur `#FFFFFF`), thème sombre compris: les caméras le lisent mieux. En attendant le secret, le même reflet `desk` que Redoc. La clé à saisir à la main est repliée dessous, groupée par quatre.
+- **Codes de secours:** deux colonnes sur `code-bg` à filet, rayon `r`; chaque code en Mono 500 1rem précédé de son rang (01 à 10) en Mono 0.75rem `ink-3`; une colonne sur mobile. Au-dessus, la bande `hl` « Rangez ces codes hors du téléphone ». Copier et Télécharger (.txt) en `btn-line sm`.
+- **État:** coche pleine `ok` et « Activée le 3 nov. 2026 »; le nombre de codes restants passe en `err` 600 à trois ou moins.
+- **Sessions ouvertes:** liste sous un filet d'encre; une ligne par session en grille icône 36px (`desk`, rayon 10px; `vol-tint`/`vol-deep` pour la session courante) / appareil en 600 avec la pilule « cette session » / Fermer. Dessous, en 0.8125rem `ink-3` tabulaire: mode de connexion, adresse, ouverture, dernière activité.
+- **Connexion en deux étapes:** même écran que la connexion; titre « Code de vérification », une phrase `ink-2`, le champ de code, Vérifier, et un lien souligné pour passer au code de secours.
+
+### Administration: comptes, annuaire, journal
+- **Pastilles de compte:** « 2 étapes » en `ok-tint`/`ok`, « SCIM » en `hover`/`ink-2`, 700 0.6875rem, à côté du mode de connexion. Un groupe du fournisseur porte la même pastille « SSO » ou « SCIM » à côté de son nom, sans bouton de retrait ni sélecteur d'ajout: il se lit ici et se gère là-bas.
+- **Annuaire:** cartes à filet et filet haut d'encre de 2px, comme les groupes, 760px au plus: titre avec icône dans un carré `desk`, état en 0.8125rem, une phrase qui dit quoi faire chez le fournisseur, l'adresse à copier, l'état du jeton (icône `ok`, préfixe Mono, dernier appel).
+- **Journal:** filtres dans un bandeau `desk` à filet, rayon `r-l`, contrôles papier de 40px; tableau `roster` à 0.875rem: date tabulaire sans retour à la ligne, personne avec avatar 24px (ou « Annuaire (SCIM) », « Andal » dans un rond `desk`), action en 600, cible soulignée `vol-deep` quand elle mène quelque part, adresse IP en Mono `ink-3`. Les actions sensibles (échecs, levées, retraits, révocations) passent en `err`. « Plus ancien » charge la page suivante; « Exporter en CSV » en `btn-line` dans l'en-tête.
+- **Onglets:** six onglets qui défilent horizontalement sur mobile plutôt que de passer à la ligne.
+
+### Enregistrement refusé
+Au-dessus du contenu, une bande `err-tint`/`err` (rayon `r`, icône octogone, 0.9375rem/1.5, `role="alert"`) tant que le serveur refuse d'enregistrer la page: elle dit quoi faire (⌘Z) et que rien n'est sauvegardé d'ici là. Seuls ceux qui peuvent écrire la voient; elle part dès que l'enregistrement repasse.
+
 ### Mouvement
 Une seule courbe, la courbe livre `cubic-bezier(.16, 1, .3, 1)`: rapide au départ, posée à l'arrivée. Durées: 0.15s pour les fonds et couleurs de survol, 0.18s pour les révélations (sommaire, bascule, interrupteur, panneau), 0.22s pour tirer un dos et révéler la construction, 0.26s pour le tiroir mobile. `prefers-reduced-motion: reduce` coupe toutes les animations et transitions.
 

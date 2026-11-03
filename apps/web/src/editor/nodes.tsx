@@ -23,6 +23,7 @@ import { useEffect, useRef, useState, type CSSProperties, type DependencyList } 
 import { useSpecOperation, useSpecOperations } from '../lib/api';
 import { useDoc, useNumber } from '../lib/doc-context';
 import { fileSize } from '../lib/format';
+import { t } from '../lib/i18n';
 import { renderMermaid } from '../lib/mermaid';
 import { usePaletteVersion } from '../lib/theme';
 import { DrawioEditor } from './DrawioEditor';
@@ -55,7 +56,7 @@ function useScrollCue(deps: DependencyList) {
 const scrollHint = (
   <span className="scroll-hint">
     <ArrowsLeftRightIcon size={16} aria-hidden />
-    Faire défiler
+    {t('Faire défiler')}
   </span>
 );
 
@@ -64,7 +65,7 @@ function Caption({ label, caption, editable, onChange, children }: { label: stri
     <figcaption contentEditable={false}>
       <span className="fignum">{label}</span>
       {editable ? (
-        <input className="cap-input" value={caption} placeholder="Légende" aria-label="Légende" onChange={(e) => onChange(e.target.value)} />
+        <input className="cap-input" value={caption} placeholder={t('Légende')} aria-label={t('Légende')} onChange={(e) => onChange(e.target.value)} />
       ) : (
         <span className="cap-text">{caption}</span>
       )}
@@ -103,26 +104,26 @@ export function MermaidView({ node, editor, getPos, updateAttributes }: NodeView
           <div
             className="mermaid-out"
             role="img"
-            aria-label={caption || 'Diagramme Mermaid'}
+            aria-label={caption || t('Diagramme Mermaid')}
             style={{ '--nat': `${result.width}px` } as CSSProperties}
             dangerouslySetInnerHTML={{ __html: result.svg }}
           />
         ) : result ? (
-          <p className="fig-error">Le diagramme ne se lit pas: {result.error}</p>
+          <p className="fig-error">{t('Le diagramme ne se lit pas: {error}', { error: result.error })}</p>
         ) : (
           <div className="mermaid-out" aria-busy="true" />
         )}
       </div>
-      <Caption label={`Figure ${number}`} caption={caption} editable={editing} onChange={(v) => updateAttributes({ caption: v })}>
+      <Caption label={t('Figure {n}', { n: number })} caption={caption} editable={editing} onChange={(v) => updateAttributes({ caption: v })}>
         {scrollHint}
         <button type="button" className="ghost" aria-expanded={showSource} onClick={() => setShowSource((s) => !s)}>
           <CodeIcon size={16} aria-hidden />
-          Source
+          {t('Source')}
         </button>
       </Caption>
       {showSource &&
         (editing ? (
-          <textarea className="src-edit" value={source} spellCheck={false} aria-label="Source Mermaid" onChange={(e) => updateAttributes({ source: e.target.value })} />
+          <textarea className="src-edit" value={source} spellCheck={false} aria-label={t('Source Mermaid')} onChange={(e) => updateAttributes({ source: e.target.value })} />
         ) : (
           <pre className="src">{source}</pre>
         ))}
@@ -158,26 +159,28 @@ export function OpenApiView({ node, editor, getPos, updateAttributes }: NodeView
               <code className="route">{op.path}</code>
               <span className="api-sum">{op.summary}</span>
               {live.data && (
-                <span className="api-ver" title={`Spec ${live.data.specName}, version publiée n° ${live.data.sequence}`}>
+                <span className="api-ver" title={t('Spec {name}, version publiée n° {sequence}', { name: live.data.specName, sequence: live.data.sequence })}>
                   {live.data.specName} v{live.data.label || live.data.sequence}
                 </span>
               )}
               {specId && !live.isError && (
                 <Link className="ghost" to="/specs/$specId" params={{ specId }} search={key ? { op: key } : {}}>
                   <BookOpenTextIcon size={16} aria-hidden />
-                  Ouvrir dans Redoc
+                  {t('Ouvrir dans Redoc')}
                 </Link>
               )}
             </div>
             {live.isError && (
               <p className="api-stale" role="note">
                 <WarningCircleIcon size={16} aria-hidden />
-                {specId ? 'Copie gardée dans la page: la spec n’est plus lisible ici, ou l’opération en a été retirée.' : `Copie de ${String(node.attrs.specFile)}, sans lien avec une spec publiée.`}
+                {specId
+                  ? t('Copie gardée dans la page: la spec n’est plus lisible ici, ou l’opération en a été retirée.')
+                  : t('Copie de {file}, sans lien avec une spec publiée.', { file: String(node.attrs.specFile) })}
               </p>
             )}
             {editing && operations.data && (
               <label className="api-swap">
-                Opération
+                {t('Opération')}
                 <select value={key ?? ''} onChange={(e) => updateAttributes({ operationKey: e.target.value })}>
                   {operations.data.map((o) => (
                     <option key={o.key} value={o.key}>
@@ -192,13 +195,13 @@ export function OpenApiView({ node, editor, getPos, updateAttributes }: NodeView
               <section>
                 {(op.parameters ?? []).length > 0 && (
                   <>
-                    <h3>Paramètres</h3>
+                    <h3>{t('Paramètres')}</h3>
                     <table className="params">
                       <thead>
                         <tr>
-                          <th scope="col">Nom</th>
-                          <th scope="col">Type</th>
-                          <th scope="col">Description</th>
+                          <th scope="col">{t('Nom')}</th>
+                          <th scope="col">{t('Type')}</th>
+                          <th scope="col">{t('Description')}</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -207,7 +210,7 @@ export function OpenApiView({ node, editor, getPos, updateAttributes }: NodeView
                             <td>
                               <code>{f.name}</code>
                               <span className="in">{f.in}</span>
-                              {f.required && <span className="req">requis</span>}
+                              {f.required && <span className="req">{t('requis')}</span>}
                             </td>
                             <td className="type">{f.type}</td>
                             <td>{f.description}</td>
@@ -220,14 +223,14 @@ export function OpenApiView({ node, editor, getPos, updateAttributes }: NodeView
                 {(op.requestBody ?? []).length > 0 ? (
                   <>
                     <h3>
-                      Corps de la requête {op.contentType && <span className="mime">{op.contentType}</span>}
+                      {t('Corps de la requête')} {op.contentType && <span className="mime">{op.contentType}</span>}
                     </h3>
                     <table className="params">
                       <thead>
                         <tr>
-                          <th scope="col">Champ</th>
-                          <th scope="col">Type</th>
-                          <th scope="col">Description</th>
+                          <th scope="col">{t('Champ')}</th>
+                          <th scope="col">{t('Type')}</th>
+                          <th scope="col">{t('Description')}</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -235,7 +238,7 @@ export function OpenApiView({ node, editor, getPos, updateAttributes }: NodeView
                           <tr key={f.name}>
                             <td>
                               <code>{f.name}</code>
-                              {f.required && <span className="req">requis</span>}
+                              {f.required && <span className="req">{t('requis')}</span>}
                             </td>
                             <td className="type">{f.type}</td>
                             <td>{f.description}</td>
@@ -245,11 +248,11 @@ export function OpenApiView({ node, editor, getPos, updateAttributes }: NodeView
                     </table>
                   </>
                 ) : (
-                  (op.parameters ?? []).length === 0 && <p className="api-none">Ni paramètre ni corps de requête.</p>
+                  (op.parameters ?? []).length === 0 && <p className="api-none">{t('Ni paramètre ni corps de requête.')}</p>
                 )}
               </section>
               <section>
-                <h3>Réponses</h3>
+                <h3>{t('Réponses')}</h3>
                 <ul className="resp">
                   {op.responses.map((r) => (
                     <li key={r.status} className={r.status < 400 ? 'ok' : 'err'}>
@@ -266,11 +269,15 @@ export function OpenApiView({ node, editor, getPos, updateAttributes }: NodeView
           </>
         ) : (
           <p className="fig-error" aria-busy={live.isLoading}>
-            {live.isLoading ? 'Chargement de l’opération…' : `Opération introuvable dans ${String(node.attrs.specFile || 'la spec')}.`}
+            {live.isLoading
+              ? t('Chargement de l’opération…')
+              : node.attrs.specFile
+                ? t('Opération introuvable dans {file}.', { file: String(node.attrs.specFile) })
+                : t('Opération introuvable dans la spec.')}
           </p>
         )}
       </div>
-      <Caption label={`Listing ${number}`} caption={caption} editable={editing} onChange={(v) => updateAttributes({ caption: v })} />
+      <Caption label={t('Listing {n}', { n: number })} caption={caption} editable={editing} onChange={(v) => updateAttributes({ caption: v })} />
     </NodeViewWrapper>
   );
 }
@@ -292,16 +299,16 @@ export function DrawioView({ node, editor, getPos, updateAttributes }: NodeViewP
         ) : (
           <div className="drawio-empty">
             <FlowArrowIcon size={28} aria-hidden />
-            Schéma vide
+            {t('Schéma vide')}
           </div>
         )}
       </div>
-      <Caption label={`Figure ${number}`} caption={caption} editable={editing} onChange={(v) => updateAttributes({ caption: v })}>
+      <Caption label={t('Figure {n}', { n: number })} caption={caption} editable={editing} onChange={(v) => updateAttributes({ caption: v })}>
         {scrollHint}
         {editing && (
           <button type="button" className="ghost" onClick={() => setOpen(true)}>
             <PencilSimpleIcon size={16} aria-hidden />
-            Modifier dans draw.io
+            {t('Modifier dans draw.io')}
           </button>
         )}
       </Caption>
@@ -325,29 +332,29 @@ export function ImageView({ node, editor, getPos, updateAttributes }: NodeViewPr
   const [broken, setBroken] = useState(false);
 
   return (
-    <NodeViewWrapper as="figure" className="fig" data-block="Image">
+    <NodeViewWrapper as="figure" className="fig" data-block={t('Image')}>
       <div className="frame image-frame" contentEditable={false}>
         {src && !broken ? (
           <img className="doc-img" src={src} alt={alt || caption} loading="lazy" onError={() => setBroken(true)} />
         ) : (
           <p className="fig-error">
             <ImageBrokenIcon size={18} aria-hidden />
-            Image indisponible: supprimée, ou sur une page que vous ne lisez pas.
+            {t('Image indisponible: supprimée, ou sur une page que vous ne lisez pas.')}
           </p>
         )}
       </div>
-      <Caption label={`Figure ${number}`} caption={caption} editable={editing} onChange={(v) => updateAttributes({ caption: v || null })}>
+      <Caption label={t('Figure {n}', { n: number })} caption={caption} editable={editing} onChange={(v) => updateAttributes({ caption: v || null })}>
         {src && !broken && (
           <a className="ghost" href={src} target="_blank" rel="noreferrer">
             <ArrowSquareOutIcon size={16} aria-hidden />
-            Taille réelle
+            {t('Taille réelle')}
           </a>
         )}
       </Caption>
       {editing && (
         <label className="alt-field" contentEditable={false}>
-          <span>Texte alternatif</span>
-          <input value={alt} placeholder="Ce que montre l'image, pour qui ne la voit pas" onChange={(e) => updateAttributes({ alt: e.target.value })} />
+          <span>{t('Texte alternatif')}</span>
+          <input value={alt} placeholder={t("Ce que montre l'image, pour qui ne la voit pas")} onChange={(e) => updateAttributes({ alt: e.target.value })} />
         </label>
       )}
     </NodeViewWrapper>
@@ -365,15 +372,15 @@ function fileIcon(contentType: string, name: string) {
 /** « PDF », « ZIP », « YAML »: le format, d'après l'extension du nom. */
 function fileKind(name: string): string {
   const ext = /\.([a-z0-9]{1,6})$/i.exec(name)?.[1];
-  return ext ? ext.toUpperCase() : 'Fichier';
+  return ext ? ext.toUpperCase() : t('Fichier');
 }
 
 export function AttachmentView({ node }: NodeViewProps) {
   const href = fileUrl(String(node.attrs.fileId ?? ''));
-  const name = String(node.attrs.name ?? 'fichier');
+  const name = String(node.attrs.name ?? t('fichier'));
   const contentType = String(node.attrs.contentType ?? '');
   return (
-    <NodeViewWrapper className="file-card" data-block="Fichier" contentEditable={false}>
+    <NodeViewWrapper className="file-card" data-block={t('Fichier')} contentEditable={false}>
       <span className="file-icon">{fileIcon(contentType, name)}</span>
       <span className="file-meta">
         <span className="file-name">{name}</span>
@@ -384,10 +391,10 @@ export function AttachmentView({ node }: NodeViewProps) {
       {href ? (
         <a className="btn-line sm" href={href} download={name}>
           <DownloadSimpleIcon size={16} aria-hidden />
-          Télécharger
+          {t('Télécharger')}
         </a>
       ) : (
-        <span className="file-info">Fichier indisponible</span>
+        <span className="file-info">{t('Fichier indisponible')}</span>
       )}
     </NodeViewWrapper>
   );
@@ -395,7 +402,7 @@ export function AttachmentView({ node }: NodeViewProps) {
 
 export function CalloutView({ node }: NodeViewProps) {
   return (
-    <NodeViewWrapper className="note-box" data-block="Encadré">
+    <NodeViewWrapper className="note-box" data-block={t('Encadré')}>
       <LightbulbIcon size={22} aria-hidden />
       <div>
         <span className="note-title" contentEditable={false}>
@@ -409,13 +416,13 @@ export function CalloutView({ node }: NodeViewProps) {
 
 export function CodeView({ node, editor, getPos }: NodeViewProps) {
   const number = useNumber(editor, getPos, 'listing');
-  const language = String(node.attrs.language ?? 'texte');
+  const language = String(node.attrs.language ?? t('texte'));
   return (
-    <NodeViewWrapper as="figure" className="fig" data-block="Code">
+    <NodeViewWrapper as="figure" className="fig" data-block={t('Code')}>
       <div className="code">
         <div className="code-head" contentEditable={false}>
           <span>{language}</span>
-          <button type="button" className="icon-btn sm" aria-label="Copier le code" onClick={() => void navigator.clipboard.writeText(node.textContent)}>
+          <button type="button" className="icon-btn sm" aria-label={t('Copier le code')} onClick={() => void navigator.clipboard.writeText(node.textContent)}>
             <CopyIcon size={16} aria-hidden />
           </button>
         </div>
@@ -424,8 +431,8 @@ export function CodeView({ node, editor, getPos }: NodeViewProps) {
         </pre>
       </div>
       <figcaption contentEditable={false}>
-        <span className="fignum">Listing {number}</span>
-        <span className="cap-text">{language === 'bash' ? 'Commande shell.' : `Code ${language}.`}</span>
+        <span className="fignum">{t('Listing {n}', { n: number })}</span>
+        <span className="cap-text">{language === 'bash' ? t('Commande shell.') : t('Code {language}.', { language })}</span>
       </figcaption>
     </NodeViewWrapper>
   );

@@ -4,21 +4,30 @@
  * Les droits s'appliquent au niveau du WebSocket: sans lecture, la connexion
  * est refusée; sans écriture, elle est ouverte en lecture seule et le serveur
  * ignore toute modification envoyée par ce client.
+ *
+ * Plusieurs instances peuvent tourner côte à côte: l'extension Redis de
+ * Hocuspocus synchronise les documents ouverts sur plusieurs instances (et un
+ * verrou n'en laisse qu'une enregistrer), les annonces de l'API arrivent à
+ * toutes, et chaque écriture demandée par l'API n'est prise que par une seule.
  */
 import { can } from '@andal/authz';
 import {
   ACCESS_CHANGED,
   COLLAB_CHANNEL,
+  COLLAB_QUEUE,
   collabReplyKey,
   createDb,
   loadSubject,
   NOTIFICATIONS_CHANGED,
   pageRoleFor,
   recordVersion,
+  SAVE_OK,
+  SAVE_REJECTED,
   TREE_CHANGED,
   readCookie,
   requireEnv,
   SESSION_COOKIE,
+  sessionHash,
   sessionKey,
   sessionStillValid,
   THREADS_CHANGED,
@@ -27,10 +36,12 @@ import {
   type SessionData,
 } from '@andal/db';
 import { andalSchema, sameDoc, validateDoc, type JSONContent } from '@andal/editor';
+import { Redis as RedisSync } from '@hocuspocus/extension-redis';
 import { Server } from '@hocuspocus/server';
 import { prosemirrorJSONToYDoc, prosemirrorJSONToYXmlFragment, yXmlFragmentToProsemirrorJSON } from '@tiptap/y-tiptap';
 import { Queue } from 'bullmq';
 import { Redis } from 'ioredis';
+import { hostname } from 'node:os';
 import * as Y from 'yjs';
 
 try {
@@ -51,12 +62,17 @@ interface Context {
   annotation?: boolean;
   /** Restauration d'une ancienne version: toujours une nouvelle version. */
   restore?: boolean;
+  /** Empreinte de la session du navigateur: fermer la session coupe ses connexions. */
+  session?: string;
 }
 
 const valkeyUrl = process.env.VALKEY_URL ?? 'redis://127.0.0.1:56379';
 const db = createDb(requireEnv('DATABASE_URL'));
 const valkey = new Redis(valkeyUrl);
 const queue = new Queue('andal', { connection: new Redis(valkeyUrl, { maxRetriesPerRequest: null }) });
+
+/** Page dont le dernier enregistrement a été refusé (dans Valkey: l'instance qui enregistre ensuite n'est pas forcément la même). */
+const rejectedKey = (pageId: string) => `andal:collab:rejected:${pageId}`;
 
 function pageIdOf(documentName: string): string {
   const id = PAGE_DOCUMENT.exec(documentName)?.[1];
@@ -72,6 +88,16 @@ const server = new Server({
   debounce: 2000,
   maxDebounce: 10000,
   quiet: true,
+  extensions: [
+    new RedisSync({
+      redis: valkey,
+      prefix: 'andal:collab:sync',
+      // Unique par processus: les messages d'une instance ne lui reviennent pas.
+      identifier: `${hostname()}:${process.pid}`,
+      // L'enregistrement (base, version, indexation) peut prendre plus d'une seconde.
+      lockTimeout: 10_000,
+    }),
+  ],
 
   async onAuthenticate({ documentName, requestHeaders, connectionConfig }) {
     const pageId = pageIdOf(documentName);
@@ -89,7 +115,7 @@ const server = new Server({
     if (!access?.role || !can(access.role, 'page.read')) throw new Error('Accès refusé');
     connectionConfig.readOnly = !can(access.role, 'page.edit');
 
-    return { userId, pageId } satisfies Context;
+    return { userId, pageId, session: sessionHash(sessionId) } satisfies Context;
   },
 
   async onLoadDocument({ documentName, document }) {
@@ -111,12 +137,16 @@ const server = new Server({
     const { userId, pageId, annotation, restore } = context as Context;
     const json = yXmlFragmentToProsemirrorJSON(document.getXmlFragment(FIELD)) as JSONContent;
 
-    // Le schéma est une liste blanche: un contenu non conforme n'est jamais enregistré.
+    // Le schéma est une liste blanche: un contenu non conforme n'est jamais
+    // enregistré, et les éditeurs ouverts en sont prévenus tout de suite.
     const invalid = validateDoc(json);
     if (invalid) {
       console.warn(`Contenu refusé pour ${pageId}: ${invalid}`);
+      await valkey.set(rejectedKey(pageId), '1', 'EX', 24 * 3600);
+      document.broadcastStateless(SAVE_REJECTED);
       return;
     }
+    if (await valkey.del(rejectedKey(pageId))) document.broadcastStateless(SAVE_OK);
 
     // Une ancre ne change pas le texte, et un état Yjs qui redit la même chose
     // (normalisation à l'ouverture, reconnexion) n'est pas une modification:
@@ -279,7 +309,8 @@ async function handle(command: CollabCommand): Promise<void> {
   if (command.op === 'kick') {
     for (const document of server.hocuspocus.documents.values()) {
       for (const connection of document.getConnections()) {
-        if ((connection.context as Context | undefined)?.userId === command.userId) connection.close();
+        const context = connection.context as Context | undefined;
+        if (context?.userId === command.userId && (!command.sessionHash || context.session === command.sessionHash)) connection.close();
       }
     }
     return;
@@ -309,6 +340,45 @@ subscriber.on('message', (_channel, raw) => {
   }
   handle(command).catch((error: unknown) => console.error(`Commande ${command.op} en échec:`, error));
 });
+
+/**
+ * Les écritures demandées par l'API (ancres, restaurations, remplacements)
+ * arrivent par une file: chaque commande n'est prise que par une instance.
+ * Une commande dont plus personne n'attend la réponse est abandonnée.
+ */
+const queueReader = valkey.duplicate();
+let stopping = false;
+async function consumeWrites(): Promise<void> {
+  while (!stopping) {
+    let raw: string | undefined;
+    try {
+      raw = (await queueReader.brpop(COLLAB_QUEUE, 5))?.[1];
+    } catch (error) {
+      if (stopping) return;
+      console.error('File des écritures collab indisponible:', error);
+      await new Promise((r) => setTimeout(r, 1000));
+      continue;
+    }
+    if (!raw) continue;
+    let command: CollabCommand;
+    try {
+      command = JSON.parse(raw) as CollabCommand;
+    } catch {
+      continue;
+    }
+    if ('deadline' in command && command.deadline && Date.now() > command.deadline) continue;
+    await handle(command).catch((error: unknown) => console.error(`Commande ${command.op} en échec:`, error));
+  }
+}
+void consumeWrites();
+
+for (const signal of ['SIGINT', 'SIGTERM'] as const) {
+  process.once(signal, () => {
+    stopping = true;
+    queueReader.disconnect();
+    void server.destroy().finally(() => process.exit(0));
+  });
+}
 
 await server.listen();
 console.log(`Collab Andal sur ws://127.0.0.1:${server.configuration.port}`);

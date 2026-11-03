@@ -44,7 +44,13 @@ import { EventsService } from './webhooks/events.service.js';
 import { WebhooksController } from './webhooks/webhooks.controller.js';
 import { WebhooksService } from './webhooks/webhooks.service.js';
 import { ProjectsService } from './projects/projects.service.js';
+import { MfaService } from './auth/mfa.service.js';
+import { ScimAdminController, ScimController } from './scim/scim.controller.js';
+import { ScimService } from './scim/scim.service.js';
+import { AuditController } from './security/audit.controller.js';
+import { AdminSecurityController, SecurityController } from './security/security.controller.js';
 import { VersionsService } from './pages/versions.service.js';
+import { RateLimitGuard } from './rate-limit.guard.js';
 
 @Module({
   imports: [InfraModule],
@@ -68,6 +74,11 @@ import { VersionsService } from './pages/versions.service.js';
     UnfurlController,
     GitController,
     AskController,
+    SecurityController,
+    AdminSecurityController,
+    AuditController,
+    ScimController,
+    ScimAdminController,
   ],
   providers: [
     AuditService,
@@ -95,7 +106,11 @@ import { VersionsService } from './pages/versions.service.js';
     SessionsService,
     LoginThrottleService,
     OidcService,
+    MfaService,
+    ScimService,
+    // Dans cet ordre: on sait qui appelle avant de compter.
     { provide: APP_GUARD, useClass: AuthGuard },
+    { provide: APP_GUARD, useClass: RateLimitGuard },
   ],
 })
 export class AppModule {}

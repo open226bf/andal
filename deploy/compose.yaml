@@ -19,6 +19,8 @@ x-server: &server
     OIDC_CLIENT_SECRET: ${OIDC_CLIENT_SECRET:-}
     OIDC_LABEL: ${OIDC_LABEL:-SSO}
     OIDC_AUTO_CREATE: ${OIDC_AUTO_CREATE:-false}
+    OIDC_GROUPS_CLAIM: ${OIDC_GROUPS_CLAIM:-}
+    OIDC_GROUPS_SCOPE: ${OIDC_GROUPS_SCOPE:-}
     SMTP_URL: ${SMTP_URL:-}
     MAIL_FROM: ${MAIL_FROM:-Andal <andal@localhost>}
     NOTIFY_EMAIL_DELAY: ${NOTIFY_EMAIL_DELAY:-300}
@@ -39,6 +41,11 @@ x-server: &server
     AI_MODEL: ${AI_MODEL:-}
     AI_BASE_URL: ${AI_BASE_URL:-}
     AI_API_KEY: ${AI_API_KEY:-}
+    RATE_LIMIT: ${RATE_LIMIT:-true}
+    RATE_LIMIT_READS: ${RATE_LIMIT_READS:-600}
+    RATE_LIMIT_WRITES: ${RATE_LIMIT_WRITES:-120}
+    RATE_LIMIT_ANONYMOUS: ${RATE_LIMIT_ANONYMOUS:-120}
+    TRUST_PROXY: ${TRUST_PROXY:-loopback,uniquelocal}
   depends_on:
     migrate: { condition: service_completed_successfully }
     valkey: { condition: service_healthy }

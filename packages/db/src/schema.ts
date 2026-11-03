@@ -36,6 +36,24 @@ export interface UsersTable {
   /** Recevoir aussi par email les notifications non lues. */
   notify_email: Generated<boolean>;
   created_at: Generated<Date>;
+  /** Double authentification (TOTP, RFC 6238): secret en base32, actif dès `totp_enabled_at`. */
+  totp_secret: string | null;
+  totp_enabled_at: Date | null;
+  /** Dernier pas de 30 s accepté: un code déjà servi ne repasse pas. */
+  totp_last_step: ColumnType<string | null, string | number | null, string | number | null>;
+  /** Identifiant chez le fournisseur d'identité qui provisionne le compte (SCIM). */
+  scim_external_id: string | null;
+  /** Retiré par SCIM: désactivé, et absent de l'annuaire SCIM. */
+  deprovisioned_at: Date | null;
+  /** Langue de l'interface et des emails. */
+  locale: Generated<'fr' | 'en'>;
+}
+
+/** Codes de secours de la double authentification: un usage chacun, seule l'empreinte est gardée. */
+export interface RecoveryCodesTable {
+  user_id: string;
+  code_hash: string;
+  used_at: Date | null;
 }
 
 export type AccountTokenKind = 'invite' | 'reset';
@@ -61,11 +79,17 @@ export interface AccountTokensTable {
   created_at: Generated<Date>;
 }
 
+/** Qui tient un groupe: l'administration d'Andal, le SSO (claim de groupes) ou SCIM. */
+export type GroupSource = 'local' | 'sso' | 'scim';
+
 export interface GroupsTable {
   id: Generated<string>;
   workspace_id: string;
   name: string;
   icon: Generated<string>;
+  source: Generated<GroupSource>;
+  /** Nom ou identifiant du groupe chez le fournisseur d'identité. */
+  external_id: string | null;
 }
 
 export interface GroupMembersTable {
@@ -350,6 +374,18 @@ export interface GitSyncAssetsTable {
 
 export type AiProvider = 'anthropic' | 'openai';
 
+/** Jeton du fournisseur d'identité pour l'API SCIM de l'espace. */
+export interface ScimTokensTable {
+  id: Generated<string>;
+  workspace_id: string;
+  token_hash: string;
+  prefix: string;
+  created_by: string | null;
+  created_at: Generated<Date>;
+  last_used_at: Date | null;
+  revoked_at: Date | null;
+}
+
 /** Assistant de questions-réponses de l'espace: fournisseur et modèle choisis par les admins. */
 export interface AiSettingsTable {
   workspace_id: string;
@@ -393,6 +429,8 @@ export interface Database {
   git_syncs: GitSyncsTable;
   git_sync_assets: GitSyncAssetsTable;
   ai_settings: AiSettingsTable;
+  recovery_codes: RecoveryCodesTable;
+  scim_tokens: ScimTokensTable;
 }
 
 export type User = Selectable<UsersTable>;

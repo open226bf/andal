@@ -10,12 +10,14 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "check:readonly": "tsx --env-file-if-exists=../../.env scripts/readonly-check.ts",
     "check:live-access": "tsx --env-file-if-exists=../../.env scripts/live-access-check.ts",
-    "check:deploy": "tsx scripts/deploy-smoke.ts"
+    "check:deploy": "tsx scripts/deploy-smoke.ts",
+    "check:multi": "tsx --env-file-if-exists=../../.env scripts/multi-instance-check.ts"
   },
   "dependencies": {
     "@andal/authz": "workspace:*",
     "@andal/db": "workspace:*",
     "@andal/editor": "workspace:*",
+    "@hocuspocus/extension-redis": "3.4.4",
     "@hocuspocus/server": "^3.2.0",
     "@tiptap/y-tiptap": "^3.0.0",
     "bullmq": "^5.56.0",
@@ -27,8 +29,8 @@
     "@hocuspocus/provider": "^3.2.0",
     "@types/node": "^22.15.0",
     "@types/ws": "^8.18.0",
-    "ws": "^8.18.0",
     "tsx": "^4.20.0",
-    "typescript": "~5.9.2"
+    "typescript": "~5.9.2",
+    "ws": "^8.18.0"
   }
 }

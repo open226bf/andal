@@ -4,6 +4,7 @@ import * as Dialog from '@radix-ui/react-dialog';
 import type { Editor } from '@tiptap/react';
 import { useEffect, useId, useState, type KeyboardEvent } from 'react';
 import { usePageLookup, type LinkedPage } from '../lib/api';
+import { t, tx } from '../lib/i18n';
 
 interface Option {
   key: string;
@@ -86,7 +87,7 @@ export function LinkDialog({ editor, open, onOpenChange, volume }: { editor: Edi
         <Dialog.Overlay className="overlay" />
         {/* Le focus revient à l'éditeur, pas au bouton qui a ouvert la boîte. */}
         <Dialog.Content className="pop search-dialog link-dialog" aria-describedby={undefined} onCloseAutoFocus={(e) => e.preventDefault()}>
-          <Dialog.Title className="sr-only">Lien</Dialog.Title>
+          <Dialog.Title className="sr-only">{t('Lien')}</Dialog.Title>
           <input
             className="search-input"
             autoFocus
@@ -94,8 +95,8 @@ export function LinkDialog({ editor, open, onOpenChange, volume }: { editor: Edi
             aria-expanded
             aria-controls={listId}
             aria-activedescendant={options.length ? `${listId}-${active}` : undefined}
-            aria-label="Page ou adresse du lien"
-            placeholder="Chercher une page, ou coller une adresse…"
+            aria-label={t('Page ou adresse du lien')}
+            placeholder={t('Chercher une page, ou coller une adresse…')}
             value={query}
             onChange={(e) => {
               setQuery(e.target.value);
@@ -103,7 +104,7 @@ export function LinkDialog({ editor, open, onOpenChange, volume }: { editor: Edi
             }}
             onKeyDown={onKeyDown}
           />
-          <ul className="search-results" role="listbox" id={listId} aria-label="Destinations" aria-busy={pages.isFetching}>
+          <ul className="search-results" role="listbox" id={listId} aria-label={t('Destinations')} aria-busy={pages.isFetching}>
             {options.map((option, i) => (
               <li key={option.key} id={`${listId}-${i}`} role="option" aria-selected={i === active} onMouseMove={() => setActive(i)} onClick={() => apply(option)}>
                 {option.page ? (
@@ -116,16 +117,14 @@ export function LinkDialog({ editor, open, onOpenChange, volume }: { editor: Edi
                 ) : (
                   <span className="link-option">
                     <GlobeIcon size={18} aria-hidden />
-                    <span>
-                      Lien vers <b>{option.label}</b>
-                    </span>
+                    <span>{tx('Lien vers {target}', { target: <b>{option.label}</b> })}</span>
                   </span>
                 )}
               </li>
             ))}
             {options.length === 0 && (
               <li className="search-empty" role="presentation">
-                {query.trim() ? (pages.isFetching ? 'Recherche…' : 'Aucune page lisible ne porte ce titre. Collez une adresse pour un lien externe.') : 'Tapez quelques lettres du titre, un numéro (3.2) ou une adresse web.'}
+                {query.trim() ? (pages.isFetching ? t('Recherche…') : t('Aucune page lisible ne porte ce titre. Collez une adresse pour un lien externe.')) : t('Tapez quelques lettres du titre, un numéro (3.2) ou une adresse web.')}
               </li>
             )}
           </ul>
@@ -133,7 +132,7 @@ export function LinkDialog({ editor, open, onOpenChange, volume }: { editor: Edi
             <div className="link-foot">
               <button type="button" className="btn-line sm" onClick={unlink}>
                 <LinkBreakIcon size={16} aria-hidden />
-                Retirer le lien
+                {t('Retirer le lien')}
               </button>
             </div>
           )}

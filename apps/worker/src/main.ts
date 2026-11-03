@@ -22,7 +22,10 @@ import {
   requireEnv,
   Storage,
   storageConfigFromEnv,
+  tr,
+  trn,
   webhookRequest,
+  type Locale,
   type NotificationKind,
   type WebhookEventJob,
   type WebhookPayload,
@@ -237,10 +240,10 @@ async function sweepStorage() {
 
 const DIGEST_SIZE = 20;
 
-function sentence(kind: NotificationKind, actor: string, page: string): string {
-  if (kind === 'mention') return `${actor} vous a cité sur « ${page} ».`;
-  if (kind === 'resolved') return `${actor} a résolu votre fil sur « ${page} ».`;
-  return `${actor} a répondu dans un fil que vous suivez, sur « ${page} ».`;
+function sentence(locale: Locale, kind: NotificationKind, actor: string, page: string): string {
+  if (kind === 'mention') return tr(locale, '{actor} vous a cité sur « {page} ».', { actor, page });
+  if (kind === 'resolved') return tr(locale, '{actor} a résolu votre fil sur « {page} ».', { actor, page });
+  return tr(locale, '{actor} a répondu dans un fil que vous suivez, sur « {page} ».', { actor, page });
 }
 
 function excerpt(body: string | null): string | null {
@@ -279,21 +282,26 @@ async function emailNotifications({ userId }: EmailJob) {
   const items = rows.filter((r) => readable.get(r.page_id));
   if (items.length === 0) return;
 
+  // Dans la langue de la personne notifiée.
+  const locale = loaded.user.locale;
   const link = (r: (typeof items)[number]) => `${webOrigin}/v/${r.slug}/${r.page_id}?fil=${r.thread_id}`;
-  const about = (r: (typeof items)[number]) => sentence(r.kind, r.actor ?? 'Quelqu’un', `${r.title} (${r.short_name})`);
+  const about = (r: (typeof items)[number]) => sentence(locale, r.kind, r.actor ?? tr(locale, 'Quelqu’un'), `${r.title} (${r.short_name})`);
   const first = items[0]!;
   const single = items.length === 1;
-  const subject = single ? about(first).replace(/\.$/, '') : `${items.length} nouveautés vous attendent sur Andal`;
+  const subject = single ? about(first).replace(/\.$/, '') : trn(locale, items.length, '{n} nouveauté vous attend sur Andal', '{n} nouveautés vous attendent sur Andal');
   const { text, html } = renderMail({
     to: loaded.user.email,
+    locale,
     subject,
     lines: [
-      `Bonjour ${loaded.user.name},`,
-      ...(single ? [about(first)] : ['Voici ce qui vous attend sur Andal :', ...items.map((r) => `• ${about(r)}${r.body ? ` « ${excerpt(r.body)} »` : ''}`)]),
+      tr(locale, 'Bonjour {name},', { name: loaded.user.name }),
+      ...(single
+        ? [about(first)]
+        : [tr(locale, 'Voici ce qui vous attend sur Andal :'), ...items.map((r) => (r.body ? tr(locale, '• {sentence} « {excerpt} »', { sentence: about(r), excerpt: excerpt(r.body) }) : `• ${about(r)}`))]),
     ],
     quotes: single && first.body ? [excerpt(first.body)!] : [],
-    action: { label: single ? 'Ouvrir le fil' : 'Ouvrir le premier fil', url: link(first) },
-    footer: 'Vous recevez cet email parce que ces notifications n’ont pas été lues dans Andal. Pour ne plus les recevoir par email, décochez « Aussi par email » dans vos notifications.',
+    action: { label: single ? tr(locale, 'Ouvrir le fil') : tr(locale, 'Ouvrir le premier fil'), url: link(first) },
+    footer: tr(locale, 'Vous recevez cet email parce que ces notifications n’ont pas été lues dans Andal. Pour ne plus les recevoir par email, décochez « Aussi par email » dans vos notifications.'),
   });
   await mailer.sendMail({ from: mailFrom, to: loaded.user.email, subject, text, html });
   await db.updateTable('notifications').set({ emailed_at: new Date() }).where('id', 'in', items.map((r) => r.id)).execute();

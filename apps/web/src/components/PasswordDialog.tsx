@@ -2,6 +2,7 @@ import { CheckCircleIcon, WarningCircleIcon, XIcon } from '@phosphor-icons/react
 import * as Dialog from '@radix-ui/react-dialog';
 import { useState, type FormEvent } from 'react';
 import { api, ApiError } from '../lib/api';
+import { t } from '../lib/i18n';
 import { PasswordField } from './PasswordField';
 
 /** Même seuil que l'API (packages/db/src/password.ts): le serveur reste juge. */
@@ -31,15 +32,15 @@ function PasswordForm({ onDone }: { onDone: () => void }) {
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
-    if (next.length < MIN_LENGTH) return setError(`Le nouveau mot de passe doit faire au moins ${MIN_LENGTH} caractères.`);
-    if (next !== confirm) return setError('Les deux saisies du nouveau mot de passe diffèrent.');
+    if (next.length < MIN_LENGTH) return setError(t('Le nouveau mot de passe doit faire au moins {n} caractères.', { n: MIN_LENGTH }));
+    if (next !== confirm) return setError(t('Les deux saisies du nouveau mot de passe diffèrent.'));
     setPending(true);
     setError(null);
     try {
       await api('/auth/password', { method: 'POST', body: JSON.stringify({ current, next }) });
       setDone(true);
     } catch (err) {
-      setError(err instanceof ApiError && err.status < 500 ? err.message : 'Le changement a échoué. Réessayez dans un instant.');
+      setError(err instanceof ApiError && err.status < 500 ? err.message : t('Le changement a échoué. Réessayez dans un instant.'));
     } finally {
       setPending(false);
     }
@@ -49,9 +50,9 @@ function PasswordForm({ onDone }: { onDone: () => void }) {
     <>
       <div className="pop-head">
         <Dialog.Title asChild>
-          <h2>Changer le mot de passe</h2>
+          <h2>{t('Changer le mot de passe')}</h2>
         </Dialog.Title>
-        <Dialog.Close className="icon-btn sm" aria-label="Fermer">
+        <Dialog.Close className="icon-btn sm" aria-label={t('Fermer')}>
           <XIcon size={18} aria-hidden />
         </Dialog.Close>
       </div>
@@ -59,10 +60,10 @@ function PasswordForm({ onDone }: { onDone: () => void }) {
         <div className="dialog-body">
           <p className="form-ok" role="status">
             <CheckCircleIcon size={18} aria-hidden />
-            Mot de passe changé. Vos autres sessions sont fermées.
+            {t('Mot de passe changé. Vos autres sessions sont fermées.')}
           </p>
           <button type="button" className="btn-ink" onClick={onDone} autoFocus>
-            Fermer
+            {t('Fermer')}
           </button>
         </div>
       ) : (
@@ -73,18 +74,18 @@ function PasswordForm({ onDone }: { onDone: () => void }) {
               {error}
             </p>
           )}
-          <PasswordField label="Mot de passe actuel" autoComplete="current-password" required autoFocus value={current} onChange={(e) => setCurrent(e.target.value)} />
+          <PasswordField label={t('Mot de passe actuel')} autoComplete="current-password" required autoFocus value={current} onChange={(e) => setCurrent(e.target.value)} />
           <PasswordField
-            label="Nouveau mot de passe"
-            hint={`Au moins ${MIN_LENGTH} caractères. Une phrase de passe fait très bien l'affaire.`}
+            label={t('Nouveau mot de passe')}
+            hint={t("Au moins {n} caractères. Une phrase de passe fait très bien l'affaire.", { n: MIN_LENGTH })}
             autoComplete="new-password"
             required
             value={next}
             onChange={(e) => setNext(e.target.value)}
           />
-          <PasswordField label="Confirmez le nouveau mot de passe" autoComplete="new-password" required value={confirm} onChange={(e) => setConfirm(e.target.value)} />
+          <PasswordField label={t('Confirmez le nouveau mot de passe')} autoComplete="new-password" required value={confirm} onChange={(e) => setConfirm(e.target.value)} />
           <button type="submit" className="btn-ink" disabled={pending}>
-            {pending ? 'Enregistrement…' : 'Changer le mot de passe'}
+            {pending ? t('Enregistrement…') : t('Changer le mot de passe')}
           </button>
         </form>
       )}

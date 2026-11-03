@@ -16,6 +16,12 @@ export interface SessionData {
   method: 'password' | 'oidc' | 'token';
   /** Jeton d'identité OIDC, gardé pour la déconnexion côté fournisseur. */
   idToken?: string;
+  /** Pour la liste des sessions ouvertes: d'où, avec quoi, vue quand. */
+  ip?: string;
+  userAgent?: string;
+  lastSeenAt?: string;
+  /** Mot de passe puis code à usage unique (ou code de secours). */
+  mfa?: boolean;
 }
 
 /**
@@ -50,8 +56,25 @@ export function newSessionId(): string {
   return randomBytes(32).toString('base64url');
 }
 
+export function sessionHash(sessionId: string): string {
+  return createHash('sha256').update(sessionId).digest('hex');
+}
+
 export function sessionKey(sessionId: string): string {
-  return `sess:${createHash('sha256').update(sessionId).digest('hex')}`;
+  return `sess:${sessionHash(sessionId)}`;
+}
+
+/** Les sessions d'un compte (empreintes), pour les lister et les fermer une à une. */
+export function userSessionsKey(userId: string): string {
+  return `andal:user-sessions:${userId}`;
+}
+
+/** Jeton SCIM de l'espace, distinct des jetons d'API personnels. */
+export const SCIM_TOKEN_PREFIX = 'andal_scim_';
+
+export function newScimToken(): { token: string; hash: string; prefix: string } {
+  const token = SCIM_TOKEN_PREFIX + randomBytes(32).toString('base64url');
+  return { token, hash: linkTokenHash(token), prefix: token.slice(0, SCIM_TOKEN_PREFIX.length + 6) };
 }
 
 /** Lit un cookie dans un en-tête `Cookie` brut (pour le WebSocket du serveur collab). */

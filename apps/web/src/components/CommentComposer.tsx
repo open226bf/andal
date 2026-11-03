@@ -3,6 +3,7 @@ import type { Editor } from '@tiptap/react';
 import { useEffect, useRef, useState, type CSSProperties, type FormEvent, type KeyboardEvent, type RefObject } from 'react';
 import { commentableSelection, relativeAnchor, type CommentTarget } from '../editor/anchors';
 import { api, errorMessage, type Posted } from '../lib/api';
+import { t } from '../lib/i18n';
 import { FormError, FormOk } from './AuthCard';
 import { MentionTextarea, unreachableNotice } from './Mentions';
 
@@ -77,11 +78,11 @@ export function CommentComposer({ editor, pageId, container, onCreated }: { edit
     try {
       const posted = await api<Posted>(`/pages/${pageId}/threads`, { method: 'POST', body: JSON.stringify({ body, anchor: draft.anchor }) });
       const warning = unreachableNotice(posted.unreachable);
-      if (warning) setNotice({ text: `Commentaire publié. ${warning}`, top: draft.top });
+      if (warning) setNotice({ text: t('Commentaire publié. {warning}', { warning }), top: draft.top });
       setDraft(null);
       onCreated();
     } catch (err) {
-      setError(errorMessage(err, 'Le commentaire n’a pas pu être enregistré. Réessayez.'));
+      setError(errorMessage(err, t('Le commentaire n’a pas pu être enregistré. Réessayez.')));
     } finally {
       setPending(false);
     }
@@ -93,7 +94,7 @@ export function CommentComposer({ editor, pageId, container, onCreated }: { edit
         <FormOk>{notice.text}</FormOk>
         <div className="note-form-actions">
           <button type="button" className="btn-line sm" autoFocus onClick={() => setNotice(null)}>
-            Compris
+            {t('Compris')}
           </button>
         </div>
       </div>
@@ -107,17 +108,17 @@ export function CommentComposer({ editor, pageId, container, onCreated }: { edit
 
   if (draft) {
     return (
-      <form className="composer" style={{ '--top': `${draft.top}px`, '--below': `${draft.below}px` } as CSSProperties} onSubmit={(e) => void submit(e)} aria-label="Nouveau commentaire">
+      <form className="composer" style={{ '--top': `${draft.top}px`, '--below': `${draft.below}px` } as CSSProperties} onSubmit={(e) => void submit(e)} aria-label={t('Nouveau commentaire')}>
         <blockquote>{draft.target.text}</blockquote>
         {error && <FormError>{error}</FormError>}
-        <MentionTextarea pageId={pageId} aria-label="Votre commentaire" autoFocus required maxLength={4000} value={body} onValueChange={setBody} onKeyDown={onKeyDown} placeholder="Votre commentaire, @ pour citer" />
+        <MentionTextarea pageId={pageId} aria-label={t('Votre commentaire')} autoFocus required maxLength={4000} value={body} onValueChange={setBody} onKeyDown={onKeyDown} placeholder={t('Votre commentaire, @ pour citer')} />
         <div className="note-form-actions">
-          <span className="form-hint">⌘ Entrée pour envoyer</span>
+          <span className="form-hint">{t('⌘ Entrée pour envoyer')}</span>
           <button type="button" className="btn-line sm" onClick={cancel}>
-            Annuler
+            {t('Annuler')}
           </button>
           <button type="submit" className="btn-ink sm" disabled={pending || !body.trim()}>
-            {pending ? 'Envoi…' : 'Commenter'}
+            {pending ? t('Envoi…') : t('Commenter')}
           </button>
         </div>
       </form>
@@ -140,7 +141,7 @@ export function CommentComposer({ editor, pageId, container, onCreated }: { edit
       onClick={start}
     >
       <ChatCircleTextIcon size={16} aria-hidden />
-      Commenter
+      {t('Commenter')}
     </button>
   );
 }

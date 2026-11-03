@@ -7,6 +7,7 @@ import { SearchDialog } from '../components/SearchDialog';
 import { Shelf } from '../components/Shelf';
 import { Sommaire } from '../components/Sommaire';
 import { api, canEdit, errorMessage, useMe, useProjects, useTree } from '../lib/api';
+import { t } from '../lib/i18n';
 
 /** Un volume sans page lisible: tout est à la corbeille, ou rien n'y est encore écrit. */
 export function EmptyVolumePage({ slug }: { slug: string }) {
@@ -40,7 +41,7 @@ export function EmptyVolumePage({ slug }: { slug: string }) {
     setPending(true);
     setError(null);
     try {
-      const { id } = await api<{ id: string }>(`/projects/${project.id}/pages`, { method: 'POST', body: JSON.stringify({ title: 'Présentation' }) });
+      const { id } = await api<{ id: string }>(`/projects/${project.id}/pages`, { method: 'POST', body: JSON.stringify({ title: t('Présentation') }) });
       await queryClient.invalidateQueries({ queryKey: ['tree', slug] });
       await navigate({ to: '/v/$slug/$pageId', params: { slug, pageId: id }, search: { edition: true } });
     } catch (err) {
@@ -58,7 +59,7 @@ export function EmptyVolumePage({ slug }: { slug: string }) {
       </div>
       <main className="main">
         <div className="topbar">
-          <button type="button" className="icon-btn" aria-label="Ouvrir le sommaire" aria-expanded={navOpen} aria-controls="nav" onClick={() => setNavOpen(true)}>
+          <button type="button" className="icon-btn" aria-label={t('Ouvrir le sommaire')} aria-expanded={navOpen} aria-controls="nav" onClick={() => setNavOpen(true)}>
             <ListIcon size={20} aria-hidden />
           </button>
           <span className="topbar-vol">
@@ -73,13 +74,13 @@ export function EmptyVolumePage({ slug }: { slug: string }) {
               <h1 className="doc-title">{project.name}</h1>
               <p className="dialog-text">
                 {canEdit(project.role)
-                  ? 'Ce volume n’a pas encore de page, ou elles sont toutes à la corbeille (en bas du sommaire).'
-                  : 'Ce volume n’a pas encore de page que vous puissiez lire.'}
+                  ? t('Ce volume n’a pas encore de page, ou elles sont toutes à la corbeille (en bas du sommaire).')
+                  : t('Ce volume n’a pas encore de page que vous puissiez lire.')}
               </p>
               {error && <FormError>{error}</FormError>}
               {canEdit(project.role) && (
                 <button type="button" className="btn-ink" disabled={pending} onClick={() => void create()}>
-                  Écrire la première page
+                  {t('Écrire la première page')}
                 </button>
               )}
             </div>

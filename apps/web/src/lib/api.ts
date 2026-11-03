@@ -2,6 +2,7 @@ import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import type { ApiOperation, JSONContent } from '@andal/editor';
 import type { WorkspaceRole } from '@andal/authz';
 import type { Role } from '@andal/ui';
+import { locale, t } from './i18n';
 
 export class ApiError extends Error {
   constructor(public readonly status: number, message: string) {
@@ -14,10 +15,11 @@ export async function api<T>(path: string, init?: RequestInit): Promise<T> {
     credentials: 'same-origin',
     ...init,
     // Un FormData (envoi de fichier) fixe lui-même son type et sa frontière multipart.
-    headers: { accept: 'application/json', ...(typeof init?.body === 'string' ? { 'content-type': 'application/json' } : {}), ...init?.headers },
+    // Les messages d'erreur de l'API arrivent dans la langue de l'interface.
+    headers: { accept: 'application/json', 'accept-language': locale, ...(typeof init?.body === 'string' ? { 'content-type': 'application/json' } : {}), ...init?.headers },
   });
   if (!response.ok) {
-    // Les erreurs de l'API portent un message en français, affichable tel quel.
+    // Le message d'erreur de l'API est rédigé pour être affiché tel quel.
     let message = `${response.status} ${response.statusText}`;
     try {
       const body = (await response.json()) as { message?: unknown };
@@ -149,7 +151,7 @@ export type Unfurl =
 export type Cloth = 'paiements' | 'identite' | 'donnees' | 'mobile' | 'plateforme' | 'design';
 
 export interface Me {
-  user: { id: string; name: string; initials: string; color: string; email: string; username: string | null; workspaceRole: string; hasPassword: boolean };
+  user: { id: string; name: string; initials: string; color: string; email: string; username: string | null; workspaceRole: string; hasPassword: boolean; mfa: boolean; locale: 'fr' | 'en' };
   auth: { method: 'password' | 'oidc' };
 }
 
@@ -362,6 +364,8 @@ export interface AdminUser {
   lastLoginAt: string | null;
   hasPassword: boolean;
   sso: boolean;
+  mfa: boolean;
+  scim: boolean;
   you: boolean;
   manageable: boolean;
 }
@@ -453,6 +457,8 @@ export interface TrashEntry {
 export interface GroupView {
   id: string;
   name: string;
+  /** Qui tient le groupe: l'administration, le SSO ou l'annuaire SCIM. */
+  source: 'local' | 'sso' | 'scim';
   members: { id: string; name: string; initials: string; color: string; email: string; disabled: boolean }[];
   volumes: { id: string; shortName: string; cloth: Cloth; volumeNumber: number; role: Role }[];
   restrictedPages: number;
@@ -538,6 +544,55 @@ export const useSpecOperation = (id: string | null, key: string | null) =>
     retry: false,
     staleTime: 60_000,
   });
+/* ---------- Sécurité du compte, journal, annuaire ---------- */
+
+export interface MfaStatus {
+  enabled: boolean;
+  enabledAt: string | null;
+  recoveryCodesLeft: number;
+  /** Faux pour un compte SSO: la double authentification se règle chez le fournisseur. */
+  available: boolean;
+}
+
+export interface OpenSession {
+  id: string;
+  current: boolean;
+  method: 'password' | 'oidc' | 'token';
+  mfa: boolean;
+  createdAt: string;
+  lastSeenAt: string;
+  ip: string | null;
+  device: string;
+}
+
+export interface AuditEvent {
+  id: string;
+  at: string;
+  action: string;
+  actor: { id: string; name: string; initials: string; color: string } | null;
+  target: { type: string; id: string | null; label: string | null; href: string | null };
+  ip: string | null;
+  metadata: Record<string, unknown>;
+}
+
+export interface AuditPage {
+  events: AuditEvent[];
+  next: string | null;
+  people: { id: string; name: string }[];
+  actions: string[] | null;
+}
+
+export interface ScimState {
+  baseUrl: string;
+  token: { prefix: string; createdAt: string; createdBy: string | null; lastUsedAt: string | null } | null;
+  provisioned: { users: number; groups: number };
+  sso: { groupsClaim: string | null } | null;
+}
+
+export const useMfa = () => useQuery({ queryKey: ['me', 'mfa'], queryFn: () => api<MfaStatus>('/me/mfa') });
+export const useSessions = () => useQuery({ queryKey: ['me', 'sessions'], queryFn: () => api<OpenSession[]>('/me/sessions') });
+export const useScim = () => useQuery({ queryKey: ['admin', 'scim'], queryFn: () => api<ScimState>('/admin/scim') });
+
 export const useTokens = () => useQuery({ queryKey: ['me', 'tokens'], queryFn: () => api<ApiToken[]>('/me/tokens') });
 export const useWebhooks = () => useQuery({ queryKey: ['admin', 'webhooks'], queryFn: () => api<{ events: string[]; webhooks: Webhook[] }>('/admin/webhooks') });
 export const useWebhookDeliveries = (id: string | null) =>
@@ -562,6 +617,6 @@ export function canComment(role: Role): boolean {
 }
 
 /** Message d'erreur lisible pour une action qui a échoué. */
-export function errorMessage(error: unknown, fallback = 'L’action a échoué. Réessayez dans un instant.'): string {
+export function errorMessage(error: unknown, fallback = t('L’action a échoué. Réessayez dans un instant.')): string {
   return error instanceof ApiError && error.status < 500 ? error.message : fallback;
 }

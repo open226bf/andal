@@ -1,6 +1,7 @@
 import { Avatar } from '@andal/ui';
 import { UsersThreeIcon } from '@phosphor-icons/react';
 import { useId, useState, type KeyboardEvent } from 'react';
+import { t, tn } from '../lib/i18n';
 
 export interface PickerEntry {
   type: 'user' | 'group';
@@ -8,6 +9,8 @@ export interface PickerEntry {
   name: string;
   /** Identifiant, email, ou « 3 personne(s) ». */
   detail: string;
+  /** Pour un groupe: le nombre de membres, affiché dans la langue de l'interface. */
+  members?: number | null;
   initials: string | null;
   color: string | null;
 }
@@ -79,7 +82,7 @@ export function Picker({ entries, onPick, placeholder, label, autoFocus }: { ent
       />
       {shown && (
         <ul className="picker-list" id={listId} role="listbox" aria-label={label}>
-          {matches.length === 0 && <li className="picker-empty">Personne ne correspond.</li>}
+          {matches.length === 0 && <li className="picker-empty">{t('Personne ne correspond.')}</li>}
           {matches.map((entry, i) => (
             <li
               key={`${entry.type}:${entry.id}`}
@@ -96,7 +99,7 @@ export function Picker({ entries, onPick, placeholder, label, autoFocus }: { ent
               <EntryMark entry={entry} />
               <span>
                 <b>{entry.name}</b>
-                <small>{entry.detail}</small>
+                <small>{entry.type === 'group' && typeof entry.members === 'number' ? tn(entry.members, '{n} personne', '{n} personnes') : entry.detail}</small>
               </span>
             </li>
           ))}

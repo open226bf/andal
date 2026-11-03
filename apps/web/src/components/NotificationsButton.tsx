@@ -3,15 +3,17 @@ import { BellIcon, ChecksIcon } from '@phosphor-icons/react';
 import * as Popover from '@radix-ui/react-popover';
 import { useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { api, errorMessage, useNotifications, type NotificationItem } from '../lib/api';
 import { relative } from '../lib/format';
+import { t, tn, tx } from '../lib/i18n';
 import { FormError } from './AuthCard';
 
-const VERB: Record<NotificationItem['kind'], string> = {
-  mention: 'vous a cité',
-  reply: 'a répondu dans un fil que vous suivez',
-  resolved: 'a résolu votre fil',
+/** La phrase entière, l'auteur en placeholder: l'ordre des mots change selon la langue. */
+const VERB: Record<NotificationItem['kind'], (actor: ReactNode) => ReactNode> = {
+  mention: (actor) => tx('{actor} vous a cité', { actor }),
+  reply: (actor) => tx('{actor} a répondu dans un fil que vous suivez', { actor }),
+  resolved: (actor) => tx('{actor} a résolu votre fil', { actor }),
 };
 
 /**
@@ -46,7 +48,7 @@ export function NotificationsButton() {
   return (
     <Popover.Root open={open} onOpenChange={setOpen}>
       <Popover.Trigger asChild>
-        <button type="button" className="bell" aria-label={unread ? `Notifications, ${unread} non lue${unread > 1 ? 's' : ''}` : 'Notifications'}>
+        <button type="button" className="bell" aria-label={unread ? tn(unread, 'Notifications, {n} non lue', 'Notifications, {n} non lues') : t('Notifications')}>
           <BellIcon size={22} aria-hidden />
           {unread > 0 && (
             <span className="bell-count" aria-hidden>
@@ -58,11 +60,11 @@ export function NotificationsButton() {
       <Popover.Portal>
         <Popover.Content className="pop inbox" side="right" align="end" sideOffset={10} collisionPadding={16}>
           <div className="pop-head">
-            <h2>Notifications</h2>
+            <h2>{t('Notifications')}</h2>
             {unread > 0 && (
               <button type="button" className="ghost" onClick={() => void markRead()}>
                 <ChecksIcon size={16} aria-hidden />
-                Tout marquer comme lu
+                {t('Tout marquer comme lu')}
               </button>
             )}
           </div>
@@ -72,7 +74,7 @@ export function NotificationsButton() {
             </div>
           )}
           {data && data.items.length === 0 ? (
-            <p className="inbox-empty">Rien de neuf. Quand quelqu’un vous cite (@identifiant) ou répond dans un de vos fils, c’est ici.</p>
+            <p className="inbox-empty">{t('Rien de neuf. Quand quelqu’un vous cite (@identifiant) ou répond dans un de vos fils, c’est ici.')}</p>
           ) : (
             <ul className="inbox-list" aria-busy={!data}>
               {data?.items.map((item) => (
@@ -80,9 +82,7 @@ export function NotificationsButton() {
                   <button type="button" className="inbox-item" data-unread={item.read ? undefined : 'true'} data-vol={item.page.cloth} onClick={() => openItem(item)}>
                     {item.actor ? <Avatar initials={item.actor.initials} color={item.actor.color} size={30} /> : <span className="av-blank" aria-hidden />}
                     <span className="inbox-text">
-                      <span>
-                        <b>{item.actor?.name ?? 'Quelqu’un'}</b> {VERB[item.kind]}
-                      </span>
+                      <span>{VERB[item.kind](<b>{item.actor?.name ?? t('Quelqu’un')}</b>)}</span>
                       <span className="inbox-where">
                         <span className="vol-swatch" aria-hidden />
                         {item.page.title} · {item.page.shortName}
@@ -90,7 +90,7 @@ export function NotificationsButton() {
                       {item.excerpt && <q>{item.excerpt}</q>}
                     </span>
                     <time dateTime={item.createdAt}>{relative(item.createdAt)}</time>
-                    {!item.read && <span className="sr-only">non lue</span>}
+                    {!item.read && <span className="sr-only">{t('non lue')}</span>}
                   </button>
                 </li>
               ))}
@@ -112,8 +112,8 @@ export function NotificationsButton() {
                 }}
               />
               <span>
-                Aussi par email
-                <small>Seulement ce que vous n’avez pas lu ici dans les minutes qui suivent, regroupé en un message.</small>
+                {t('Aussi par email')}
+                <small>{t('Seulement ce que vous n’avez pas lu ici dans les minutes qui suivent, regroupé en un message.')}</small>
               </span>
             </label>
           )}

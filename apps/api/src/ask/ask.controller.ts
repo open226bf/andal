@@ -1,4 +1,5 @@
-import { Body, Controller, Get, HttpCode, Post, Put, Req, Res } from '@nestjs/common';
+import { Body, Controller, Get, Headers, HttpCode, Post, Put, Req, Res } from '@nestjs/common';
+import { localeFromHeader, tr, translateMessage } from '@andal/db';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { type AuthContext, CurrentAuth, SessionOnly } from '../auth/auth.guard.js';
 import { AskService } from './ask.service.js';
@@ -30,15 +31,17 @@ export class AskController {
       'x-accel-buffering': 'no',
     });
     const send = (event: string, data: unknown) => reply.raw.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
+    // Le flux ne passe pas par le filtre des erreurs: ses messages sont traduits ici.
+    const locale = localeFromHeader(req.headers['accept-language']);
     send('sources', prepared.sources);
     try {
       const result = await generate(prepared.settings, prepared.system, prepared.user, (text) => send('delta', { text }), abort.signal);
-      if (result.outcome === 'refusal') send('error', { message: 'Le modèle a décliné cette question. Reformulez-la, ou cherchez directement dans les pages citées.' });
+      if (result.outcome === 'refusal') send('error', { message: tr(locale, 'Le modèle a décliné cette question. Reformulez-la, ou cherchez directement dans les pages citées.') });
       else send('done', { truncated: result.outcome === 'truncated' });
     } catch (error) {
       if (!abort.signal.aborted) {
         console.error('Assistant en échec:', error instanceof Error ? error.message : error);
-        send('error', { message: 'Le modèle ne répond pas pour le moment. Réessayez dans un instant.' });
+        send('error', { message: tr(locale, 'Le modèle ne répond pas pour le moment. Réessayez dans un instant.') });
       }
     }
     reply.raw.end();
@@ -60,7 +63,9 @@ export class AskController {
   @SessionOnly()
   @Post('admin/ai/test')
   @HttpCode(200)
-  adminTest(@CurrentAuth() auth: AuthContext) {
-    return this.ask.adminTest(auth);
+  async adminTest(@CurrentAuth() auth: AuthContext, @Headers('accept-language') acceptLanguage: string | undefined) {
+    const result = await this.ask.adminTest(auth);
+    // L'erreur du modèle est renvoyée telle quelle (pas d'exception): traduite si elle vient d'Andal.
+    return result.error === undefined ? result : { ...result, error: translateMessage(result.error, localeFromHeader(acceptLanguage)) };
   }
 }

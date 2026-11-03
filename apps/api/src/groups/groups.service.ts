@@ -15,6 +15,15 @@ function groupName(value: unknown): string {
   return name;
 }
 
+const MANAGED_BY = { sso: 'le SSO', scim: 'SCIM' } as const;
+
+/** Un groupe du fournisseur d'identité se gère chez lui: ni nom ni membres ici. */
+function assertLocal(group: { source: string }) {
+  if (group.source === 'sso' || group.source === 'scim') {
+    throw new ForbiddenException(`Ce groupe est tenu par votre fournisseur d’identité (${MANAGED_BY[group.source]}): son nom et ses membres se gèrent là-bas.`);
+  }
+}
+
 function isUniqueViolation(error: unknown): boolean {
   return typeof error === 'object' && error !== null && (error as { code?: string }).code === '23505';
 }
@@ -46,7 +55,7 @@ export class GroupsService {
     this.assertAdmin(actor);
     const workspaceId = actor.workspace_id;
     const [groups, members, grants, restrictions, users] = await Promise.all([
-      this.db.selectFrom('groups').select(['id', 'name']).where('workspace_id', '=', workspaceId).orderBy(sql`lower(name)`).execute(),
+      this.db.selectFrom('groups').select(['id', 'name', 'source']).where('workspace_id', '=', workspaceId).orderBy(sql`lower(name)`).execute(),
       this.db
         .selectFrom('group_members as m')
         .innerJoin('users as u', 'u.id', 'm.user_id')
@@ -77,6 +86,7 @@ export class GroupsService {
       groups: groups.map((g) => ({
         id: g.id,
         name: g.name,
+        source: g.source,
         members: members.filter((m) => m.group_id === g.id).map((m) => ({ id: m.id, name: m.name, initials: m.initials, color: m.color, email: m.email, disabled: m.disabled_at !== null })),
         volumes: grants.filter((x) => x.principal_id === g.id).map((x) => ({ id: x.id, shortName: x.short_name, cloth: x.cloth, volumeNumber: x.volume_number, role: x.role })),
         restrictedPages: new Set(restrictions.filter((r) => r.principal_id === g.id).map((r) => r.page_id)).size,
@@ -101,6 +111,7 @@ export class GroupsService {
   async rename(actor: User, groupId: string, input: { name?: unknown }, ip: string) {
     this.assertAdmin(actor);
     const group = await this.group(actor, groupId);
+    assertLocal(group);
     const name = groupName(input.name);
     if (name === group.name) return;
     try {
@@ -120,6 +131,8 @@ export class GroupsService {
   async remove(actor: User, groupId: string, ip: string) {
     this.assertAdmin(actor);
     const group = await this.group(actor, groupId);
+    // Un groupe SSO revient à la prochaine connexion de ses membres; un groupe SCIM se retire chez le fournisseur.
+    if (group.source === 'scim') assertLocal(group);
     const used = await this.db.selectFrom('page_restrictions').select(sql<string>`count(distinct page_id)`.as('n')).where('principal_type', '=', 'group').where('principal_id', '=', group.id).executeTakeFirstOrThrow();
     const pages = Number(used.n);
     if (pages > 0) {
@@ -136,6 +149,7 @@ export class GroupsService {
   async addMember(actor: User, groupId: string, userId: string, ip: string) {
     this.assertAdmin(actor);
     const group = await this.group(actor, groupId);
+    assertLocal(group);
     const user = await this.db.selectFrom('users').select(['id', 'disabled_at', 'name']).where('id', '=', userId).where('workspace_id', '=', actor.workspace_id).executeTakeFirst();
     if (!user) throw new NotFoundException('Compte introuvable.');
     if (user.disabled_at) throw new BadRequestException(`Le compte de ${user.name} est désactivé.`);
@@ -148,6 +162,7 @@ export class GroupsService {
   async removeMember(actor: User, groupId: string, userId: string, ip: string) {
     this.assertAdmin(actor);
     const group = await this.group(actor, groupId);
+    assertLocal(group);
     const removed = await this.db.deleteFrom('group_members').where('group_id', '=', group.id).where('user_id', '=', userId).returning('user_id').executeTakeFirst();
     if (!removed) return;
     await this.audit.record({ workspaceId: actor.workspace_id, actorId: actor.id, action: 'group.member_removed', targetType: 'group', targetId: group.id, ip, metadata: { userId } });

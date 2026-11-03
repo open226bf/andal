@@ -15,6 +15,9 @@ export * from './storage.js';
 export * from './specs.js';
 export * from './webhooks.js';
 export * from './content-helpers.js';
+export * from './totp.js';
+export * from './groups-sync.js';
+export * from './i18n.js';
 export { migrateToLatest } from './migrations.js';
 
 export function createDb(connectionString: string, max = 10): Kysely<Database> {

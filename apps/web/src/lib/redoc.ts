@@ -1,5 +1,6 @@
 // Redoc (≈1 Mo) ne se charge que sur la page d'une spec, depuis notre propre origine (CSP « script-src 'self' »).
 import redocUrl from 'redoc/bundles/redoc.standalone.js?url';
+import { t } from './i18n';
 import { cssVar } from './theme';
 
 interface RedocGlobal {
@@ -20,10 +21,10 @@ export function loadRedoc(): Promise<RedocGlobal> {
     const script = document.createElement('script');
     script.src = redocUrl;
     script.async = true;
-    script.onload = () => (window.Redoc ? resolve(window.Redoc) : reject(new Error('Redoc ne s’est pas initialisé.')));
+    script.onload = () => (window.Redoc ? resolve(window.Redoc) : reject(new Error(t('Redoc ne s’est pas initialisé.'))));
     script.onerror = () => {
       loading = null;
-      reject(new Error('Redoc ne se charge pas.'));
+      reject(new Error(t('Redoc ne se charge pas.')));
     };
     document.head.append(script);
   });

@@ -10,12 +10,13 @@ import { RayonsDialog } from '../components/RayonsDialog';
 import { ArchivesDialog, NewVolumeDialog } from '../components/VolumeDialogs';
 import { errorMessage, useMe, useProjects, useRayons, type ProjectSummary } from '../lib/api';
 import { dateTime, relative } from '../lib/format';
+import { t, tn } from '../lib/i18n';
 import { byRayon, matchesVolume, sortVolumes, useTogglePin, volumeLink, type VolumeSort } from '../lib/volumes';
 
 const SORTS: { value: VolumeSort; label: string }[] = [
-  { value: 'number', label: 'Numéro' },
-  { value: 'name', label: 'Nom' },
-  { value: 'activity', label: 'Activité récente' },
+  { value: 'number', label: t('Numéro') },
+  { value: 'name', label: t('Nom') },
+  { value: 'activity', label: t('Activité récente') },
 ];
 
 const SORT_KEY = 'andal:bibliotheque:tri';
@@ -71,7 +72,7 @@ export function LibraryPage() {
   const search = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    document.title = 'Bibliothèque · Andal';
+    document.title = `${t('Bibliothèque')} · Andal`;
   }, []);
 
   // « / » pour filtrer, comme dans la plupart des outils de doc.
@@ -127,14 +128,14 @@ export function LibraryPage() {
       </div>
       <main className="main">
         <div className="topbar">
-          <button type="button" className="icon-btn" aria-label="Ouvrir l’étagère" aria-expanded={navOpen} aria-controls="nav" onClick={() => setNavOpen(true)}>
+          <button type="button" className="icon-btn" aria-label={t('Ouvrir l’étagère')} aria-expanded={navOpen} aria-controls="nav" onClick={() => setNavOpen(true)}>
             <ListIcon size={20} aria-hidden />
           </button>
           <span className="topbar-vol">
             <BooksIcon size={18} aria-hidden />
-            Bibliothèque
+            {t('Bibliothèque')}
           </span>
-          <button type="button" className="icon-btn push" aria-label="Rechercher dans les pages" onClick={() => setSearchOpen(true)}>
+          <button type="button" className="icon-btn push" aria-label={t('Rechercher dans les pages')} onClick={() => setSearchOpen(true)}>
             <MagnifyingGlassIcon size={20} aria-hidden />
           </button>
         </div>
@@ -142,11 +143,16 @@ export function LibraryPage() {
           <div className="library">
             <header className="library-head">
               <div>
-                <h1 className="doc-title">Bibliothèque</h1>
+                <h1 className="doc-title">{t('Bibliothèque')}</h1>
                 {projects.data && (
                   <p className="admin-count">
-                    {volumes.length} volume{volumes.length > 1 ? 's' : ''} ouvert{volumes.length > 1 ? 's' : ''} pour vous
-                    {filed && `, en ${(rayons.data ?? []).length} rayon${(rayons.data ?? []).length > 1 ? 's' : ''}`} · {pinned.length} sur votre étagère
+                    {filed
+                      ? tn(volumes.length, '{n} volume ouvert pour vous, en {aisles}', '{n} volumes ouverts pour vous, en {aisles}', {
+                          aisles: tn((rayons.data ?? []).length, '{n} rayon', '{n} rayons'),
+                        })
+                      : tn(volumes.length, '{n} volume ouvert pour vous', '{n} volumes ouverts pour vous')}
+                    {' · '}
+                    {t('{n} sur votre étagère', { n: pinned.length })}
                   </p>
                 )}
               </div>
@@ -154,17 +160,17 @@ export function LibraryPage() {
                 <div className="library-actions">
                   <button type="button" className="ghost" onClick={() => setArchivesOpen(true)}>
                     <ArchiveIcon size={16} aria-hidden />
-                    Archives
+                    {t('Archives')}
                   </button>
                   {arranger && (
                     <button type="button" className="ghost" onClick={() => setRayonsOpen(true)}>
                       <SquaresFourIcon size={16} aria-hidden />
-                      Ranger les rayons
+                      {t('Ranger les rayons')}
                     </button>
                   )}
                   <button type="button" className="btn-ink" onClick={() => setNewOpen(true)}>
                     <PlusIcon size={18} aria-hidden />
-                    Nouveau volume
+                    {t('Nouveau volume')}
                   </button>
                 </div>
               )}
@@ -173,12 +179,12 @@ export function LibraryPage() {
             <div className="library-tools">
               <label className="library-search">
                 <MagnifyingGlassIcon size={18} aria-hidden />
-                <span className="sr-only">Filtrer les volumes</span>
+                <span className="sr-only">{t('Filtrer les volumes')}</span>
                 <input
                   ref={search}
                   type="search"
                   value={query}
-                  placeholder="Filtrer les volumes"
+                  placeholder={t('Filtrer les volumes')}
                   onChange={(e) => setQuery(e.target.value)}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' && found[0]) void navigate(volumeLink(found[0]));
@@ -188,7 +194,7 @@ export function LibraryPage() {
                 {!searching && <kbd aria-hidden>/</kbd>}
               </label>
               <label className="library-sort">
-                <span>Trier par</span>
+                <span>{t('Trier par')}</span>
                 <select className="input" value={sort} onChange={(e) => changeSort(e.target.value as VolumeSort)}>
                   {SORTS.map((s) => (
                     <option key={s.value} value={s.value}>
@@ -200,38 +206,38 @@ export function LibraryPage() {
             </div>
 
             {projects.isPending ? (
-              <div className="doc-skeleton" aria-busy="true" aria-label="Chargement des volumes">
+              <div className="doc-skeleton" aria-busy="true" aria-label={t('Chargement des volumes')}>
                 <span />
                 <span />
                 <span />
               </div>
             ) : projects.isError ? (
-              <FormError>{errorMessage(projects.error, 'Impossible de charger les volumes.')}</FormError>
+              <FormError>{errorMessage(projects.error, t('Impossible de charger les volumes.'))}</FormError>
             ) : volumes.length === 0 ? (
               <div className="library-empty">
                 <BooksIcon size={28} aria-hidden />
                 <p>
-                  <b>Aucun volume ne vous est encore ouvert.</b>{' '}
-                  {member ? 'Créez le premier, ou demandez à un admin de vous ouvrir ceux de votre équipe.' : 'Un admin de votre espace doit vous y donner accès.'}
+                  <b>{t('Aucun volume ne vous est encore ouvert.')}</b>{' '}
+                  {member ? t('Créez le premier, ou demandez à un admin de vous ouvrir ceux de votre équipe.') : t('Un admin de votre espace doit vous y donner accès.')}
                 </p>
               </div>
             ) : searching ? (
-              <section aria-label="Volumes trouvés">
+              <section aria-label={t('Volumes trouvés')}>
                 <h2 className="library-section">
-                  {found.length === 0 ? `Aucun volume ne correspond à « ${query.trim()} »` : `${found.length} volume${found.length > 1 ? 's' : ''} trouvé${found.length > 1 ? 's' : ''}`}
+                  {found.length === 0 ? t('Aucun volume ne correspond à « {query} »', { query: query.trim() }) : tn(found.length, '{n} volume trouvé', '{n} volumes trouvés')}
                 </h2>
                 {found.length > 0 && <Catalog volumes={found} rayonNames={rayonNames} />}
-                {found.length === 0 && <p className="form-hint">Pour chercher dans les pages elles-mêmes, utilisez la recherche (⌘K).</p>}
+                {found.length === 0 && <p className="form-hint">{t('Pour chercher dans les pages elles-mêmes, utilisez la recherche (⌘K).')}</p>}
               </section>
             ) : (
               <div className={`library-body${shelves.length > 1 ? ' indexed' : ''}`}>
                 {shelves.length > 1 && (
-                  <nav className="rayon-index" aria-label="Rayons">
+                  <nav className="rayon-index" aria-label={t('Rayons')}>
                     <ul>
                       {shelves.map(({ rayon, volumes: inside }) => (
                         <li key={rayon?.id ?? OUTSIDE}>
                           <button type="button" onClick={() => jump(rayon?.id ?? OUTSIDE)}>
-                            <span>{rayon?.name ?? 'Hors rayon'}</span>
+                            <span>{rayon?.name ?? t('Hors rayon')}</span>
                             <span className="count">{inside.length}</span>
                           </button>
                         </li>
@@ -243,13 +249,13 @@ export function LibraryPage() {
                   {pinned.length === 0 && (
                     <p className="library-hint">
                       <PushPinIcon size={16} aria-hidden />
-                      Épinglez les volumes que vous ouvrez souvent: ils restent à portée de main, sur l’étagère à gauche.
+                      {t('Épinglez les volumes que vous ouvrez souvent: ils restent à portée de main, sur l’étagère à gauche.')}
                     </p>
                   )}
                   {shelves.map(({ rayon, volumes: inside }) => {
                     const key = rayon?.id ?? OUTSIDE;
                     const open = !folded.has(key);
-                    const title = rayon?.name ?? (filed ? 'Hors rayon' : 'Tous les volumes');
+                    const title = rayon?.name ?? (filed ? t('Hors rayon') : t('Tous les volumes'));
                     return (
                       <section key={key} id={`rayon-${key}`} className="rayon" aria-labelledby={`rayon-title-${key}`}>
                         <h2 className="library-section" id={`rayon-title-${key}`}>
@@ -263,7 +269,7 @@ export function LibraryPage() {
                           {inside.length > 0 ? (
                             <Catalog volumes={inside} />
                           ) : (
-                            <p className="library-hint">Aucun volume dans ce rayon. Rangez-y un volume depuis ses réglages, ou créez-en un.</p>
+                            <p className="library-hint">{t('Aucun volume dans ce rayon. Rangez-y un volume depuis ses réglages, ou créez-en un.')}</p>
                           )}
                         </div>
                       </section>
@@ -301,21 +307,21 @@ function Catalog({ volumes, rayonNames }: { volumes: ProjectSummary[]; rayonName
                 </span>
                 <span className="cat-title">
                   <b>
-                    <span className="sr-only">Volume {v.volumeNumber}, </span>
+                    <span className="sr-only">{t('Volume {number}, ', { number: v.volumeNumber })}</span>
                     {v.name}
                   </b>
                   {v.description && <span className="cat-desc">{v.description}</span>}
-                  {rayonNames && <span className="cat-rayon">{(v.rayonId && rayonNames.get(v.rayonId)) ?? 'Hors rayon'}</span>}
+                  {rayonNames && <span className="cat-rayon">{(v.rayonId && rayonNames.get(v.rayonId)) ?? t('Hors rayon')}</span>}
                 </span>
                 <span className="cat-meta">
                   <span className="cat-access">
                     <AccessMark level={level} />
-                    {v.role === 'admin' ? 'Admin' : accessLabel(level)}
+                    {v.role === 'admin' ? t('Admin') : t(accessLabel(level))}
                   </span>
                   <span className="cat-pages">
-                    {v.pageCount} page{v.pageCount > 1 ? 's' : ''}
+                    {tn(v.pageCount, '{n} page', '{n} pages')}
                   </span>
-                  <span className="cat-when" title={`Dernière modification: ${dateTime(v.updatedAt)}`}>
+                  <span className="cat-when" title={t('Dernière modification: {date}', { date: dateTime(v.updatedAt) })}>
                     {relative(v.updatedAt)}
                   </span>
                 </span>
@@ -324,8 +330,8 @@ function Catalog({ volumes, rayonNames }: { volumes: ProjectSummary[]; rayonName
                 type="button"
                 className="cat-pin"
                 aria-pressed={v.pinned}
-                aria-label={`Épingler ${v.name} sur l’étagère`}
-                title={v.pinned ? 'Sur l’étagère: cliquer pour l’en retirer' : 'Poser sur l’étagère'}
+                aria-label={t('Épingler {name} sur l’étagère', { name: v.name })}
+                title={v.pinned ? t('Sur l’étagère: cliquer pour l’en retirer') : t('Poser sur l’étagère')}
                 onClick={() => {
                   setError(null);
                   togglePin(v).catch((err: unknown) => setError(errorMessage(err)));

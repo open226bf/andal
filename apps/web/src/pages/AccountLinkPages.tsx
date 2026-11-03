@@ -5,20 +5,21 @@ import { AuthCard, FormError, FormOk } from '../components/AuthCard';
 import { PasswordField } from '../components/PasswordField';
 import { api, ApiError, errorMessage, useAuthConfig, useLinkInfo } from '../lib/api';
 import { roleLabel } from '../lib/format';
+import { t, tn, tx } from '../lib/i18n';
 
 /** Même seuil que l'API (packages/db/src/password.ts): le serveur reste juge. */
 const MIN_LENGTH = 12;
-const PASSWORD_HINT = `Au moins ${MIN_LENGTH} caractères, sans votre email ni votre identifiant. Une phrase de passe fait très bien l'affaire.`;
+const PASSWORD_HINT = t("Au moins {min} caractères, sans votre email ni votre identifiant. Une phrase de passe fait très bien l'affaire.", { min: MIN_LENGTH });
 
 function DeadLink({ kind }: { kind: 'invite' | 'reset' }) {
   return (
     <>
-      <FormError>Ce lien n'est plus valable : il a déjà servi, ou il a expiré.</FormError>
+      <FormError>{t("Ce lien n'est plus valable : il a déjà servi, ou il a expiré.")}</FormError>
       <p className="login-foot">
-        {kind === 'invite' ? 'Demandez une nouvelle invitation à un admin de votre espace.' : 'Demandez un nouveau lien depuis l’écran de connexion, ou à un admin.'}
+        {kind === 'invite' ? t('Demandez une nouvelle invitation à un admin de votre espace.') : t('Demandez un nouveau lien depuis l’écran de connexion, ou à un admin.')}
       </p>
       <Link to="/login" className="btn-line">
-        Aller à la connexion
+        {t('Aller à la connexion')}
       </Link>
     </>
   );
@@ -38,10 +39,10 @@ export function InvitationPage({ token }: { token: string }) {
   const [pending, setPending] = useState(false);
   const [createdForSso, setCreatedForSso] = useState(false);
 
-  if (info.isPending) return <AuthCard title="Invitation" />;
+  if (info.isPending) return <AuthCard title={t('Invitation')} />;
   if (info.isError || info.data.kind !== 'invite') {
     return (
-      <AuthCard title="Invitation">
+      <AuthCard title={t('Invitation')}>
         <DeadLink kind="invite" />
       </AuthCard>
     );
@@ -52,8 +53,8 @@ export function InvitationPage({ token }: { token: string }) {
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
-    if (link.passwordLogin && password.length < MIN_LENGTH) return setError(`Le mot de passe doit faire au moins ${MIN_LENGTH} caractères.`);
-    if (link.passwordLogin && password !== confirm) return setError('Les deux saisies du mot de passe diffèrent.');
+    if (link.passwordLogin && password.length < MIN_LENGTH) return setError(t('Le mot de passe doit faire au moins {min} caractères.', { min: MIN_LENGTH }));
+    if (link.passwordLogin && password !== confirm) return setError(t('Les deux saisies du mot de passe diffèrent.'));
     setPending(true);
     setError(null);
     try {
@@ -65,7 +66,7 @@ export function InvitationPage({ token }: { token: string }) {
       if (signedIn) await router.navigate({ to: '/' });
       else setCreatedForSso(true);
     } catch (err) {
-      setError(err instanceof ApiError && err.status === 410 ? 'Ce lien n’est plus valable.' : errorMessage(err, 'La création du compte a échoué. Réessayez dans un instant.'));
+      setError(err instanceof ApiError && err.status === 410 ? t('Ce lien n’est plus valable.') : errorMessage(err, t('La création du compte a échoué. Réessayez dans un instant.')));
     } finally {
       setPending(false);
     }
@@ -73,11 +74,11 @@ export function InvitationPage({ token }: { token: string }) {
 
   if (createdForSso) {
     return (
-      <AuthCard title={`Bienvenue sur ${link.workspace}`}>
-        <FormOk>Votre compte est prêt. Connectez-vous avec votre compte d’entreprise.</FormOk>
+      <AuthCard title={t('Bienvenue sur {workspace}', { workspace: link.workspace })}>
+        <FormOk>{t('Votre compte est prêt. Connectez-vous avec votre compte d’entreprise.')}</FormOk>
         {config.data?.oidc && (
           <a className="btn-ink" href="/api/auth/oidc?returnTo=%2F">
-            Se connecter avec {config.data.oidc.label}
+            {t('Se connecter avec {provider}', { provider: config.data.oidc.label })}
           </a>
         )}
       </AuthCard>
@@ -85,19 +86,24 @@ export function InvitationPage({ token }: { token: string }) {
   }
 
   return (
-    <AuthCard title={`Rejoindre ${link.workspace}`} documentTitle="Invitation">
+    <AuthCard title={t('Rejoindre {workspace}', { workspace: link.workspace })} documentTitle={t('Invitation')}>
       <p className="login-lede">
-        Invitation pour <b>{link.email}</b>. Votre compte aura le rôle {roleLabel(link.role ?? 'member')}
-        {link.groups.length > 0 ? `, et rejoindra ${link.groups.length > 1 ? 'les groupes' : 'le groupe'} ${link.groups.join(', ')}.` : '.'}
+        {tx('Invitation pour {email}.', { email: <b>{link.email}</b> })}{' '}
+        {link.groups.length > 0
+          ? tn(link.groups.length, 'Votre compte aura le rôle {role}, et rejoindra le groupe {groups}.', 'Votre compte aura le rôle {role}, et rejoindra les groupes {groups}.', {
+              role: roleLabel(link.role ?? 'member'),
+              groups: link.groups.join(', '),
+            })
+          : t('Votre compte aura le rôle {role}.', { role: roleLabel(link.role ?? 'member') })}
       </p>
       {error && <FormError>{error}</FormError>}
       <form className="login-form" onSubmit={(e) => void submit(e)}>
         <div className="field">
-          <label htmlFor="invite-name">Votre nom</label>
+          <label htmlFor="invite-name">{t('Votre nom')}</label>
           <input id="invite-name" className="input" autoComplete="name" required autoFocus maxLength={80} value={nameValue} onChange={(e) => setName(e.target.value)} />
         </div>
         <div className="field">
-          <label htmlFor="invite-username">Identifiant de connexion</label>
+          <label htmlFor="invite-username">{t('Identifiant de connexion')}</label>
           <input
             id="invite-username"
             className="input"
@@ -111,17 +117,17 @@ export function InvitationPage({ token }: { token: string }) {
             aria-describedby="invite-username-hint"
           />
           <p className="form-hint" id="invite-username-hint">
-            Lettres minuscules, chiffres, point, tiret. Vous pourrez aussi vous connecter avec votre email.
+            {t('Lettres minuscules, chiffres, point, tiret. Vous pourrez aussi vous connecter avec votre email.')}
           </p>
         </div>
         {link.passwordLogin && (
           <>
-            <PasswordField label="Mot de passe" hint={PASSWORD_HINT} autoComplete="new-password" required value={password} onChange={(e) => setPassword(e.target.value)} />
-            <PasswordField label="Confirmez le mot de passe" autoComplete="new-password" required value={confirm} onChange={(e) => setConfirm(e.target.value)} />
+            <PasswordField label={t('Mot de passe')} hint={PASSWORD_HINT} autoComplete="new-password" required value={password} onChange={(e) => setPassword(e.target.value)} />
+            <PasswordField label={t('Confirmez le mot de passe')} autoComplete="new-password" required value={confirm} onChange={(e) => setConfirm(e.target.value)} />
           </>
         )}
         <button type="submit" className="btn-ink" disabled={pending}>
-          {pending ? 'Création…' : 'Créer mon compte'}
+          {pending ? t('Création…') : t('Créer mon compte')}
         </button>
       </form>
     </AuthCard>
@@ -137,10 +143,10 @@ export function ResetPasswordPage({ token }: { token: string }) {
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
-  if (info.isPending) return <AuthCard title="Nouveau mot de passe" />;
+  if (info.isPending) return <AuthCard title={t('Nouveau mot de passe')} />;
   if (info.isError || info.data.kind !== 'reset') {
     return (
-      <AuthCard title="Nouveau mot de passe">
+      <AuthCard title={t('Nouveau mot de passe')}>
         <DeadLink kind="reset" />
       </AuthCard>
     );
@@ -148,31 +154,29 @@ export function ResetPasswordPage({ token }: { token: string }) {
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
-    if (password.length < MIN_LENGTH) return setError(`Le mot de passe doit faire au moins ${MIN_LENGTH} caractères.`);
-    if (password !== confirm) return setError('Les deux saisies diffèrent.');
+    if (password.length < MIN_LENGTH) return setError(t('Le mot de passe doit faire au moins {min} caractères.', { min: MIN_LENGTH }));
+    if (password !== confirm) return setError(t('Les deux saisies diffèrent.'));
     setPending(true);
     setError(null);
     try {
       await api('/auth/password/reset', { method: 'POST', body: JSON.stringify({ token, password }) });
       await router.navigate({ to: '/login', search: { info: 'mot-de-passe-change' } });
     } catch (err) {
-      setError(err instanceof ApiError && err.status === 410 ? 'Ce lien n’est plus valable.' : errorMessage(err, 'Le changement a échoué. Réessayez dans un instant.'));
+      setError(err instanceof ApiError && err.status === 410 ? t('Ce lien n’est plus valable.') : errorMessage(err, t('Le changement a échoué. Réessayez dans un instant.')));
     } finally {
       setPending(false);
     }
   };
 
   return (
-    <AuthCard title="Nouveau mot de passe">
-      <p className="login-lede">
-        Pour le compte <b>{info.data.email}</b>. Vos sessions ouvertes seront fermées.
-      </p>
+    <AuthCard title={t('Nouveau mot de passe')}>
+      <p className="login-lede">{tx('Pour le compte {email}. Vos sessions ouvertes seront fermées.', { email: <b>{info.data.email}</b> })}</p>
       {error && <FormError>{error}</FormError>}
       <form className="login-form" onSubmit={(e) => void submit(e)}>
-        <PasswordField label="Nouveau mot de passe" hint={PASSWORD_HINT} autoComplete="new-password" required autoFocus value={password} onChange={(e) => setPassword(e.target.value)} />
-        <PasswordField label="Confirmez le mot de passe" autoComplete="new-password" required value={confirm} onChange={(e) => setConfirm(e.target.value)} />
+        <PasswordField label={t('Nouveau mot de passe')} hint={PASSWORD_HINT} autoComplete="new-password" required autoFocus value={password} onChange={(e) => setPassword(e.target.value)} />
+        <PasswordField label={t('Confirmez le mot de passe')} autoComplete="new-password" required value={confirm} onChange={(e) => setConfirm(e.target.value)} />
         <button type="submit" className="btn-ink" disabled={pending}>
-          {pending ? 'Enregistrement…' : 'Enregistrer le mot de passe'}
+          {pending ? t('Enregistrement…') : t('Enregistrer le mot de passe')}
         </button>
       </form>
     </AuthCard>
@@ -203,39 +207,39 @@ export function ForgotPasswordPage() {
 
   if (config.data && !config.data.passwordReset) {
     return (
-      <AuthCard title="Mot de passe oublié">
-        <p className="login-lede">Ce serveur n’envoie pas d’email. Demandez à un admin de votre espace de réinitialiser votre mot de passe.</p>
+      <AuthCard title={t('Mot de passe oublié')}>
+        <p className="login-lede">{t('Ce serveur n’envoie pas d’email. Demandez à un admin de votre espace de réinitialiser votre mot de passe.')}</p>
         <Link to="/login" className="btn-line">
-          Retour à la connexion
+          {t('Retour à la connexion')}
         </Link>
       </AuthCard>
     );
   }
 
   return (
-    <AuthCard title="Mot de passe oublié">
+    <AuthCard title={t('Mot de passe oublié')}>
       {sent ? (
         <>
-          <FormOk>Si un compte existe pour {email}, un lien vient d’y être envoyé. Il expire dans une heure.</FormOk>
+          <FormOk>{t('Si un compte existe pour {email}, un lien vient d’y être envoyé. Il expire dans une heure.', { email })}</FormOk>
           <Link to="/login" className="btn-line">
-            Retour à la connexion
+            {t('Retour à la connexion')}
           </Link>
         </>
       ) : (
         <>
-          <p className="login-lede">Indiquez l’email de votre compte : vous recevrez un lien pour choisir un nouveau mot de passe.</p>
+          <p className="login-lede">{t('Indiquez l’email de votre compte : vous recevrez un lien pour choisir un nouveau mot de passe.')}</p>
           {error && <FormError>{error}</FormError>}
           <form className="login-form" onSubmit={(e) => void submit(e)}>
             <div className="field">
-              <label htmlFor="forgot-email">Email</label>
+              <label htmlFor="forgot-email">{t('Email')}</label>
               <input id="forgot-email" className="input" type="email" autoComplete="email" required autoFocus value={email} onChange={(e) => setEmail(e.target.value)} />
             </div>
             <button type="submit" className="btn-ink" disabled={pending}>
-              {pending ? 'Envoi…' : 'Recevoir un lien'}
+              {pending ? t('Envoi…') : t('Recevoir un lien')}
             </button>
           </form>
           <Link to="/login" className="form-link">
-            Retour à la connexion
+            {t('Retour à la connexion')}
           </Link>
         </>
       )}

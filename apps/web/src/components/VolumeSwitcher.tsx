@@ -3,6 +3,7 @@ import * as Popover from '@radix-ui/react-popover';
 import { Link, useNavigate } from '@tanstack/react-router';
 import { Fragment, useEffect, useId, useState, type KeyboardEvent } from 'react';
 import { useProjects, useRayons, type ProjectSummary, type Tree } from '../lib/api';
+import { t, tn } from '../lib/i18n';
 import { byRayon, matchesVolume, sortVolumes, volumeLink } from '../lib/volumes';
 
 /**
@@ -28,11 +29,11 @@ export function VolumeSwitcher({ tree }: { tree: Tree }) {
   const groups: { label: string | null; volumes: ProjectSummary[] }[] = searching
     ? [{ label: null, volumes: matches }]
     : [
-        { label: 'Sur votre étagère', volumes: matches.filter((v) => v.pinned) },
+        { label: t('Sur votre étagère'), volumes: matches.filter((v) => v.pinned) },
         ...byRayon(
           matches.filter((v) => !v.pinned),
           rayons.data ?? [],
-        ).map((shelf) => ({ label: shelf.rayon?.name ?? (rayons.data?.length ? 'Hors rayon' : 'Dans la bibliothèque'), volumes: shelf.volumes })),
+        ).map((shelf) => ({ label: shelf.rayon?.name ?? (rayons.data?.length ? t('Hors rayon') : t('Dans la bibliothèque')), volumes: shelf.volumes })),
       ].filter((g) => g.volumes.length > 0);
   const ordered = groups.flatMap((g) => g.volumes);
 
@@ -66,17 +67,17 @@ export function VolumeSwitcher({ tree }: { tree: Tree }) {
   return (
     <Popover.Root open={open} onOpenChange={close}>
       <Popover.Trigger asChild>
-        <button type="button" className="toc-vol-text toc-switch" aria-label={`${tree.project.name}: changer de volume`}>
+        <button type="button" className="toc-vol-text toc-switch" aria-label={t('{name}: changer de volume', { name: tree.project.name })}>
           <span className="toc-vol-name">
             {tree.project.name}
             <CaretUpDownIcon size={14} aria-hidden />
           </span>
           <span className="vol-count">
-            Vol. {tree.project.volumeNumber} · {tree.pages.length} page{tree.pages.length > 1 ? 's' : ''}
+            {tn(tree.pages.length, 'Vol. {vol} · {n} page', 'Vol. {vol} · {n} pages', { vol: tree.project.volumeNumber })}
             {tree.project.archived && (
               <span className="archived-tag">
                 <ArchiveIcon size={12} aria-hidden />
-                archivé
+                {t('archivé')}
               </span>
             )}
           </span>
@@ -87,18 +88,18 @@ export function VolumeSwitcher({ tree }: { tree: Tree }) {
           <input
             className="switcher-input"
             role="combobox"
-            aria-label="Aller au volume"
+            aria-label={t('Aller au volume')}
             aria-expanded
             aria-controls={listId}
             aria-activedescendant={ordered.length > 0 ? `${listId}-${active}` : undefined}
             aria-autocomplete="list"
-            placeholder="Aller au volume…"
+            placeholder={t('Aller au volume…')}
             autoFocus
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={onKeyDown}
           />
-          <ul className="switcher-list" role="listbox" id={listId} aria-label="Volumes">
+          <ul className="switcher-list" role="listbox" id={listId} aria-label={t('Volumes')}>
             {groups.map((group) => (
               <Fragment key={group.label ?? 'found'}>
                 {group.label && (
@@ -124,7 +125,7 @@ export function VolumeSwitcher({ tree }: { tree: Tree }) {
                       <span className="vol-swatch" aria-hidden />
                       <span className="num">{v.volumeNumber}</span>
                       <span className="switcher-name">{v.name}</span>
-                      {searching && v.pinned && <PushPinIcon size={14} weight="fill" aria-label="sur votre étagère" />}
+                      {searching && v.pinned && <PushPinIcon size={14} weight="fill" aria-label={t('sur votre étagère')} />}
                     </li>
                   );
                 })}
@@ -132,13 +133,13 @@ export function VolumeSwitcher({ tree }: { tree: Tree }) {
             ))}
             {ordered.length === 0 && (
               <li className="search-empty" role="presentation">
-                {projects.isPending ? 'Chargement…' : `Aucun volume ne correspond à « ${query.trim()} ».`}
+                {projects.isPending ? t('Chargement…') : t('Aucun volume ne correspond à « {query} ».', { query: query.trim() })}
               </li>
             )}
           </ul>
           <Link to="/" className="switcher-foot" onClick={() => close(false)}>
             <BooksIcon size={16} aria-hidden />
-            Toute la bibliothèque
+            {t('Toute la bibliothèque')}
             <span className="count">{all.length}</span>
           </Link>
         </Popover.Content>

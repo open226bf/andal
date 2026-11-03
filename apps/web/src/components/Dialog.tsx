@@ -2,6 +2,7 @@ import { XIcon } from '@phosphor-icons/react';
 import * as Dialog from '@radix-ui/react-dialog';
 import { useState, type ReactNode } from 'react';
 import { errorMessage } from '../lib/api';
+import { t } from '../lib/i18n';
 import { FormError } from './AuthCard';
 
 /** Boîtes de dialogue de l'application: un titre, une croix, et le contenu. */
@@ -15,7 +16,7 @@ export function Modal({ open, onOpenChange, title, children }: { open: boolean; 
             <Dialog.Title asChild>
               <h2>{title}</h2>
             </Dialog.Title>
-            <Dialog.Close className="icon-btn sm" aria-label="Fermer">
+            <Dialog.Close className="icon-btn sm" aria-label={t('Fermer')}>
               <XIcon size={18} aria-hidden />
             </Dialog.Close>
           </div>
@@ -51,7 +52,7 @@ export function ConfirmDialog({ confirmation, onClose }: { confirmation: Confirm
         {error && <FormError>{error}</FormError>}
         <p className="dialog-text">{confirmation?.body}</p>
         <div className="dialog-actions">
-          <Dialog.Close className="btn-line">Annuler</Dialog.Close>
+          <Dialog.Close className="btn-line">{t('Annuler')}</Dialog.Close>
           <button
             type="button"
             className="btn-danger"

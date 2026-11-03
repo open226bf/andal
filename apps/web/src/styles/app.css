@@ -219,6 +219,8 @@
   .doc-skeleton span { display: block; height: 16px; border-radius: 6px; background: var(--desk); }
   .doc-skeleton span:nth-child(3n) { width: 72%; }
   .doc-state { display: flex; align-items: center; gap: 10px; padding: 14px 16px; border-radius: var(--r); background: var(--desk); color: var(--ink-2); font-size: .9375rem; }
+  .doc-state.err { align-items: flex-start; margin-bottom: 16px; background: var(--err-tint); color: var(--err); line-height: 1.5; }
+  .doc-state.err svg { flex: none; margin-top: 2px; }
 
   /* Figures et listings */
   .fig { margin: 30px 0 34px; }
@@ -425,7 +427,8 @@
   .brand-spine[data-lean]:hover { transform: rotate(-5deg) translateY(-6px); }
   @keyframes spine-in { from { opacity: 0; translate: 0 48px; } }
   .brand-foot { margin: 0; color: var(--brand-ink-2); font-size: .875rem; }
-  .auth-pane { display: grid; place-items: center; padding: 48px 32px; }
+  .auth-pane { position: relative; display: grid; place-items: center; padding: 48px 32px; }
+  .auth-lang { position: absolute; top: 20px; right: 24px; }
   .auth-form { width: min(380px, 100%); display: grid; gap: 16px; }
   .auth-form h1 { margin: 0 0 6px; font: 700 2rem/1.15 var(--font-ui); letter-spacing: -.02em; }
   .login-form { display: grid; gap: 14px; }
@@ -556,8 +559,8 @@
   .inbox-foot small { display: block; font-weight: 400; color: var(--ink-3); font-size: .8125rem; line-height: 1.4; }
 
   /* Administration: onglets et groupes */
-  .admin-tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--rule); }
-  .admin-tabs a { padding: 8px 12px 10px; margin-bottom: -1px; border-bottom: 2px solid transparent; color: var(--ink-2); font-weight: 600; text-decoration: none; }
+  .admin-tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--rule); overflow-x: auto; scrollbar-width: none; }
+  .admin-tabs a { flex: none; white-space: nowrap; padding: 8px 12px 10px; margin-bottom: -1px; border-bottom: 2px solid transparent; color: var(--ink-2); font-weight: 600; text-decoration: none; }
   .admin-tabs a:hover { color: var(--ink); }
   .admin-tabs a[aria-current="page"] { color: var(--ink); border-bottom-color: var(--ink); }
   .admin-intro { margin: -8px 0 0; max-width: 64ch; color: var(--ink-2); font-size: .9375rem; line-height: 1.5; }
@@ -1013,6 +1016,77 @@
   .ask-n { display: inline-grid; place-items: center; min-width: 1.4em; height: 1.4em; border-radius: 999px; background: var(--hover); color: var(--ink-2); font-size: .6875rem; font-weight: 700; }
   .ask-foot { margin: 0; padding: 8px 18px 12px; font-size: .75rem; color: var(--ink-3); border-top: 1px solid var(--rule); }
 
+  /* Sécurité du compte: double authentification, codes de secours, sessions */
+  .login-lead { margin: 0; color: var(--ink-2); font-size: .9375rem; line-height: 1.5; }
+  .form-link.as-button { padding: 0; background: none; border: 0; text-decoration: underline; text-underline-offset: .18em; cursor: pointer; }
+  .code-input { font: 500 1.375rem/1 var(--font-mono); letter-spacing: .14em; font-variant-numeric: tabular-nums; }
+  .code-input::placeholder { color: var(--ink-3); opacity: .55; letter-spacing: .08em; }
+  .mfa-on { display: grid; gap: 12px; }
+  .mfa-state { display: flex; align-items: flex-start; gap: 10px; margin: 0; color: var(--ink); font-size: .9375rem; line-height: 1.5; }
+  .mfa-state svg { flex: none; color: var(--ok); margin-top: 1px; }
+  .mfa-low { color: var(--err); font-weight: 600; }
+  .mfa-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+  .mfa-setup { gap: 14px; }
+  .mfa-steps { margin: 0; padding-left: 1.25em; display: grid; gap: 6px; color: var(--ink-2); font-size: .9375rem; line-height: 1.5; }
+  /* Le QR code reste sombre sur blanc, même en thème sombre: les caméras le lisent mieux. */
+  .mfa-qr { justify-self: center; display: grid; place-items: center; width: 200px; height: 200px; padding: 12px; border: 1px solid var(--rule); border-radius: var(--r-l); background: #FFFFFF; }
+  .mfa-qr[aria-busy="true"] { background: linear-gradient(90deg, var(--paper), var(--desk), var(--paper)) 0 0 / 200% 100%; animation: shimmer 1.4s linear infinite; }
+  .mfa-qr img { display: block; width: 176px; height: 176px; image-rendering: pixelated; }
+  .mfa-key summary { cursor: pointer; color: var(--ink-2); font-size: .875rem; font-weight: 600; }
+  .mfa-key[open] { display: grid; gap: 8px; }
+  .recovery-codes { list-style: none; margin: 0; padding: 14px 16px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 20px; border: 1px solid var(--rule); border-radius: var(--r); background: var(--code-bg); counter-reset: code; }
+  .recovery-codes li { counter-increment: code; display: flex; align-items: baseline; gap: 10px; }
+  .recovery-codes li::before { content: counter(code, decimal-leading-zero); color: var(--ink-3); font: 400 .75rem var(--font-mono); }
+  .recovery-codes code { font: 500 1rem var(--font-mono); letter-spacing: .04em; color: var(--ink); }
+  .recovery-tools { display: flex; flex-wrap: wrap; gap: 8px; }
+  .recovery-tools .btn-line { display: inline-flex; align-items: center; gap: 6px; }
+  .sessions { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--ink); }
+  .session { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 14px; padding: 12px 0; border-bottom: 1px solid var(--rule); }
+  .session-icon { display: inline-grid; place-items: center; width: 36px; height: 36px; border-radius: 10px; background: var(--desk); color: var(--ink-2); }
+  .session[data-current] .session-icon { background: var(--vol-tint); color: var(--vol-deep); }
+  .session-main { display: grid; gap: 2px; min-width: 0; }
+  .session-main b { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; font-size: .9375rem; }
+  .session-meta { color: var(--ink-3); font-size: .8125rem; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+  .badge-mfa, .badge-scim { display: inline-block; margin-left: 6px; padding: 1px 7px; border-radius: 999px; font-size: .6875rem; font-weight: 700; vertical-align: 1px; }
+  .badge-mfa { background: var(--ok-tint); color: var(--ok); }
+  .badge-scim { background: var(--hover); color: var(--ink-2); }
+  .group-source { display: inline-block; margin-left: 8px; padding: 1px 7px; border-radius: 999px; background: var(--hover); color: var(--ink-2); font: 700 .6875rem/1.5 var(--font-ui); vertical-align: 2px; }
+
+  .lang-switch { display: inline-flex; align-items: center; gap: 2px; padding: 3px; border: 1px solid var(--rule); border-radius: 999px; background: var(--paper); color: var(--ink-3); }
+  .lang-switch svg { margin: 0 4px 0 6px; }
+  .lang-switch button { padding: 4px 12px; border-radius: 999px; font-size: .8125rem; font-weight: 600; color: var(--ink-2); }
+  .lang-switch button:hover { color: var(--ink); background: var(--hover); }
+  .lang-switch button[aria-pressed="true"] { background: var(--ink); color: var(--paper); }
+
+  /* Journal d'audit */
+  .audit-filters { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px 14px; padding: 14px 16px; border: 1px solid var(--rule); border-radius: var(--r-l); background: var(--desk); }
+  .audit-filters .field { flex: 1 1 160px; min-width: 0; }
+  .audit-filters .field:first-child { flex-basis: 240px; }
+  .audit-filters .input { height: 40px; padding-top: 0; padding-bottom: 0; background: var(--paper); }
+  .audit-clear { margin-bottom: 6px; }
+  .roster.audit td { padding-top: 10px; padding-bottom: 10px; font-size: .875rem; }
+  .audit-when { white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .audit-action { font-weight: 600; color: var(--ink); }
+  .roster.audit tr[data-alert] .audit-action { color: var(--err); }
+  .audit-target { color: var(--ink-2); overflow-wrap: anywhere; }
+  a.audit-target { color: var(--vol-deep); text-decoration: underline; text-decoration-color: color-mix(in srgb, currentColor 45%, transparent); text-underline-offset: .18em; }
+  a.audit-target:hover { text-decoration-color: currentColor; }
+  .audit-ip { font: 400 .8125rem var(--font-mono); color: var(--ink-3); }
+  .person.system { gap: 8px; color: var(--ink-2); }
+  .system-icon { display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: var(--desk); color: var(--ink-3); }
+  .audit-more { display: flex; justify-content: center; padding: 8px 0 4px; }
+
+  /* Annuaire: SCIM et groupes du SSO */
+  .directory-card { display: grid; gap: 12px; padding: 16px 18px 18px; border: 1px solid var(--rule); border-top: 2px solid var(--ink); border-radius: var(--r-l); background: var(--paper); max-width: 760px; }
+  .directory-card header { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 12px; }
+  .directory-card h2 { margin: 0; font: 700 1.0625rem/1.3 var(--font-ui); }
+  .directory-card header p { margin: 2px 0 0; font-size: .8125rem; }
+  .directory-card .dialog-text { margin: 0; max-width: 68ch; }
+  .directory-card .btn-ink, .directory-card .btn-line { display: inline-flex; align-items: center; gap: 6px; }
+  .scim-token { display: flex; align-items: flex-start; gap: 10px; margin: 0; color: var(--ink-2); font-size: .875rem; line-height: 1.5; }
+  .scim-token svg { flex: none; margin-top: 2px; color: var(--ok); }
+  .scim-token code { font: 400 .8125rem var(--font-mono); }
+
   /* Mobile */
   .topbar, .scrim { display: none; }
 }
@@ -1103,7 +1177,8 @@
   .brand-spine b { top: 18px; font-size: .6875rem; }
   .brand-spine > span { display: none; }
   .brand-spine[data-lean] { margin-left: 12px; }
-  .auth-pane { place-items: start center; padding: 32px 20px 48px; }
+  .auth-pane { place-items: start center; padding: 72px 20px 48px; }
+  .auth-lang { top: 16px; right: 16px; }
   .auth-form h1 { font-size: 1.75rem; }
   .library-app .nav-wrap { width: 64px; grid-template-columns: 64px; }
   .library-tools { flex-wrap: wrap; }
@@ -1119,6 +1194,9 @@
   .roster td[data-label] { grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: .875rem; }
   .roster td[data-label]::before { content: attr(data-label); color: var(--ink-3); font-size: .8125rem; }
   .roster td.actions { grid-row: 1; grid-column: 2; }
+  .recovery-codes { grid-template-columns: minmax(0, 1fr); }
+  .session { grid-template-columns: auto minmax(0, 1fr); }
+  .session > .btn-line { grid-column: 2; justify-self: start; }
 }
 
 /* Écran tactile: pas de survol, le bouton « ⋯ » reste visible à la place du droit et de l'âge. */

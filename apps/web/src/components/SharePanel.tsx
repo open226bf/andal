@@ -5,17 +5,34 @@ import { useQueryClient } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import { useState } from 'react';
 import { api, errorMessage, useSharing, type DirectoryEntry, type PageDetail, type PrincipalView, type Sharing } from '../lib/api';
+import { t, tn, tx } from '../lib/i18n';
 import { FormError } from './AuthCard';
 import { EntryMark, Picker } from './Picker';
 
 const GRANT_ROLES: { role: Role; label: string }[] = [
-  { role: 'reader', label: 'Lecture' },
-  { role: 'commenter', label: 'Commentaire' },
-  { role: 'editor', label: 'Écriture' },
-  { role: 'admin', label: 'Admin du volume' },
+  { role: 'reader', label: t('Lecture') },
+  { role: 'commenter', label: t('Commentaire') },
+  { role: 'editor', label: t('Écriture') },
+  { role: 'admin', label: t('Admin du volume') },
 ];
 
-const KIND_LABEL = { view: 'Lecture', edit: 'Écriture' } as const;
+/** Les phrases de chaque restriction, entières: lecture d'un côté, écriture de l'autre. */
+const KIND_TEXT = {
+  view: {
+    reserved: t('Lecture réservée à'),
+    open: t('Lecture : tout le volume'),
+    start: t('Réserver la lecture…'),
+    add: t('Ajouter à la liste lecture'),
+    hint: t('Les autres ne verront plus la page, ni dans le sommaire, ni dans la recherche.'),
+  },
+  edit: {
+    reserved: t('Écriture réservée à'),
+    open: t('Écriture : tout le volume'),
+    start: t('Réserver l’écriture…'),
+    add: t('Ajouter à la liste écriture'),
+    hint: t('Les autres pourront lire et commenter, plus modifier.'),
+  },
+} as const;
 
 type Kind = 'view' | 'edit';
 type Ref = { type: 'user' | 'group'; id: string };
@@ -29,7 +46,7 @@ export function SharePanel({ page }: { page: PageDetail }) {
       <Popover.Trigger asChild>
         <button type="button" className="btn-paper">
           <UsersThreeIcon size={16} aria-hidden />
-          Partager
+          {t('Partager')}
         </button>
       </Popover.Trigger>
       <Popover.Portal>
@@ -73,10 +90,8 @@ function ShareContent({ page }: { page: PageDetail }) {
   return (
     <>
       <div className="pop-head">
-        <h2>
-          Partager « {page.number} {page.title} »
-        </h2>
-        <Popover.Close className="icon-btn sm" aria-label="Fermer">
+        <h2>{t('Partager « {number} {title} »', { number: page.number, title: page.title })}</h2>
+        <Popover.Close className="icon-btn sm" aria-label={t('Fermer')}>
           <XIcon size={18} aria-hidden />
         </Popover.Close>
       </div>
@@ -106,25 +121,25 @@ function VolumeSection({ data, act }: { data: Sharing; act: (run: () => Promise<
   return (
     <section className="share-sec" aria-labelledby="share-volume">
       <h3 id="share-volume">
-        Volume {data.project.shortName}
-        <small>Ce que chacun peut faire sur toutes les pages du volume.</small>
+        {t('Volume {name}', { name: data.project.shortName })}
+        <small>{t('Ce que chacun peut faire sur toutes les pages du volume.')}</small>
       </h3>
       <ul className="members">
-        {data.grants.length === 0 && <li className="members-empty">Personne en dehors des admins de l’espace.</li>}
+        {data.grants.length === 0 && <li className="members-empty">{t('Personne en dehors des admins de l’espace.')}</li>}
         {data.grants.map(({ principal, role: current }) => (
           <li key={key(principal)}>
             <EntryMark entry={principal} size={32} />
             <span>
               <b>
                 {principal.name}
-                {principal.you && <span className="you">vous</span>}
-                {principal.guest && <span className="badge-guest">invité</span>}
+                {principal.you && <span className="you">{t('vous')}</span>}
+                {principal.guest && <span className="badge-guest">{t('invité')}</span>}
               </b>
-              <small>{principal.type === 'group' ? `Groupe · ${principal.members ?? 0} personne(s)` : 'Accès direct'}</small>
+              <small>{principal.type === 'group' ? tn(principal.members ?? 0, 'Groupe · {n} personne', 'Groupe · {n} personnes') : t('Accès direct')}</small>
             </span>
             {data.canShare ? (
               <>
-                <select className="input select sm" aria-label={`Rôle de ${principal.name} sur le volume`} value={current} onChange={(e) => void grant(principal, e.target.value as Role)}>
+                <select className="input select sm" aria-label={t('Rôle de {name} sur le volume', { name: principal.name })} value={current} onChange={(e) => void grant(principal, e.target.value as Role)}>
                   {GRANT_ROLES.filter((r) => !(principal.guest && r.role === 'admin')).map((r) => (
                     <option key={r.role} value={r.role}>
                       {r.label}
@@ -134,8 +149,8 @@ function VolumeSection({ data, act }: { data: Sharing; act: (run: () => Promise<
                 <button
                   type="button"
                   className="icon-btn xs"
-                  aria-label={`Retirer ${principal.name} du volume`}
-                  title="Retirer du volume"
+                  aria-label={t('Retirer {name} du volume', { name: principal.name })}
+                  title={t('Retirer du volume')}
                   onClick={() => void act(() => api(`/projects/${data.projectId}/grants/${principal.type}/${principal.id}`, { method: 'DELETE' }))}
                 >
                   <XIcon size={15} aria-hidden />
@@ -144,7 +159,7 @@ function VolumeSection({ data, act }: { data: Sharing; act: (run: () => Promise<
             ) : (
               <span className="role">
                 <AccessMark level={accessLevel(current)} />
-                {current === 'admin' ? 'Admin' : accessLabel(accessLevel(current))}
+                {current === 'admin' ? t('Admin') : t(accessLabel(accessLevel(current)))}
               </span>
             )}
           </li>
@@ -154,11 +169,11 @@ function VolumeSection({ data, act }: { data: Sharing; act: (run: () => Promise<
         <div className="share-add">
           <Picker
             entries={candidates}
-            label="Ajouter au volume"
-            placeholder="Ajouter une personne ou un groupe…"
+            label={t('Ajouter au volume')}
+            placeholder={t('Ajouter une personne ou un groupe…')}
             onPick={(entry) => void grant(entry, (entry as DirectoryEntry).guest && role === 'admin' ? 'editor' : role)}
           />
-          <select className="input select" aria-label="Rôle donné aux personnes ajoutées" value={role} onChange={(e) => setRole(e.target.value as Role)}>
+          <select className="input select" aria-label={t('Rôle donné aux personnes ajoutées')} value={role} onChange={(e) => setRole(e.target.value as Role)}>
             {GRANT_ROLES.map((r) => (
               <option key={r.role} value={r.role}>
                 {r.label}
@@ -167,7 +182,7 @@ function VolumeSection({ data, act }: { data: Sharing; act: (run: () => Promise<
           </select>
         </div>
       )}
-      <p className="share-note">Les admins et propriétaires de l’espace administrent tous les volumes. Un invité ne dépasse jamais l’écriture.</p>
+      <p className="share-note">{t('Les admins et propriétaires de l’espace administrent tous les volumes. Un invité ne dépasse jamais l’écriture.')}</p>
     </section>
   );
 }
@@ -177,25 +192,29 @@ function PageSection({ data, act, pageId, slug }: { data: Sharing; act: (run: ()
   return (
     <section className="share-sec" aria-labelledby="share-page">
       <h3 id="share-page">
-        Cette page
-        <small>Réserver la lecture ou l’écriture à quelques personnes ou groupes du volume.</small>
+        {t('Cette page')}
+        <small>{t('Réserver la lecture ou l’écriture à quelques personnes ou groupes du volume.')}</small>
       </h3>
-      {data.inheritedRestrictions.map((r) => (
-        <p key={`${r.page.id}:${r.kind}`} className="share-inherited">
-          <LockSimpleIcon size={16} aria-hidden />
-          <span>
-            {KIND_LABEL[r.kind]} réservée à {names(r.principals)} par{' '}
+      {data.inheritedRestrictions.map((r) => {
+        const vars = {
+          names: names(r.principals),
+          page: (
             <Link to="/v/$slug/$pageId" params={{ slug, pageId: r.page.id }}>
               {r.page.number} {r.page.title}
             </Link>
-            , et donc à ses sous-pages.
-          </span>
-        </p>
-      ))}
+          ),
+        };
+        return (
+          <p key={`${r.page.id}:${r.kind}`} className="share-inherited">
+            <LockSimpleIcon size={16} aria-hidden />
+            <span>{r.kind === 'view' ? tx('Lecture réservée à {names} par {page}, et donc à ses sous-pages.', vars) : tx('Écriture réservée à {names} par {page}, et donc à ses sous-pages.', vars)}</span>
+          </p>
+        );
+      })}
       <Restriction kind="view" current={data.pageRestrictions.view} data={data} onSave={(list) => save('view', list)} />
       <Restriction kind="edit" current={data.pageRestrictions.edit} data={data} onSave={(list) => save('edit', list)} />
-      <p className="share-note">Une restriction réduit les droits du volume, elle ne les élargit jamais. Elle s’applique aussi aux sous-pages.</p>
-      {!data.canShare && !data.canRestrict && <p className="share-note">Seuls les admins du volume et les personnes qui peuvent écrire sur la page modifient ces accès.</p>}
+      <p className="share-note">{t('Une restriction réduit les droits du volume, elle ne les élargit jamais. Elle s’applique aussi aux sous-pages.')}</p>
+      {!data.canShare && !data.canRestrict && <p className="share-note">{t('Seuls les admins du volume et les personnes qui peuvent écrire sur la page modifient ces accès.')}</p>}
     </section>
   );
 }
@@ -224,15 +243,15 @@ function Restriction({ kind, current, data, onSave }: { kind: Kind; current: Pri
     <div className="restriction" data-on={restricted || draft ? 'true' : undefined}>
       <div className="restriction-head">
         {restricted ? <LockSimpleIcon size={16} aria-hidden /> : <LockSimpleOpenIcon size={16} aria-hidden />}
-        <b>{restricted || draft ? `${KIND_LABEL[kind]} réservée à` : `${KIND_LABEL[kind]} : tout le volume`}</b>
+        <b>{restricted || draft ? KIND_TEXT[kind].reserved : KIND_TEXT[kind].open}</b>
         {editable && !restricted && !draft && (
           <button type="button" className="ghost" onClick={start}>
-            {kind === 'view' ? 'Réserver la lecture…' : 'Réserver l’écriture…'}
+            {KIND_TEXT[kind].start}
           </button>
         )}
         {editable && restricted && !draft && (
           <button type="button" className="ghost" onClick={() => void onSave([])}>
-            Lever la restriction
+            {t('Lever la restriction')}
           </button>
         )}
       </div>
@@ -242,9 +261,9 @@ function Restriction({ kind, current, data, onSave }: { kind: Kind; current: Pri
             <li key={key(p)} className="chip">
               <EntryMark entry={p} size={22} />
               {p.name}
-              {p.you && <span className="you">vous</span>}
+              {p.you && <span className="you">{t('vous')}</span>}
               {editable && list.length > 1 && (
-                <button type="button" className="icon-btn xs" aria-label={`Retirer ${p.name} de la liste`} onClick={() => void change(list.filter((x) => key(x) !== key(p)))}>
+                <button type="button" className="icon-btn xs" aria-label={t('Retirer {name} de la liste', { name: p.name })} onClick={() => void change(list.filter((x) => key(x) !== key(p)))}>
                   <XIcon size={13} aria-hidden />
                 </button>
               )}
@@ -253,13 +272,13 @@ function Restriction({ kind, current, data, onSave }: { kind: Kind; current: Pri
         </ul>
       )}
       {editable && (restricted || draft) && (
-        <Picker entries={candidates} label={`Ajouter à la liste ${KIND_LABEL[kind].toLowerCase()}`} placeholder="Ajouter une personne ou un groupe…" onPick={(entry) => void change([...list, entry as DirectoryEntry])} />
+        <Picker entries={candidates} label={KIND_TEXT[kind].add} placeholder={t('Ajouter une personne ou un groupe…')} onPick={(entry) => void change([...list, entry as DirectoryEntry])} />
       )}
       {draft && (
         <div className="restriction-actions">
-          <span className="form-hint">{kind === 'view' ? 'Les autres ne verront plus la page, ni dans le sommaire, ni dans la recherche.' : 'Les autres pourront lire et commenter, plus modifier.'}</span>
+          <span className="form-hint">{KIND_TEXT[kind].hint}</span>
           <button type="button" className="btn-line sm" onClick={() => setDraft(null)}>
-            Annuler
+            {t('Annuler')}
           </button>
           <button
             type="button"
@@ -269,7 +288,7 @@ function Restriction({ kind, current, data, onSave }: { kind: Kind; current: Pri
               if (await onSave(draft)) setDraft(null);
             }}
           >
-            Restreindre
+            {t('Restreindre')}
           </button>
         </div>
       )}
@@ -279,5 +298,5 @@ function Restriction({ kind, current, data, onSave }: { kind: Kind; current: Pri
 
 function names(list: PrincipalView[]): string {
   const all = list.map((p) => p.name);
-  return all.length <= 1 ? (all[0] ?? '') : `${all.slice(0, -1).join(', ')} et ${all.at(-1)}`;
+  return all.length <= 1 ? (all[0] ?? '') : t('{list} et {last}', { list: all.slice(0, -1).join(', '), last: all.at(-1) });
 }

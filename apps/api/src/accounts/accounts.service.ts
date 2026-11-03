@@ -9,6 +9,7 @@ import {
   passwordProblem,
   profileColor,
   suggestUsername,
+  tr,
   USERNAME_PATTERN,
   type Database,
   type User,
@@ -96,7 +97,8 @@ export class AccountsService {
         .where('t.used_at', 'is', null)
         .orderBy('t.created_at', 'desc')
         .execute(),
-      this.db.selectFrom('groups').select(['id', 'name']).where('workspace_id', '=', actor.workspace_id).orderBy(sql`lower(name)`).execute(),
+      // Les groupes du fournisseur d'identité ne se rejoignent pas par invitation.
+      this.db.selectFrom('groups').select(['id', 'name']).where('workspace_id', '=', actor.workspace_id).where('source', '=', 'local').orderBy(sql`lower(name)`).execute(),
     ]);
     const now = Date.now();
     const groupNames = (ids: string[]) => groups.filter((g) => ids.includes(g.id)).map((g) => g.name);
@@ -114,6 +116,8 @@ export class AccountsService {
         lastLoginAt: u.last_login_at?.toISOString() ?? null,
         hasPassword: u.password_hash !== null,
         sso: u.oidc_subject !== null,
+        mfa: u.totp_enabled_at !== null,
+        scim: u.scim_external_id !== null,
         you: u.id === actor.id,
         manageable: canManageAccount({ userId: actor.id, role: actor.workspace_role }, { userId: u.id, role: u.workspace_role }),
       })),
@@ -170,7 +174,7 @@ export class AccountsService {
     const ids = [...new Set(value as string[])];
     if (ids.length === 0) return [];
     if (ids.some((id) => !/^[0-9a-f-]{36}$/.test(id))) throw new BadRequestException('Groupes invalides.');
-    const found = await this.db.selectFrom('groups').select('id').where('workspace_id', '=', actor.workspace_id).where('id', 'in', ids).execute();
+    const found = await this.db.selectFrom('groups').select('id').where('workspace_id', '=', actor.workspace_id).where('source', '=', 'local').where('id', 'in', ids).execute();
     if (found.length !== ids.length) throw new BadRequestException('Un des groupes n’existe plus.');
     return ids;
   }
@@ -241,12 +245,15 @@ export class AccountsService {
     if (target.disabled_at) throw new ConflictException("Réactivez d'abord ce compte.");
     const token = await this.createResetToken(target, actor.id, RESET_TTL_BY_ADMIN);
     const link = this.link('reinitialiser', token);
+    // Dans la langue de la personne visée.
+    const locale = target.locale;
     const emailed = await this.mail.send({
       to: target.email,
-      subject: 'Choisissez un nouveau mot de passe Andal',
-      lines: [`Bonjour ${target.name},`, `${actor.name} a lancé la réinitialisation de votre mot de passe Andal.`],
-      action: { label: 'Choisir un nouveau mot de passe', url: link },
-      footer: 'Ce lien sert une seule fois et expire dans 24 heures. Votre mot de passe actuel reste valable tant que vous ne l’avez pas remplacé.',
+      locale,
+      subject: tr(locale, 'Choisissez un nouveau mot de passe Andal'),
+      lines: [tr(locale, 'Bonjour {name},', { name: target.name }), tr(locale, '{actor} a lancé la réinitialisation de votre mot de passe Andal.', { actor: actor.name })],
+      action: { label: tr(locale, 'Choisir un nouveau mot de passe'), url: link },
+      footer: tr(locale, 'Ce lien sert une seule fois et expire dans 24 heures. Votre mot de passe actuel reste valable tant que vous ne l’avez pas remplacé.'),
     });
     await this.audit.record({ workspaceId: actor.workspace_id, actorId: actor.id, action: 'account.password_reset_issued', targetType: 'user', targetId: target.id, ip, metadata: { emailed } });
     // Le lien n'est montré à l'admin que s'il n'a pas pu partir par email.
@@ -265,12 +272,16 @@ export class AccountsService {
 
   private async sendInvitation(actor: User, email: string, link: string): Promise<boolean> {
     const workspace = await this.db.selectFrom('workspaces').select('name').where('id', '=', actor.workspace_id).executeTakeFirstOrThrow();
+    // Pas encore de compte, donc pas de langue: celle de l'admin qui invite.
+    const locale = actor.locale;
+    const vars = { actor: actor.name, workspace: workspace.name };
     return this.mail.send({
       to: email,
-      subject: `${actor.name} vous invite sur ${workspace.name}`,
-      lines: ['Bonjour,', `${actor.name} vous invite à rejoindre « ${workspace.name} » sur Andal, la documentation de l’équipe.`],
-      action: { label: 'Créer mon compte', url: link },
-      footer: 'Ce lien sert une seule fois et expire dans 7 jours. Si vous n’attendiez pas cette invitation, ignorez cet email.',
+      locale,
+      subject: tr(locale, '{actor} vous invite sur {workspace}', vars),
+      lines: [tr(locale, 'Bonjour,'), tr(locale, '{actor} vous invite à rejoindre « {workspace} » sur Andal, la documentation de l’équipe.', vars)],
+      action: { label: tr(locale, 'Créer mon compte'), url: link },
+      footer: tr(locale, 'Ce lien sert une seule fois et expire dans 7 jours. Si vous n’attendiez pas cette invitation, ignorez cet email.'),
     });
   }
 
@@ -389,12 +400,14 @@ export class AccountsService {
     if (!user) return;
     void (async () => {
       const token = await this.createResetToken(user, null, RESET_TTL_SELF);
+      const locale = user.locale;
       const sent = await this.mail.send({
         to: user.email,
-        subject: 'Réinitialisation de votre mot de passe Andal',
-        lines: [`Bonjour ${user.name},`, 'Quelqu’un, sans doute vous, a demandé à réinitialiser votre mot de passe Andal.'],
-        action: { label: 'Choisir un nouveau mot de passe', url: this.link('reinitialiser', token) },
-        footer: 'Ce lien sert une seule fois et expire dans une heure. Si vous n’êtes pas à l’origine de la demande, ignorez cet email: votre mot de passe ne change pas.',
+        locale,
+        subject: tr(locale, 'Réinitialisation de votre mot de passe Andal'),
+        lines: [tr(locale, 'Bonjour {name},', { name: user.name }), tr(locale, 'Quelqu’un, sans doute vous, a demandé à réinitialiser votre mot de passe Andal.')],
+        action: { label: tr(locale, 'Choisir un nouveau mot de passe'), url: this.link('reinitialiser', token) },
+        footer: tr(locale, 'Ce lien sert une seule fois et expire dans une heure. Si vous n’êtes pas à l’origine de la demande, ignorez cet email: votre mot de passe ne change pas.'),
       });
       await this.audit.record({ workspaceId: user.workspace_id, actorId: null, action: 'auth.password_reset_requested', targetType: 'user', targetId: user.id, ip, metadata: { emailed: sent } });
     })().catch((error: unknown) => console.error('Mot de passe oublié:', error));

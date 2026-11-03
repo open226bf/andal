@@ -1,6 +1,6 @@
 import { BadRequestException, ConflictException, ForbiddenException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { can, canCreateProject, canDeleteProject, projectRole } from '@andal/authz';
-import { projectGrants, type Cloth, type Database } from '@andal/db';
+import { projectGrants, type Cloth, type Database, tr } from '@andal/db';
 import { randomUUID } from 'node:crypto';
 import { sql, type Kysely } from 'kysely';
 import { AuditService } from '../audit.service.js';
@@ -120,7 +120,7 @@ export class ProjectsService {
 
     await this.audit.record({ workspaceId, actorId: auth.user.id, action: 'project.created', targetType: 'project', targetId: id, ip, metadata: { name, slug } });
     // Un volume s'ouvre sur une page: la première, prête à écrire.
-    const first = await this.pages.create(auth, id, { title: 'Présentation' }, ip);
+    const first = await this.pages.create(auth, id, { title: tr(auth.user.locale, 'Présentation') }, ip);
     return { id, slug, firstPageId: first.id };
   }
 

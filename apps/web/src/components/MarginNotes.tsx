@@ -4,6 +4,7 @@ import type { Editor } from '@tiptap/react';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type FormEvent, type KeyboardEvent, type RefObject } from 'react';
 import { api, errorMessage, type Posted, type Thread, type ThreadComment } from '../lib/api';
 import { relative } from '../lib/format';
+import { t } from '../lib/i18n';
 import { FormError, FormOk } from './AuthCard';
 import { CommentBody, MentionTextarea, unreachableNotice } from './Mentions';
 
@@ -99,12 +100,12 @@ export function MarginNotes({
       <AnchorHighlights threads={open} />
       {anchored.length > 0 && (
         <>
-          <div className="notes" ref={notesRef} aria-label="Commentaires">
+          <div className="notes" ref={notesRef} aria-label={t('Commentaires')}>
             {anchored.map((t) => (
               <Note key={t.id} thread={t} top={tops[t.id]} pageId={pageId} onChanged={onChanged} />
             ))}
           </div>
-          <div className="notes-inline after" aria-label="Commentaires">
+          <div className="notes-inline after" aria-label={t('Commentaires')}>
             {anchored.map((t) => (
               <Note key={t.id} thread={t} pageId={pageId} onChanged={onChanged} />
             ))}
@@ -112,11 +113,11 @@ export function MarginNotes({
         </>
       )}
       {(detached.length > 0 || resolved.length > 0) && (
-        <section className="threads-archive" aria-label="Autres commentaires">
+        <section className="threads-archive" aria-label={t('Autres commentaires')}>
           {detached.length > 0 && (
             <details open>
-              <summary>Sans passage ({detached.length})</summary>
-              <p className="muted">Le texte commenté a été supprimé. Répondez, ou résolvez le fil.</p>
+              <summary>{t('Sans passage ({n})', { n: detached.length })}</summary>
+              <p className="muted">{t('Le texte commenté a été supprimé. Répondez, ou résolvez le fil.')}</p>
               {detached.map((t) => (
                 <Note key={t.id} thread={t} pageId={pageId} onChanged={onChanged} />
               ))}
@@ -124,7 +125,7 @@ export function MarginNotes({
           )}
           {resolved.length > 0 && (
             <details open={focusResolved || undefined}>
-              <summary>Fils résolus ({resolved.length})</summary>
+              <summary>{t('Fils résolus ({n})', { n: resolved.length })}</summary>
               {resolved.map((t) => (
                 <Note key={t.id} thread={t} pageId={pageId} onChanged={onChanged} />
               ))}
@@ -187,11 +188,11 @@ function Note({ thread, top, pageId, onChanged }: { thread: Thread; top?: number
       <Comment comment={first} onDelete={() => run(() => api(`/comments/${first.id}`, { method: 'DELETE' }))}>
         {thread.canReply &&
           (resolved ? (
-            <button type="button" className="icon-btn xs" title="Rouvrir le fil" aria-label="Rouvrir le fil" onClick={() => void run(() => api(`/threads/${thread.id}/reopen`, { method: 'POST' }))}>
+            <button type="button" className="icon-btn xs" title={t('Rouvrir le fil')} aria-label={t('Rouvrir le fil')} onClick={() => void run(() => api(`/threads/${thread.id}/reopen`, { method: 'POST' }))}>
               <ArrowCounterClockwiseIcon size={16} aria-hidden />
             </button>
           ) : (
-            <button type="button" className="icon-btn xs" title="Résoudre le fil" aria-label="Résoudre le fil" onClick={() => void run(() => api(`/threads/${thread.id}/resolve`, { method: 'POST' }))}>
+            <button type="button" className="icon-btn xs" title={t('Résoudre le fil')} aria-label={t('Résoudre le fil')} onClick={() => void run(() => api(`/threads/${thread.id}/resolve`, { method: 'POST' }))}>
               <CheckIcon size={16} aria-hidden />
             </button>
           ))}
@@ -201,7 +202,7 @@ function Note({ thread, top, pageId, onChanged }: { thread: Thread; top?: number
           <Comment comment={c} small onDelete={() => run(() => api(`/comments/${c.id}`, { method: 'DELETE' }))} />
         </div>
       ))}
-      {resolved && thread.resolvedBy && <p className="resolved-by">Résolu par {thread.resolvedBy}</p>}
+      {resolved && thread.resolvedBy && <p className="resolved-by">{t('Résolu par {name}', { name: thread.resolvedBy })}</p>}
       {error && <FormError>{error}</FormError>}
       {notice && <FormOk>{notice}</FormOk>}
       {thread.canReply &&
@@ -226,7 +227,7 @@ function Note({ thread, top, pageId, onChanged }: { thread: Thread; top?: number
               setReplying(true);
             }}
           >
-            Répondre
+            {t('Répondre')}
           </button>
         ))}
     </aside>
@@ -246,14 +247,14 @@ function Comment({ comment, small, onDelete, children }: { comment: ThreadCommen
             (confirming ? (
               <>
                 <button type="button" className="ghost danger xs" onClick={() => void onDelete()} autoFocus>
-                  Supprimer
+                  {t('Supprimer')}
                 </button>
                 <button type="button" className="ghost xs" onClick={() => setConfirming(false)}>
-                  Non
+                  {t('Non')}
                 </button>
               </>
             ) : (
-              <button type="button" className="icon-btn xs" title="Supprimer" aria-label="Supprimer ce commentaire" onClick={() => setConfirming(true)}>
+              <button type="button" className="icon-btn xs" title={t('Supprimer')} aria-label={t('Supprimer ce commentaire')} onClick={() => setConfirming(true)}>
                 <TrashIcon size={15} aria-hidden />
               </button>
             ))}
@@ -290,13 +291,13 @@ function ReplyForm({ pageId, onSubmit, onCancel }: { pageId: string; onSubmit: (
   return (
     <form className="note-form" onSubmit={(e) => void submit(e)}>
       {error && <FormError>{error}</FormError>}
-      <MentionTextarea pageId={pageId} aria-label="Votre réponse" autoFocus required maxLength={4000} value={body} onValueChange={setBody} onKeyDown={onKeyDown} placeholder="Votre réponse, @ pour citer" />
+      <MentionTextarea pageId={pageId} aria-label={t('Votre réponse')} autoFocus required maxLength={4000} value={body} onValueChange={setBody} onKeyDown={onKeyDown} placeholder={t('Votre réponse, @ pour citer')} />
       <div className="note-form-actions">
         <button type="button" className="btn-line sm" onClick={onCancel}>
-          Annuler
+          {t('Annuler')}
         </button>
         <button type="submit" className="btn-ink sm" disabled={pending || !body.trim()}>
-          {pending ? 'Envoi…' : 'Répondre'}
+          {pending ? t('Envoi…') : t('Répondre')}
         </button>
       </div>
     </form>

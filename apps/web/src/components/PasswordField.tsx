@@ -1,5 +1,6 @@
 import { EyeIcon, EyeSlashIcon } from '@phosphor-icons/react';
 import { useId, useState, type InputHTMLAttributes, type Ref } from 'react';
+import { t } from '../lib/i18n';
 
 /** Champ mot de passe avec bouton Afficher / Masquer. */
 export function PasswordField({ label, hint, ref, ...input }: { label: string; hint?: string; ref?: Ref<HTMLInputElement> } & Omit<InputHTMLAttributes<HTMLInputElement>, 'type'>) {
@@ -10,7 +11,7 @@ export function PasswordField({ label, hint, ref, ...input }: { label: string; h
       <label htmlFor={id}>{label}</label>
       <div className="input-wrap">
         <input {...input} ref={ref} id={id} className="input" type={visible ? 'text' : 'password'} aria-describedby={hint ? `${id}-hint` : undefined} />
-        <button type="button" className="icon-btn sm" onClick={() => setVisible((v) => !v)} aria-label={visible ? 'Masquer le mot de passe' : 'Afficher le mot de passe'} aria-pressed={visible}>
+        <button type="button" className="icon-btn sm" onClick={() => setVisible((v) => !v)} aria-label={visible ? t('Masquer le mot de passe') : t('Afficher le mot de passe')} aria-pressed={visible}>
           {visible ? <EyeSlashIcon size={18} aria-hidden /> : <EyeIcon size={18} aria-hidden />}
         </button>
       </div>
