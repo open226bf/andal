@@ -1,4 +1,5 @@
 import {
+  BracketsCurlyIcon,
   CodeIcon,
   ColumnsPlusRightIcon,
   FlowArrowIcon,
@@ -26,7 +27,7 @@ import { useEditorState, type Editor } from '@tiptap/react';
 import { dismissUploadError, pickFiles, useUploads } from '../editor/uploads';
 
 /** Barre du mode édition: mise en forme, insertion des blocs, fichiers et tableaux. */
-export function InsertBar({ editor, pageId, onLink }: { editor: Editor; pageId: string; onLink: () => void }) {
+export function InsertBar({ editor, pageId, onLink, onSpec }: { editor: Editor; pageId: string; onLink: () => void; onSpec: () => void }) {
   const state = useEditorState({
     editor,
     selector: ({ editor: e }) => ({
@@ -69,6 +70,7 @@ export function InsertBar({ editor, pageId, onLink }: { editor: Editor; pageId: 
         icon={<GraphIcon size={18} />}
         text
       />
+      <Tool label="OpenAPI" onClick={onSpec} icon={<BracketsCurlyIcon size={18} />} text />
       <Tool label="draw.io" onClick={() => chain().insertContent({ type: 'drawio', attrs: { src: '', caption: 'Nouveau schéma.' } }).run()} icon={<FlowArrowIcon size={18} />} text />
       {state.table && (
         <span className="tool-group" role="group" aria-label="Tableau">

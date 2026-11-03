@@ -1,4 +1,4 @@
-import { ArchiveIcon, ArrowLeftIcon, ArrowRightIcon, ListIcon, LockSimpleIcon, MagnifyingGlassIcon } from '@phosphor-icons/react';
+import { ArchiveIcon, GitBranchIcon, ArrowLeftIcon, ArrowRightIcon, ListIcon, LockSimpleIcon, MagnifyingGlassIcon } from '@phosphor-icons/react';
 import { Link } from '@tanstack/react-router';
 import type { Editor } from '@tiptap/react';
 import { useQueryClient } from '@tanstack/react-query';
@@ -10,6 +10,7 @@ import { CommentComposer } from '../components/CommentComposer';
 import { HistoryDialog } from '../components/HistoryDialog';
 import { InsertBar } from '../components/InsertBar';
 import { LinkDialog } from '../components/LinkDialog';
+import { SpecDialog } from '../components/SpecDialog';
 import { LinkLayer } from '../components/LinkLayer';
 import { MarginNotes } from '../components/MarginNotes';
 import { SearchDialog } from '../components/SearchDialog';
@@ -131,6 +132,7 @@ function Document({
   const [editor, setEditor] = useState<Editor | null>(null);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [linkOpen, setLinkOpen] = useState(false);
+  const [specOpen, setSpecOpen] = useState(false);
   const measureRef = useRef<HTMLDivElement>(null);
   const notifications = useNotifications();
 
@@ -171,13 +173,27 @@ function Document({
       <HistoryDialog page={page} open={historyOpen} onOpenChange={setHistoryOpen} context={context} />
       {editing && writable && editor && (
         <>
-          <InsertBar editor={editor} pageId={page.id} onLink={() => setLinkOpen(true)} />
+          <InsertBar editor={editor} pageId={page.id} onLink={() => setLinkOpen(true)} onSpec={() => setSpecOpen(true)} />
           <LinkDialog editor={editor} open={linkOpen} onOpenChange={setLinkOpen} volume={page.project.slug} />
+          <SpecDialog editor={editor} open={specOpen} onOpenChange={setSpecOpen} projectId={page.project.id} />
         </>
       )}
       <article className="page" data-editing={editing}>
         <div className="sheet">
           <div className="measure" ref={measureRef}>
+            {page.git && (
+              <p className="git-note" role="note">
+                <GitBranchIcon size={18} aria-hidden />
+                <span>
+                  Cette page vient de <code>{page.git.file}</code> ({page.git.repo}). Modifiez-la dans le dépôt: la synchro suivante la mettra à jour.{' '}
+                  {page.git.url && (
+                    <a href={page.git.url} target="_blank" rel="noopener noreferrer">
+                      Ouvrir le fichier
+                    </a>
+                  )}
+                </span>
+              </p>
+            )}
             {archived && (
               <p className="archived-note" role="note">
                 <ArchiveIcon size={18} aria-hidden />

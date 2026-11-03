@@ -27,14 +27,22 @@ export interface ApiResponse {
   example?: string;
 }
 
+export interface ApiParameter extends ApiField {
+  /** path, query, header ou cookie. */
+  in: string;
+}
+
 export interface ApiOperation {
   method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
   path: string;
   summary: string;
   contentType?: string;
   requestBody?: ApiField[];
+  parameters?: ApiParameter[];
   responses: ApiResponse[];
 }
+
+export * from './openapi.js';
 
 /** Attribut stocké dans le JSON du nœud, jamais recopié dans le HTML. */
 function dataAttr<T>(defaultValue: T) {
@@ -58,7 +66,11 @@ export const MermaidBlock = Node.create({
   },
 });
 
-/** Référence d'une opération OpenAPI, extraite d'une spec publiée (par la CI par exemple). */
+/**
+ * Une opération d'une spec OpenAPI stockée dans le volume (publiée par la CI,
+ * par exemple). La page affiche la dernière version de la spec; `operation`
+ * en garde une copie, montrée si la spec n'est plus lisible.
+ */
 export const OpenApiBlock = Node.create({
   name: 'openapi',
   group: 'block',
@@ -66,6 +78,8 @@ export const OpenApiBlock = Node.create({
   draggable: true,
   addAttributes() {
     return {
+      specId: dataAttr<string | null>(null),
+      operationKey: dataAttr<string | null>(null),
       specFile: dataAttr(''),
       specVersion: dataAttr<string | null>(null),
       operation: dataAttr<ApiOperation | null>(null),

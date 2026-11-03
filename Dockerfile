@@ -41,6 +41,10 @@ RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile
 # ---------- Image serveur ----------
 FROM node:${NODE_VERSION}-bookworm-slim AS server
 ENV NODE_ENV=production HOST=0.0.0.0
+# git: la synchro des volumes avec un dépôt (worker).
+RUN apt-get update \
+ && apt-get install --yes --no-install-recommends git ca-certificates \
+ && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 COPY --from=prune --chown=node:node /app /app
 USER node

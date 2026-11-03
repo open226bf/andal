@@ -1,9 +1,9 @@
 import { pageIdFromHref } from '@andal/editor';
-import { LockSimpleIcon } from '@phosphor-icons/react';
+import { GitPullRequestIcon, KanbanIcon, LockSimpleIcon, RecordIcon } from '@phosphor-icons/react';
 import { useNavigate } from '@tanstack/react-router';
 import { useEffect, useRef, useState, type RefObject } from 'react';
 import { createPortal } from 'react-dom';
-import { usePagePreview } from '../lib/api';
+import { usePagePreview, useUnfurl, type Unfurl } from '../lib/api';
 import { date } from '../lib/format';
 
 /** Lien du texte de la page (pas les boutons des figures ni les fiches de fichiers). */
@@ -13,6 +13,10 @@ function textLink(target: EventTarget | null): HTMLAnchorElement | null {
 }
 
 const SAFE_EXTERNAL = /^(https?:|mailto:)/i;
+/** Liens qui ont un aperçu: tickets et pull requests GitHub, tickets Jira. Le serveur décide du reste. */
+const UNFURLABLE = /^https:\/\/(github\.com\/[\w.-]+\/[\w.-]+\/(issues|pull)\/\d+|[^/]+\/browse\/[A-Z][A-Z0-9_]+-\d+)/;
+
+type Hover = { kind: 'page'; id: string; rect: DOMRect } | { kind: 'external'; url: string; rect: DOMRect };
 
 /**
  * Les liens de la page: une page d'Andal s'ouvre dans l'application, avec un
@@ -21,7 +25,7 @@ const SAFE_EXTERNAL = /^(https?:|mailto:)/i;
  */
 export function LinkLayer({ container, editing }: { container: RefObject<HTMLElement | null>; editing: boolean }) {
   const navigate = useNavigate();
-  const [hover, setHover] = useState<{ id: string; rect: DOMRect } | null>(null);
+  const [hover, setHover] = useState<Hover | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const overCard = useRef(false);
 
@@ -46,10 +50,11 @@ export function LinkLayer({ container, editing }: { container: RefObject<HTMLEle
     };
 
     const show = (anchor: HTMLAnchorElement) => {
-      const pageId = pageIdFromHref(anchor.getAttribute('href') ?? '');
+      const href = anchor.getAttribute('href') ?? '';
+      const pageId = pageIdFromHref(href);
       clearTimeout(timer.current);
-      if (!pageId) return;
-      timer.current = setTimeout(() => setHover({ id: pageId, rect: anchor.getBoundingClientRect() }), 350);
+      if (pageId) timer.current = setTimeout(() => setHover({ kind: 'page', id: pageId, rect: anchor.getBoundingClientRect() }), 350);
+      else if (UNFURLABLE.test(href)) timer.current = setTimeout(() => setHover({ kind: 'external', url: href, rect: anchor.getBoundingClientRect() }), 350);
     };
     const hide = () => {
       clearTimeout(timer.current);
@@ -88,29 +93,75 @@ export function LinkLayer({ container, editing }: { container: RefObject<HTMLEle
   }, [hover]);
 
   if (!hover) return null;
+  const onEnter = () => {
+    overCard.current = true;
+    clearTimeout(timer.current);
+  };
+  const onLeave = () => {
+    overCard.current = false;
+    setHover(null);
+  };
   return createPortal(
-    <PreviewCard
-      id={hover.id}
-      rect={hover.rect}
-      onEnter={() => {
-        overCard.current = true;
-        clearTimeout(timer.current);
-      }}
-      onLeave={() => {
-        overCard.current = false;
-        setHover(null);
-      }}
-    />,
+    hover.kind === 'page' ? <PreviewCard id={hover.id} rect={hover.rect} onEnter={onEnter} onLeave={onLeave} /> : <UnfurlCard url={hover.url} rect={hover.rect} onEnter={onEnter} onLeave={onLeave} />,
     document.body,
+  );
+}
+
+function cardStyle(rect: DOMRect) {
+  const width = Math.min(360, window.innerWidth - 32);
+  const left = Math.max(16, Math.min(rect.left, window.innerWidth - width - 16));
+  const below = rect.bottom + 8 + 180 < window.innerHeight;
+  return below ? { left, top: rect.bottom + 8, width } : { left, bottom: window.innerHeight - rect.top + 8, width };
+}
+
+const GITHUB_STATE: Record<string, string> = { open: 'Ouvert', closed: 'Fermé', merged: 'Fusionnée', draft: 'Brouillon' };
+
+/** Ticket ou pull request GitHub, ticket Jira: titre et état. Sans aperçu (privé, hors ligne), rien ne s'affiche. */
+function UnfurlCard({ url, rect, onEnter, onLeave }: { url: string; rect: DOMRect; onEnter: () => void; onLeave: () => void }) {
+  const unfurl = useUnfurl(url);
+  if (unfurl.isError) return null;
+  const data: Unfurl | undefined = unfurl.data;
+  return (
+    <div className="pop link-preview unfurl" role="tooltip" style={cardStyle(rect)} onMouseEnter={onEnter} onMouseLeave={onLeave}>
+      {data?.kind === 'github' ? (
+        <>
+          <span className="unfurl-src">
+            <GitPullRequestIcon size={14} aria-hidden />
+            {data.repo} #{data.number}
+          </span>
+          <b className="unfurl-title">{data.title}</b>
+          <span className="unfurl-state" data-state={data.state}>
+            <RecordIcon size={10} weight="fill" aria-hidden />
+            {data.type === 'pull' ? (GITHUB_STATE[data.state] ?? data.state) : data.state === 'open' ? 'Ouvert' : 'Fermé'}
+            {data.author && <> · {data.author}</>}
+          </span>
+        </>
+      ) : data?.kind === 'jira' ? (
+        <>
+          <span className="unfurl-src">
+            <KanbanIcon size={14} aria-hidden />
+            {data.key}
+            {data.type && <> · {data.type}</>}
+          </span>
+          <b className="unfurl-title">{data.summary}</b>
+          <span className="unfurl-state" data-state={data.category}>
+            <RecordIcon size={10} weight="fill" aria-hidden />
+            {data.status}
+          </span>
+        </>
+      ) : (
+        <span className="doc-skeleton" aria-busy="true" aria-label="Chargement de l'aperçu">
+          <span />
+          <span />
+        </span>
+      )}
+    </div>
   );
 }
 
 function PreviewCard({ id, rect, onEnter, onLeave }: { id: string; rect: DOMRect; onEnter: () => void; onLeave: () => void }) {
   const preview = usePagePreview(id);
-  const width = Math.min(360, window.innerWidth - 32);
-  const left = Math.max(16, Math.min(rect.left, window.innerWidth - width - 16));
-  const below = rect.bottom + 8 + 180 < window.innerHeight;
-  const style = below ? { left, top: rect.bottom + 8, width } : { left, bottom: window.innerHeight - rect.top + 8, width };
+  const style = cardStyle(rect);
   const data = preview.data;
 
   return (

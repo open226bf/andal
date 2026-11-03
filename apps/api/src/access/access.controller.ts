@@ -1,8 +1,9 @@
 import { Body, Controller, Delete, HttpCode, Param, ParseUUIDPipe, Put, Req } from '@nestjs/common';
 import type { FastifyRequest } from 'fastify';
-import { type AuthContext, CurrentAuth } from '../auth/auth.guard.js';
+import { type AuthContext, CurrentAuth, SessionOnly } from '../auth/auth.guard.js';
 import { AccessService } from './access.service.js';
 
+@SessionOnly()
 @Controller()
 export class AccessController {
   constructor(private readonly access: AccessService) {}

@@ -1,8 +1,9 @@
-import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { ForbiddenException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { archivedRole, can, canDeleteProject, matches, projectRole, type Action, type ProjectRole, type Subject } from '@andal/authz';
 import { pageRoleFor, projectGrants, readablePages, type Database, type TreeRow } from '@andal/db';
 import { countNumbered, type JSONContent } from '@andal/editor';
 import { sql, type Kysely } from 'kysely';
+import { forgeUrl } from '../git/git.service.js';
 import { DB } from '../infra.module.js';
 
 export interface PrincipalView {
@@ -112,6 +113,7 @@ export class DocsService {
           title: p.title,
           role: p.role,
           restricted: p.restricted,
+          git: p.git,
           updatedAt: p.updated_at.toISOString(),
         }))
         .sort((a, b) => compareNumbers(a.number, b.number)),
@@ -123,10 +125,22 @@ export class DocsService {
     const page = await this.db
       .selectFrom('pages')
       .leftJoin('users', 'users.id', 'pages.updated_by')
-      .select(['pages.id', 'pages.project_id', 'pages.parent_id', 'pages.title', 'pages.summary', 'pages.content', 'pages.version', 'pages.updated_at', 'pages.path', 'users.name as updated_by_name'])
+      .leftJoin('git_syncs', 'git_syncs.id', 'pages.git_sync_id')
+      .select(['pages.id', 'pages.project_id', 'pages.parent_id', 'pages.title', 'pages.summary', 'pages.content', 'pages.version', 'pages.updated_at', 'pages.path', 'pages.git_path', 'users.name as updated_by_name'])
+      .select(['git_syncs.repo_url', 'git_syncs.branch', 'git_syncs.path as git_root', 'git_syncs.last_synced_at'])
       .where('pages.id', '=', pageId)
       .executeTakeFirstOrThrow();
     const project = await this.db.selectFrom('projects').selectAll().where('id', '=', page.project_id).executeTakeFirstOrThrow();
+    // Page tenue par un dépôt Git: d'où elle vient, et où la modifier.
+    const git =
+      page.repo_url && page.git_path !== null
+        ? {
+            repo: page.repo_url.replace(/^\w+:\/\//, '').replace(/\.git$/, ''),
+            file: [page.git_root, page.git_path].filter(Boolean).join('/'),
+            url: forgeUrl(page.repo_url, page.branch ?? 'main', page.git_root ?? '', page.git_path),
+            syncedAt: page.last_synced_at?.toISOString() ?? null,
+          }
+        : null;
 
     const [readable, numbers] = await Promise.all([readablePages(this.db, subject, project.id), this.numbering(project.id)]);
     const readableIds = new Set(readable.map((p) => p.id));
@@ -157,6 +171,7 @@ export class DocsService {
       updatedBy: page.updated_by_name,
       role: access.role,
       project: {
+        id: project.id,
         slug: project.slug,
         name: project.name,
         shortName: project.short_name,
@@ -170,6 +185,7 @@ export class DocsService {
       prev: index > 0 ? neighbour(index - 1) : null,
       next: index >= 0 ? neighbour(index + 1) : null,
       backlinks: await this.backlinks(subject, pageId),
+      git,
     };
   }
 
@@ -338,8 +354,25 @@ export class DocsService {
   /** Charge le rôle et refuse en 404 si l'action n'est pas permise. */
   async require(subject: Subject, pageId: string, action: Action): Promise<{ projectId: string; role: ProjectRole }> {
     const access = await pageRoleFor(this.db, subject, pageId);
+    if (access?.role && !can(access.role, action) && (action === 'page.edit' || action === 'page.create')) {
+      // Lisible, mais tenue par Git: on dit pourquoi, plutôt qu'un 404.
+      const page = await this.db.selectFrom('pages').select('git_sync_id').where('id', '=', pageId).executeTakeFirst();
+      if (page?.git_sync_id) throw new ForbiddenException('Cette page vient d’un dépôt Git: modifiez-la dans le dépôt, la synchro suivante la mettra à jour.');
+    }
     if (!access || !access.role || !can(access.role, action)) throw new NotFoundException();
     return { projectId: access.projectId, role: access.role };
+  }
+
+  /** Numéros de section de pages de volumes quelconques (sources de l'assistant). */
+  async numbers(pageIds: string[]): Promise<Map<string, string>> {
+    const out = new Map<string, string>();
+    if (pageIds.length === 0) return out;
+    const rows = await this.db.selectFrom('pages').select(['id', 'project_id']).where('id', 'in', pageIds).execute();
+    for (const projectId of new Set(rows.map((r) => r.project_id))) {
+      const numbers = await this.numbering(projectId);
+      for (const r of rows.filter((x) => x.project_id === projectId)) out.set(r.id, numbers.get(r.id)?.number ?? '');
+    }
+    return out;
   }
 
   /** Numéros de section (1, 3.2, 4.1…) sur TOUTES les pages, pour qu'ils ne changent pas selon le lecteur. */

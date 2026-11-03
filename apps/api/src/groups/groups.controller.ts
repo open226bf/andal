@@ -1,9 +1,10 @@
 import { Body, Controller, Delete, Get, HttpCode, Param, ParseUUIDPipe, Patch, Post, Put, Req } from '@nestjs/common';
 import type { FastifyRequest } from 'fastify';
-import { type AuthContext, CurrentAuth } from '../auth/auth.guard.js';
+import { type AuthContext, CurrentAuth, SessionOnly } from '../auth/auth.guard.js';
 import { GroupsService } from './groups.service.js';
 
 /** Groupes de l'espace: réservés aux propriétaires et admins (vérifié par le service). */
+@SessionOnly()
 @Controller('admin/groups')
 export class GroupsController {
   constructor(private readonly groups: GroupsService) {}

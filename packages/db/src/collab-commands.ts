@@ -17,7 +17,9 @@ export type CollabCommand =
   /** Le sommaire d'un volume a changé (page créée, renommée, réordonnée). */
   | { op: 'tree'; requestId: string }
   /** Remettre le contenu d'une ancienne version dans le document vivant, au nom de `userId`. Réponse: 'ok', 'same' ou 'invalid'. */
-  | { op: 'restore'; requestId: string; pageId: string; versionId: string; userId: string };
+  | { op: 'restore'; requestId: string; pageId: string; versionId: string; userId: string }
+  /** Remplacer le contenu (API, synchro Git), au nom de `userId` (null: la synchro, sans auteur). Réponse: 'ok', 'same' ou 'invalid'. */
+  | { op: 'replace'; requestId: string; pageId: string; content: unknown; userId: string | null };
 
 /** Réponses possibles d'une commande ancrée: 'ok', 'invalid' (positions inutilisables) ou 'error'. */
 export function collabReplyKey(requestId: string): string {

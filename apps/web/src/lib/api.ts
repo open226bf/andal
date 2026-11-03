@@ -1,5 +1,5 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
-import type { JSONContent } from '@andal/editor';
+import type { ApiOperation, JSONContent } from '@andal/editor';
 import type { WorkspaceRole } from '@andal/authz';
 import type { Role } from '@andal/ui';
 
@@ -44,6 +44,107 @@ export function uploadFile(pageId: string, file: File): Promise<UploadedFile> {
   form.append('file', file, file.name);
   return api<UploadedFile>(`/pages/${pageId}/files`, { method: 'POST', body: form });
 }
+
+export interface SpecSummary {
+  id: string;
+  name: string;
+  title: string;
+  /** info.version de la dernière publication (« 2.3 »). */
+  label: string;
+  sequence: number;
+  operationCount: number;
+  updatedAt: string;
+}
+
+export interface SpecList {
+  canPublish: boolean;
+  specs: SpecSummary[];
+}
+
+export interface SpecOperationRef {
+  key: string;
+  method: ApiOperation['method'];
+  path: string;
+  summary: string;
+  tags: string[];
+}
+
+export interface SpecDetail {
+  id: string;
+  name: string;
+  title: string;
+  project: { id: string; slug: string; name: string; shortName: string };
+  versions: { sequence: number; label: string; createdAt: string; author: string | null }[];
+  canPublish: boolean;
+  canDelete: boolean;
+}
+
+export interface LiveOperation {
+  operation: ApiOperation;
+  specName: string;
+  title: string;
+  sequence: number;
+  label: string;
+}
+
+export interface PublishedSpec {
+  id: string;
+  name: string;
+  title: string;
+  sequence: number;
+  label: string;
+  /** Même contenu que la dernière version: rien n'a été ajouté. */
+  unchanged: boolean;
+  operationCount: number;
+}
+
+/** Publie une spec OpenAPI (YAML ou JSON) dans un volume; même nom, nouvelle version. */
+export function publishSpec(projectId: string, file: File, name?: string): Promise<PublishedSpec> {
+  const form = new FormData();
+  form.append('file', file, file.name);
+  return api<PublishedSpec>(`/projects/${projectId}/specs${name ? `?name=${encodeURIComponent(name)}` : ''}`, { method: 'POST', body: form });
+}
+
+export interface ApiToken {
+  id: string;
+  name: string;
+  prefix: string;
+  scope: 'read' | 'write';
+  createdAt: string;
+  expiresAt: string | null;
+  expired: boolean;
+  lastUsedAt: string | null;
+}
+
+export type WebhookKind = 'generic' | 'slack' | 'teams';
+
+export interface Webhook {
+  id: string;
+  name: string;
+  url: string;
+  kind: WebhookKind;
+  events: string[];
+  active: boolean;
+  /** Clé HMAC (format générique seulement). */
+  secret: string | null;
+  project: { id: string; name: string } | null;
+  createdAt: string;
+  lastDelivery: { status: number | null; error: string | null; at: string } | null;
+}
+
+export interface WebhookDelivery {
+  id: string;
+  event: string;
+  attempt: number;
+  status: number | null;
+  error: string | null;
+  durationMs: number | null;
+  at: string;
+}
+
+export type Unfurl =
+  | { kind: 'github'; type: 'issue' | 'pull'; repo: string; number: number; title: string; state: 'open' | 'closed' | 'merged' | 'draft'; author: string | null; url: string }
+  | { kind: 'jira'; key: string; summary: string; status: string; category: 'new' | 'indeterminate' | 'done'; type: string | null; url: string };
 
 export type Cloth = 'paiements' | 'identite' | 'donnees' | 'mobile' | 'plateforme' | 'design';
 
@@ -164,7 +265,7 @@ export interface PageDetail {
   updatedAt: string;
   updatedBy: string | null;
   role: Role;
-  project: { slug: string; name: string; shortName: string; cloth: Cloth; volumeNumber: number; pageCount: number };
+  project: { id: string; slug: string; name: string; shortName: string; cloth: Cloth; volumeNumber: number; pageCount: number };
   breadcrumb: PageRef[];
   numbering: { chapter: string; figureOffset: number; listingOffset: number };
   access: AccessSummary;
@@ -172,6 +273,8 @@ export interface PageDetail {
   next: PageRef | null;
   /** Pages lisibles qui citent celle-ci. */
   backlinks: LinkedPage[];
+  /** Page tenue par un dépôt Git: d'où elle vient, où la modifier. */
+  git: { repo: string; file: string; url: string | null; syncedAt: string | null } | null;
 }
 
 /** Une page d'un volume, avec de quoi l'afficher hors de son sommaire (liens, rétroliens). */
@@ -420,6 +523,27 @@ export const usePageLookup = (q: string, volume: string) =>
   });
 export const usePagePreview = (id: string | null) =>
   useQuery({ queryKey: ['preview', id], queryFn: () => api<PagePreview>(`/pages/${id}/preview`), enabled: id !== null, retry: false, staleTime: 30_000 });
+export const useProjectSpecs = (projectId: string | null) =>
+  useQuery({ queryKey: ['specs', 'project', projectId], queryFn: () => api<SpecList>(`/projects/${projectId}/specs`), enabled: projectId !== null });
+export const useSpec = (id: string) => useQuery({ queryKey: ['specs', id], queryFn: () => api<SpecDetail>(`/specs/${id}`) });
+export const useSpecDocument = (id: string, version?: number) =>
+  useQuery({ queryKey: ['specs', id, 'document', version ?? 'latest'], queryFn: () => api<Record<string, unknown>>(`/specs/${id}/document${version ? `?version=${version}` : ''}`), staleTime: 60_000 });
+export const useSpecOperations = (id: string | null) =>
+  useQuery({ queryKey: ['specs', id, 'operations'], queryFn: () => api<SpecOperationRef[]>(`/specs/${id}/operations`), enabled: id !== null });
+export const useSpecOperation = (id: string | null, key: string | null) =>
+  useQuery({
+    queryKey: ['specs', id, 'operation', key],
+    queryFn: () => api<LiveOperation>(`/specs/${id}/operation?key=${encodeURIComponent(key ?? '')}`),
+    enabled: id !== null && key !== null,
+    retry: false,
+    staleTime: 60_000,
+  });
+export const useTokens = () => useQuery({ queryKey: ['me', 'tokens'], queryFn: () => api<ApiToken[]>('/me/tokens') });
+export const useWebhooks = () => useQuery({ queryKey: ['admin', 'webhooks'], queryFn: () => api<{ events: string[]; webhooks: Webhook[] }>('/admin/webhooks') });
+export const useWebhookDeliveries = (id: string | null) =>
+  useQuery({ queryKey: ['admin', 'webhooks', id, 'deliveries'], queryFn: () => api<WebhookDelivery[]>(`/admin/webhooks/${id}/deliveries`), enabled: id !== null, refetchInterval: 5000 });
+export const useUnfurl = (url: string | null) =>
+  useQuery({ queryKey: ['unfurl', url], queryFn: () => api<Unfurl>(`/unfurl?url=${encodeURIComponent(url ?? '')}`), enabled: url !== null, retry: false, staleTime: 300_000 });
 export const useAccounts = () => useQuery({ queryKey: ['admin', 'accounts'], queryFn: () => api<AccountsOverview>('/admin/accounts') });
 export const useLinkInfo = (token: string) => useQuery({ queryKey: ['link', token], queryFn: () => api<LinkInfo>(`/auth/links/${encodeURIComponent(token)}`), retry: false });
 export const useAuthConfig = () => useQuery({ queryKey: ['auth-config'], queryFn: () => api<AuthConfig>('/auth/config'), staleTime: Infinity });

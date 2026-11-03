@@ -5,6 +5,7 @@ import { useState, type CSSProperties, type FormEvent } from 'react';
 import { api, errorMessage, useArchivedVolumes, useRayons, type Cloth, type ProjectSummary, type Tree } from '../lib/api';
 import { relative } from '../lib/format';
 import { spineHeight } from '../lib/volumes';
+import { GitSyncPanel } from './GitSyncPanel';
 import { FormError } from './AuthCard';
 import { Modal } from './Dialog';
 
@@ -242,6 +243,7 @@ export function VolumeSettingsDialog({ tree, open, onOpenChange }: { tree: Tree;
           }}
         />
       )}
+      {open && !project.archived && <GitSyncPanel projectId={project.id} slug={project.slug} />}
       <div className="dialog-body volume-archive">
         {error && <FormError>{error}</FormError>}
         {project.archived ? (

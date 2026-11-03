@@ -200,6 +200,73 @@ La cloche de l'étagère prévient quand quelqu'un vous cite, répond dans un fi
 
 La page la plus complète est **Paiements → 3.2 Authentification** : notes en marge, diagramme de séquence Mermaid, listing de code, encadré, endpoint OpenAPI et schéma draw.io.
 
+## Specs OpenAPI
+
+Un volume range ses specs OpenAPI (3.x, YAML ou JSON), listées dans le sommaire sous « Specs API ». Chacune s'ouvre dans Redoc, version par version : la spec de démo **Paiements** en a deux (2.2 et 2.3).
+
+- **Publier** (droit d'écriture sur le volume) : depuis le sommaire, ou depuis la CI avec un jeton d'API. Une nouvelle version n'est créée que si la spec change vraiment ; republier la même ne fait rien.
+- **Bloc OpenAPI** : dans une page, le bouton OpenAPI de la barre choisit une spec et une opération. Le bloc lit la spec vivante : paramètres, corps, réponses, puce de version, lien vers l'opération dans Redoc. Il garde une copie, montrée si la spec disparaît ou si l'opération en sort.
+- **Supprimer** une spec : admins du volume. Les blocs qui la citent gardent leur copie.
+
+```bash
+curl -X POST "https://docs.example.com/api/projects/<volume>/specs?name=paiements" \
+  -H "Authorization: Bearer andal_…" -H "Content-Type: application/yaml" \
+  --data-binary @openapi.yaml
+```
+
+La page de la spec rappelle cette commande, avec l'identifiant du volume.
+
+## API publique et jetons
+
+Toute l'API de l'interface (`/api/…`) se lit et s'écrit aussi avec un **jeton d'API**, créé dans **Mon compte** (menu du compte) : un nom, une portée (lecture, ou lecture et écriture), une durée (7, 30, 90 ou 365 jours). Le jeton ne s'affiche qu'une fois ; Andal n'en garde qu'une empreinte. Il agit avec vos droits, jamais plus, et se révoque d'un clic.
+
+- Un jeton en lecture ne fait que des `GET`.
+- Un jeton ne touche ni aux mots de passe, ni aux comptes et groupes, ni aux jetons, ni aux webhooks, ni à la synchro Git, ni à l'assistant : il faut une session pour cela.
+- 20 jetons actifs au plus par personne ; la date de dernière utilisation s'affiche.
+
+Le contenu d'une page s'échange en JSON (le document de l'éditeur) ou en Markdown, et un remplacement arrive en direct chez qui a la page ouverte :
+
+```bash
+curl -H "Authorization: Bearer andal_…" "https://docs.example.com/api/pages/<page>/content?format=markdown"
+curl -X PUT -H "Authorization: Bearer andal_…" -H "Content-Type: text/markdown" \
+  --data-binary @guide.md "https://docs.example.com/api/pages/<page>/content"
+curl -X POST -H "Authorization: Bearer andal_…" -H "Content-Type: application/json" \
+  -d '{"title":"Notes de version","markdown":"# 2.3\n\n- Jetons plus courts"}' \
+  "https://docs.example.com/api/projects/<volume>/pages"
+```
+
+Le Markdown suit GFM (tableaux, cases à cocher), plus les encadrés `> [!NOTE]`, les blocs ```` ```mermaid ```` et ```` ```openapi ```` (`spec:` et `operation:`, qui relient le bloc à la spec du volume).
+
+## Intégrations
+
+**Administration → Intégrations** (admins de l'espace) envoie les événements vers d'autres outils : page créée, modifiée, mise à la corbeille, commentaire, spec publiée.
+
+- **Formats** : JSON signé (en-tête `X-Andal-Signature`, HMAC-SHA256 de `horodatage.corps` avec le secret du webhook), Slack ou Mattermost (webhook entrant), Microsoft Teams (carte adaptative).
+- **Portée** : tous les volumes, ou un seul ; **événements** au choix. « Tester » envoie un ping ; les 50 derniers envois s'affichent, avec leur réponse.
+- Une page modifiée n'est annoncée qu'après `WEBHOOK_UPDATE_DELAY` secondes de calme (120 par défaut) : une séance d'écriture, un message. Une page sous restriction de lecture n'est jamais annoncée.
+- Un envoi en échec est retenté jusqu'à 6 tentatives en tout, de 30 secondes à 8 minutes d'écart ; une réponse 4xx (hors 408 et 429) arrête tout de suite. Les adresses du réseau privé sont refusées, résolution DNS comprise, sauf `WEBHOOK_ALLOW_PRIVATE=true`.
+
+**Aperçus de liens** : au survol d'un lien vers un ticket ou une pull request GitHub, ou un ticket Jira, une fiche montre son titre et son état. `GITHUB_TOKEN` ouvre les dépôts privés (sans lui, dépôts publics et 60 requêtes par heure) ; `JIRA_BASE_URL`, `JIRA_EMAIL` et `JIRA_API_TOKEN` branchent Jira.
+
+## Docs-as-code : synchro Git
+
+Dans les réglages d'un volume (admins du volume), **Synchro Git** relie un dossier d'un dépôt au volume : chaque fichier Markdown devient une page, chaque sous-dossier une page parente (son `README.md` ou `index.md` en est le contenu).
+
+- **Titres et ordre** : `title` et `position` de l'en-tête YAML, sinon le premier titre, sinon le nom du fichier ; à défaut de position, l'ordre des noms (`01-demarrer.md`).
+- **Liens relatifs** vers d'autres fichiers `.md` : des liens entre pages. **Images** du dépôt : des pièces jointes de la page. Blocs `mermaid` et `openapi` : comme dans l'éditeur.
+- Les pages tenues par le dépôt se lisent et se commentent dans Andal, et s'écrivent dans le dépôt : leur bandeau mène au fichier sur la forge. Personne ne les modifie, renomme ou déplace ici, admins compris.
+- Un fichier retiré du dépôt met sa page à la corbeille ; une page modifiée garde sa version d'avant dans l'historique, et le changement arrive en direct sur les pages ouvertes.
+- **Quand** : à chaque push si la forge appelle le webhook affiché (GitHub, GitLab, Gitea, Forgejo, signé avec le secret affiché), sinon toutes les 10 minutes, ou sur « Synchroniser ».
+- Dépôts en `https://` seulement ; un dépôt privé demande un jeton de lecture, gardé côté serveur. **Détacher** laisse les pages en place, et modifiables de nouveau.
+
+## Assistant
+
+**⌘K** répond aussi aux questions : une question qui finit par « ? », ou Maj + Entrée. La réponse arrive au fil de l'eau, cite ses sources [1], [2]… et les liste en dessous.
+
+- L'assistant ne lit que les pages que **vous** pouvez lire : la recherche se fait avant, avec vos droits, et seuls ces extraits partent au modèle. Une page restreinte ne quitte jamais Andal pour qui ne la lit pas.
+- **Administration → Assistant** (admins de l'espace) choisit le modèle : **Claude** (clé d'API Anthropic, `claude-opus-5-5` par défaut) ou **toute API compatible OpenAI**, locale comprise (Ollama, LM Studio, vLLM) pour que rien ne sorte du réseau. « Tester » vérifie la connexion ; la clé n'est jamais renvoyée au navigateur. Les variables `AI_*` donnent la valeur par défaut.
+- 40 questions par heure et par personne.
+
 ## Organisation
 
 ```
@@ -207,11 +274,11 @@ apps/
   web/      React 19, Vite, Tailwind 4, TanStack Router et Query, TipTap 3
   api/      NestJS 11 sur Fastify; fichiers vers le stockage S3
   collab/   Hocuspocus 3 (Yjs), validation du schéma avant écriture
-  worker/   BullMQ: texte et liens pour la recherche et les rétroliens, emails, purges (corbeille, fichiers)
+  worker/   BullMQ: texte et liens pour la recherche et les rétroliens, emails, purges (corbeille, fichiers), webhooks, synchro Git
 packages/
   authz/    Modèle de droits, pur et testé
   db/       Kysely, migrations, seed, requêtes d'accès, stockage S3
-  editor/   Schéma TipTap partagé client / serveur (Mermaid, OpenAPI, draw.io, image, pièce jointe, tableau, tâches, encadré, commentaire)
+  editor/   Schéma TipTap partagé client / serveur (Mermaid, OpenAPI, draw.io, image, pièce jointe, tableau, tâches, encadré, commentaire), lecture des specs OpenAPI, Markdown aller-retour
   ui/       Jetons de design (CSS) et composants de base
 deploy/     Images, compose de production, Caddy (voir deploy/README.md)
 tests/e2e/  Suites de bout en bout (Python, sans dépendance)
@@ -233,13 +300,13 @@ infra/      Realm Keycloak de dev
 pnpm test
 ```
 
-Lance les tests du modèle de droits et du schéma de l'éditeur.
+Lance les tests du modèle de droits, du schéma de l'éditeur (specs OpenAPI, Markdown) et des webhooks (signature, garde réseau).
 
 ```bash
 tests/e2e/run.sh
 ```
 
-Avec la stack lancée : les suites de bout en bout (comptes, accès et notifications, pages, versions, volumes, fichiers et liens), puis les deux vérifications du serveur collab ci-dessous. Chaque suite repart des données de démo ; `tests/e2e/run.sh files_links_test` n'en lance qu'une. La CI GitHub les fait tourner à chaque commit, sur une stack complète.
+Avec la stack lancée : les suites de bout en bout (comptes, accès et notifications, pages, versions, volumes, fichiers et liens, specs, API publique et webhooks, synchro Git, assistant), puis les deux vérifications du serveur collab ci-dessous. Chaque suite repart des données de démo ; `tests/e2e/run.sh files_links_test` n'en lance qu'une. La CI GitHub les fait tourner à chaque commit, sur une stack complète.
 
 ```bash
 pnpm --filter @andal/collab check:readonly
@@ -273,7 +340,9 @@ Avec `ANDAL_URL`, `ANDAL_USER` et `ANDAL_PASSWORD` : vérifie une installation d
 - **Bibliothèque** : ordonner son étagère à la main (aujourd'hui par numéro de volume) ; glisser un volume d'un rayon à l'autre depuis la bibliothèque.
 - **Pages** : comparer deux versions (aujourd'hui on les regarde l'une après l'autre) ; replier les sections du sommaire.
 - **Fichiers** : les schémas draw.io sont encore stockés en data URI dans le document, pas dans le stockage.
-- **Redoc** : le bouton « Ouvrir dans Redoc » est désactivé, faute de spec stockée.
+- **Specs** : comparer deux versions d'une spec (routes ajoutées, retirées, cassées) ; des specs AsyncAPI ou GraphQL.
+- **Synchro Git** : dans un seul sens (dépôt → Andal) ; proposer une modification depuis Andal ouvrirait une pull request.
+- **Assistant** : la recherche est plein texte (français) ; une recherche sémantique (embeddings, pgvector) trouverait mieux les questions mal formulées.
 - **Export PDF** (Gotenberg), extension Redis de Hocuspocus pour lancer plusieurs instances collab.
 - **Durcissement** : RLS PostgreSQL en seconde barrière, limitation de débit au-delà de la connexion, `trustProxy` à régler selon le proxy de production (aujourd'hui l'API fait confiance à `X-Forwarded-For`).
 - **Enregistrement refusé** : quand le serveur collab rejette un contenu invalide, l'éditeur n'en est pas averti ; il faudrait le signaler à l'écran.

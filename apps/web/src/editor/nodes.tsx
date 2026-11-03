@@ -15,9 +15,12 @@ import {
   LightbulbIcon,
   PencilSimpleIcon,
   FlowArrowIcon,
+  WarningCircleIcon,
 } from '@phosphor-icons/react';
+import { Link } from '@tanstack/react-router';
 import { NodeViewContent, NodeViewWrapper, type NodeViewProps } from '@tiptap/react';
 import { useEffect, useRef, useState, type CSSProperties, type DependencyList } from 'react';
+import { useSpecOperation, useSpecOperations } from '../lib/api';
 import { useDoc, useNumber } from '../lib/doc-context';
 import { fileSize } from '../lib/format';
 import { renderMermaid } from '../lib/mermaid';
@@ -130,8 +133,18 @@ export function MermaidView({ node, editor, getPos, updateAttributes }: NodeView
 export function OpenApiView({ node, editor, getPos, updateAttributes }: NodeViewProps) {
   const { editing } = useDoc();
   const number = useNumber(editor, getPos, 'listing');
-  const op = node.attrs.operation as ApiOperation | null;
+  const specId = (node.attrs.specId as string | null) ?? null;
+  const key = (node.attrs.operationKey as string | null) ?? null;
+  const snapshot = node.attrs.operation as ApiOperation | null;
   const caption = String(node.attrs.caption ?? '');
+  const live = useSpecOperation(specId, key);
+  const operations = useSpecOperations(editing ? specId : null);
+  const op = live.data?.operation ?? snapshot;
+  // La spec a bougé depuis l'insertion: en mode édition, la copie gardée dans la page suit.
+  const fresh = live.data?.operation;
+  useEffect(() => {
+    if (editing && fresh && JSON.stringify(fresh) !== JSON.stringify(snapshot)) updateAttributes({ operation: fresh });
+  }, [editing, fresh, snapshot, updateAttributes]);
 
   return (
     <NodeViewWrapper as="figure" className="fig" data-block="OpenAPI">
@@ -139,40 +152,101 @@ export function OpenApiView({ node, editor, getPos, updateAttributes }: NodeView
         {op ? (
           <>
             <div className="api-head">
-              <span className="verb">{op.method}</span>
+              <span className="verb" data-method={op.method}>
+                {op.method}
+              </span>
               <code className="route">{op.path}</code>
               <span className="api-sum">{op.summary}</span>
-              <button type="button" className="ghost" disabled title="Arrive avec le stockage des specs (RustFS)">
-                <BookOpenTextIcon size={16} aria-hidden />
-                Ouvrir dans Redoc
-              </button>
+              {live.data && (
+                <span className="api-ver" title={`Spec ${live.data.specName}, version publiée n° ${live.data.sequence}`}>
+                  {live.data.specName} v{live.data.label || live.data.sequence}
+                </span>
+              )}
+              {specId && !live.isError && (
+                <Link className="ghost" to="/specs/$specId" params={{ specId }} search={key ? { op: key } : {}}>
+                  <BookOpenTextIcon size={16} aria-hidden />
+                  Ouvrir dans Redoc
+                </Link>
+              )}
             </div>
+            {live.isError && (
+              <p className="api-stale" role="note">
+                <WarningCircleIcon size={16} aria-hidden />
+                {specId ? 'Copie gardée dans la page: la spec n’est plus lisible ici, ou l’opération en a été retirée.' : `Copie de ${String(node.attrs.specFile)}, sans lien avec une spec publiée.`}
+              </p>
+            )}
+            {editing && operations.data && (
+              <label className="api-swap">
+                Opération
+                <select value={key ?? ''} onChange={(e) => updateAttributes({ operationKey: e.target.value })}>
+                  {operations.data.map((o) => (
+                    <option key={o.key} value={o.key}>
+                      {o.key}
+                      {o.summary ? ` · ${o.summary}` : ''}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
             <div className="api-cols">
               <section>
-                <h3>
-                  Corps de la requête {op.contentType && <span className="mime">{op.contentType}</span>}
-                </h3>
-                <table className="params">
-                  <thead>
-                    <tr>
-                      <th scope="col">Champ</th>
-                      <th scope="col">Type</th>
-                      <th scope="col">Description</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {(op.requestBody ?? []).map((f) => (
-                      <tr key={f.name}>
-                        <td>
-                          <code>{f.name}</code>
-                          {f.required && <span className="req">requis</span>}
-                        </td>
-                        <td className="type">{f.type}</td>
-                        <td>{f.description}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                {(op.parameters ?? []).length > 0 && (
+                  <>
+                    <h3>Paramètres</h3>
+                    <table className="params">
+                      <thead>
+                        <tr>
+                          <th scope="col">Nom</th>
+                          <th scope="col">Type</th>
+                          <th scope="col">Description</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {op.parameters!.map((f) => (
+                          <tr key={`${f.in}:${f.name}`}>
+                            <td>
+                              <code>{f.name}</code>
+                              <span className="in">{f.in}</span>
+                              {f.required && <span className="req">requis</span>}
+                            </td>
+                            <td className="type">{f.type}</td>
+                            <td>{f.description}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </>
+                )}
+                {(op.requestBody ?? []).length > 0 ? (
+                  <>
+                    <h3>
+                      Corps de la requête {op.contentType && <span className="mime">{op.contentType}</span>}
+                    </h3>
+                    <table className="params">
+                      <thead>
+                        <tr>
+                          <th scope="col">Champ</th>
+                          <th scope="col">Type</th>
+                          <th scope="col">Description</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {op.requestBody!.map((f) => (
+                          <tr key={f.name}>
+                            <td>
+                              <code>{f.name}</code>
+                              {f.required && <span className="req">requis</span>}
+                            </td>
+                            <td className="type">{f.type}</td>
+                            <td>{f.description}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </>
+                ) : (
+                  (op.parameters ?? []).length === 0 && <p className="api-none">Ni paramètre ni corps de requête.</p>
+                )}
               </section>
               <section>
                 <h3>Réponses</h3>
@@ -191,7 +265,9 @@ export function OpenApiView({ node, editor, getPos, updateAttributes }: NodeView
             </div>
           </>
         ) : (
-          <p className="fig-error">Opération introuvable dans {String(node.attrs.specFile)}.</p>
+          <p className="fig-error" aria-busy={live.isLoading}>
+            {live.isLoading ? 'Chargement de l’opération…' : `Opération introuvable dans ${String(node.attrs.specFile || 'la spec')}.`}
+          </p>
         )}
       </div>
       <Caption label={`Listing ${number}`} caption={caption} editable={editing} onChange={(v) => updateAttributes({ caption: v })} />

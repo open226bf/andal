@@ -36,6 +36,7 @@
     "mermaid": "^11.9.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
+    "redoc": "2.5.4",
     "yjs": "^13.6.27"
   },
   "devDependencies": {

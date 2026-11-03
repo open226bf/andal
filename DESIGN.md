@@ -428,7 +428,30 @@ Listing à filet et rayon 14px sur `code-bg`; en-tête Mono 500 0.75rem `ink-3` 
 Fond `vol-tint`, rayon 14px, sans bordure; grille icône (1.375rem, `vol-deep`) / contenu; titre « À retenir » en UI 700 0.9375rem `vol-deep`, texte en Literata. La toile teinte l'encadré: il change avec le volume.
 
 ### Le bloc OpenAPI
-Bloc large (déborde sur la marge à partir de 956px). En-tête `desk` à filet: verbe en Mono 700 sur `ok-tint`/`ok`, route en Mono 500 1rem, résumé `ink-2`, lien fantôme « Ouvrir dans Redoc ». Corps en deux colonnes `1.25fr / 1fr` séparées par un filet: tableau des champs (en-têtes `ink-3` 0.75rem, lignes à filet, « requis » en `err` 700 0.6875rem, type en Mono `ink-3`) et réponses (code en Mono 700 sur pastille `ok-tint` ou `err-tint`, schéma JSON sur `code-bg` rayon 6px). Une colonne sous 860px.
+Bloc large (déborde sur la marge à partir de 956px). En-tête `desk` à filet: verbe en Mono 700 sur `ok-tint`/`ok`, route en Mono 500 1rem, résumé `ink-2`, puce de version (Mono 500 0.75rem `ink-3`, filet `rule`, rayon 6px), lien fantôme « Ouvrir dans Redoc » vers l'opération. Corps en deux colonnes `1.25fr / 1fr` séparées par un filet: paramètres puis tableau des champs (en-têtes `ink-3` 0.75rem, lignes à filet, « requis » en `err` 700 0.6875rem, type en Mono `ink-3`) et réponses (code en Mono 700 sur pastille `ok-tint` ou `err-tint`, schéma JSON sur `code-bg` rayon 6px). Une colonne sous 860px.
+- **Spec vivante:** le bloc relit la spec du volume à l'affichage. Si la spec ou l'opération a disparu, une bande `hl` sous l'en-tête (0.8125rem, icône) annonce « Copie gardée dans la page » et le bloc montre sa dernière copie.
+- **En mode Modifier:** un sélecteur « Opération » apparaît sous l'en-tête; la copie gardée suit la spec quand elle a changé.
+
+### La page d'une spec
+Bandeau du volume, puis une barre papier collante sous lui (filet bas, `12px 28px`): nom en UI 700 1.25rem, sélecteur de version en Mono 0.8125rem, actions `btn-line sm` à droite (Publier une version, Depuis la CI, Supprimer en icône). « Depuis la CI » déplie la commande `curl` dans un cadre `code-bg` à filet avec un bouton Copier. Redoc prend toute la largeur dessous, sur papier, avec les tokens: polices UI et Mono d'Andal, encre, filets, toile du volume pour les liens et le menu actif; verbes HTTP en tons moyens fixes, lisibles en clair comme en sombre. Son menu se colle sous la barre (`--spec-top`, mesuré). Chargement: un reflet `desk` qui balaie le papier en 1.4s.
+- **Dans le sommaire:** « Specs API » sous un filet, intitulé Label `ink-3`; une ligne par spec, icône `ink-3`, nom tronqué, version Mono 0.75rem `ink-3`; courante en `vol-tint`/`vol-deep` 600.
+
+### Jetons, webhooks, synchro Git
+- **Jeton tout juste créé:** bande `hl` (0.875rem, icône d'avertissement) « Copiez-le maintenant: il ne sera plus jamais affiché », puis le jeton dans un champ à copier (`linkbox`). Dans la liste, préfixe Mono 0.75rem `ink-3` sous le nom, portée et dernière utilisation.
+- **Webhook:** une carte à filet `rule`, rayon `r-l`, `16px 18px`: nom 700 1rem, format en pilule `hover` 700 0.75rem (JSON signé, Slack, Teams), adresse Mono 0.8125rem `ink-2` qui se coupe n'importe où, portée et événements `ink-2`, dernier envoi en `ok` ou `err`. Actions `btn-line` à droite. Un webhook coupé passe sur `desk`, son contenu à 70%. Liste vide: cadre pointillé `rule-2` avec une phrase et le bouton d'ajout.
+- **Synchro Git** (réglages du volume): titre avec l'icône de branche, une phrase qui dit quel dossier de quel dépôt tient combien de pages, l'état en `ok` ou `err`, le webhook de la forge replié dans un `details`. Formulaire: dépôt pleine largeur, branche et dossier côte à côte.
+- **Page tenue par Git:** au-dessus du titre, une note `desk` à filet, rayon `r`, UI 0.875rem `ink-2`: icône de branche `ink-3`, « Cette page vient de `docs/api/auth.md` », lien 600 « Ouvrir le fichier » sur la forge. Dans le sommaire, la page porte le signe commentaire de qui pourrait sinon l'écrire.
+
+### Aperçus GitHub et Jira
+Même `pop` de 360px que l'aperçu de page, en grille à 6px: source en UI 600 0.75rem `ink-3` avec icône (pull request ou tableau), « open226bf/andal #42 » ou « PAY-128 · Bug »; titre 0.9375rem/1.4 `ink`; état en pilule 700 0.75rem précédée d'un point plein: ouvert en `ok-tint`/`ok`, fusionnée en teinte de commande, fermé en `err-tint`/`err`, statut Jira selon sa catégorie. Un lien privé ou injoignable n'ouvre rien: pas de fiche vide.
+
+### L'assistant
+Dans ⌘K, une ligne « Demander à l'assistant: … » (icône étincelle, touche `↵` ou `⇧↵`) précède les résultats; Entrée sur une phrase qui finit par « ? », ou Maj + Entrée, l'ouvre. La réponse remplace la liste:
+- **En-tête:** icône `vol-deep`, la question en 700 1rem, filet bas.
+- **Réponse:** en Literata 1rem/1.62, comme une page (paragraphes, listes à puces, code en ligne `code-bg`). Les citations [1] sont des pastilles `vol-tint`/`vol-deep` 700 0.6875rem qui mènent à la source et s'inversent au survol.
+- **Sources:** sous un filet, intitulé Label `ink-3`, une ligne par page citée: numéro de citation en pastille `hover`, numéro de section `vol-deep` tabulaire, titre, volume `ink-3`.
+- **Pied:** 0.75rem `ink-3`, sous un filet: le modèle qui a répondu, et le rappel de vérifier dans les pages citées.
+- **Administration → Assistant:** une note `desk` à filet qui dit ce qui part au modèle et ce qui n'y part jamais, puis le formulaire (640px max): fournisseur, modèle, adresse, clé (jamais réaffichée), interrupteur, Tester.
 
 ### Figures draw.io et Mermaid
 Les deux renderers prennent les tokens, pas leur thème par défaut.

@@ -1,6 +1,7 @@
-import { Body, Controller, Delete, Get, HttpCode, Param, ParseIntPipe, ParseUUIDPipe, Patch, Post, Req } from '@nestjs/common';
-import type { FastifyRequest } from 'fastify';
+import { Body, Controller, Delete, Get, Headers, HttpCode, Param, ParseIntPipe, ParseUUIDPipe, Patch, Post, Put, Query, Req, Res } from '@nestjs/common';
+import type { FastifyReply, FastifyRequest } from 'fastify';
 import { type AuthContext, CurrentAuth } from '../auth/auth.guard.js';
+import { ContentService, type ContentInput } from './content.service.js';
 import { PagesService } from './pages.service.js';
 import { VersionsService } from './versions.service.js';
 
@@ -9,9 +10,30 @@ export class PagesController {
   constructor(
     private readonly pages: PagesService,
     private readonly versions: VersionsService,
+    private readonly content: ContentService,
   ) {}
 
-  /** `{ title, parentId }`: parentId absent ou nul, la page va au premier niveau du volume. */
+  /** Le contenu en JSON (par défaut) ou en Markdown: `?format=markdown`, ou `Accept: text/markdown`. */
+  @Get('pages/:id/content')
+  async readContent(@CurrentAuth() auth: AuthContext, @Param('id', ParseUUIDPipe) id: string, @Query('format') format: string | undefined, @Headers('accept') accept: string | undefined, @Res({ passthrough: true }) reply: FastifyReply) {
+    const page = await this.content.read(auth.subject, id);
+    if (format === 'markdown' || (!format && accept?.includes('text/markdown'))) {
+      reply.header('Content-Type', 'text/markdown; charset=utf-8');
+      return page.markdown();
+    }
+    return { id: page.id, title: page.title, version: page.version, updatedAt: page.updatedAt, content: page.content };
+  }
+
+  /**
+   * Remplace le contenu: `{ content }` (JSON), `{ markdown }`, ou du Markdown brut
+   * (`Content-Type: text/markdown`). Les navigateurs ouverts le reçoivent en direct.
+   */
+  @Put('pages/:id/content')
+  replaceContent(@CurrentAuth() auth: AuthContext, @Param('id', ParseUUIDPipe) id: string, @Body() body: unknown, @Req() req: FastifyRequest) {
+    return this.content.replace(auth, id, (typeof body === 'string' ? body : (body ?? {})) as ContentInput, req.ip);
+  }
+
+  /** `{ title, parentId, markdown?, content? }`: parentId absent ou nul, la page va au premier niveau du volume. */
   @Post('projects/:id/pages')
   create(@CurrentAuth() auth: AuthContext, @Param('id', ParseUUIDPipe) id: string, @Body() body: Record<string, unknown> | undefined, @Req() req: FastifyRequest) {
     return this.pages.create(auth, id, body ?? {}, req.ip);

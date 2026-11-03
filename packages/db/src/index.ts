@@ -12,6 +12,9 @@ export * from './mail.js';
 export * from './mentions.js';
 export * from './versions.js';
 export * from './storage.js';
+export * from './specs.js';
+export * from './webhooks.js';
+export * from './content-helpers.js';
 export { migrateToLatest } from './migrations.js';
 
 export function createDb(connectionString: string, max = 10): Kysely<Database> {

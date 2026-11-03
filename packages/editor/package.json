@@ -7,6 +7,10 @@
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
+    },
+    "./markdown": {
+      "types": "./dist/markdown.d.ts",
+      "default": "./dist/markdown.js"
     }
   },
   "scripts": {
@@ -21,9 +25,11 @@
     "@tiptap/extension-list": "3.32.2",
     "@tiptap/extension-table": "3.32.2",
     "@tiptap/pm": "^3.4.0",
-    "@tiptap/starter-kit": "^3.4.0"
+    "@tiptap/starter-kit": "^3.4.0",
+    "markdown-it": "^14.3.3"
   },
   "devDependencies": {
+    "@types/markdown-it": "^14.2.0",
     "typescript": "~5.9.2",
     "vitest": "^3.2.0"
   }

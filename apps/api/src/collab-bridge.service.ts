@@ -38,6 +38,11 @@ export class CollabBridgeService {
     return this.request({ op: 'restore', requestId: randomUUID(), pageId, versionId, userId });
   }
 
+  /** Remplace le contenu d'une page (écriture par l'API): 'ok', 'same', 'invalid' ou 'timeout'. */
+  replace(pageId: string, content: unknown, userId: string): Promise<string> {
+    return this.request({ op: 'replace', requestId: randomUUID(), pageId, content, userId }, 10);
+  }
+
   /** Retire l'ancre d'un fil supprimé. */
   unanchor(pageId: string, threadId: string): Promise<string> {
     return this.request({ op: 'unanchor', requestId: randomUUID(), pageId, threadId });

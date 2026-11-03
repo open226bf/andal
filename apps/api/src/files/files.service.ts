@@ -1,6 +1,6 @@
 import { HttpException, Inject, Injectable, NotFoundException, PayloadTooLargeException, ServiceUnavailableException, BadRequestException } from '@nestjs/common';
 import type { Subject } from '@andal/authz';
-import { Storage, type Database } from '@andal/db';
+import { sniffImage, Storage, type Database } from '@andal/db';
 import type { FastifyRequest } from 'fastify';
 import '@fastify/multipart';
 import { randomUUID } from 'node:crypto';
@@ -28,19 +28,6 @@ export interface OpenedFile {
   size: number;
   inline: boolean;
   stream: Readable;
-}
-
-/** Signatures des formats d'image affichés dans la page. Le type annoncé par le navigateur ne suffit pas. */
-function sniffImage(head: Buffer, declared: string): string | null {
-  const ascii = head.subarray(0, 16).toString('latin1');
-  if (head[0] === 0x89 && ascii.startsWith('\x89PNG\r\n\x1a\n')) return 'image/png';
-  if (head[0] === 0xff && head[1] === 0xd8 && head[2] === 0xff) return 'image/jpeg';
-  if (ascii.startsWith('GIF87a') || ascii.startsWith('GIF89a')) return 'image/gif';
-  if (ascii.startsWith('RIFF') && ascii.slice(8, 12) === 'WEBP') return 'image/webp';
-  if (ascii.slice(4, 12) === 'ftypavif' || ascii.slice(4, 12) === 'ftypavis') return 'image/avif';
-  // SVG: affiché en <img> (aucun script ne s'y exécute) et servi sous CSP « sandbox ».
-  if (declared === 'image/svg+xml' && /^\s*(<\?xml[^>]*>\s*)?(<!--[\s\S]*?-->\s*)*(<!DOCTYPE[^>]*>\s*)?<svg[\s>]/i.test(head.subarray(0, 2048).toString('utf8').replace(/^﻿/, ''))) return 'image/svg+xml';
-  return null;
 }
 
 /** Nom affichable: sans chemin ni caractère de contrôle, 180 caractères au plus. */

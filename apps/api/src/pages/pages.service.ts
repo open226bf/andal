@@ -7,6 +7,8 @@ import { AuditService } from '../audit.service.js';
 import type { AuthContext } from '../auth/auth.guard.js';
 import { CollabBridgeService } from '../collab-bridge.service.js';
 import { DocsService } from '../docs/docs.service.js';
+import { EventsService } from '../webhooks/events.service.js';
+import { ContentService } from './content.service.js';
 import { config } from '../env.js';
 import { DB } from '../infra.module.js';
 
@@ -43,6 +45,8 @@ export class PagesService {
     private readonly docs: DocsService,
     private readonly audit: AuditService,
     private readonly bridge: CollabBridgeService,
+    private readonly content: ContentService,
+    private readonly events: EventsService,
   ) {}
 
   private async project(auth: AuthContext, projectId: string) {
@@ -82,9 +86,11 @@ export class PagesService {
     return Number(row.max) + 1;
   }
 
-  async create(auth: AuthContext, projectId: string, input: { title?: unknown; parentId?: unknown }, ip: string) {
+  async create(auth: AuthContext, projectId: string, input: { title?: unknown; parentId?: unknown; markdown?: unknown; content?: unknown }, ip: string) {
     const name = title(input.title);
     const parent = await this.destination(auth, projectId, parentId(input.parentId));
+    // Créée par l'API avec son contenu: personne ne l'a encore ouverte, il s'écrit directement.
+    const initial = input.markdown !== undefined || input.content !== undefined ? (await this.content.prepare(projectId, { markdown: input.markdown, content: input.content })).doc : EMPTY_DOC;
     const id = randomUUID();
     await this.db
       .insertInto('pages')
@@ -95,12 +101,14 @@ export class PagesService {
         path: parent ? `${parent.path}.${ltreeLabel(id)}` : ltreeLabel(id),
         position: await this.nextPosition(projectId, parent?.id ?? null),
         title: name,
-        content: JSON.stringify(EMPTY_DOC),
+        content: JSON.stringify(initial),
         updated_by: auth.user.id,
       })
       .execute();
     // Version 1 dans l'historique: la séance qui suit la création s'y ajoute.
-    await this.db.insertInto('page_versions').values({ page_id: id, version: 1, title: name, content: JSON.stringify(EMPTY_DOC), authors: JSON.stringify([auth.user.id]) }).execute();
+    await this.db.insertInto('page_versions').values({ page_id: id, version: 1, title: name, content: JSON.stringify(initial), authors: JSON.stringify([auth.user.id]) }).execute();
+    if (initial !== EMPTY_DOC) await this.content.indexLater(id);
+    await this.events.emit({ event: 'page.created', workspaceId: auth.user.workspace_id, projectId, actorId: auth.user.id, pageId: id });
     await this.audit.record({ workspaceId: auth.user.workspace_id, actorId: auth.user.id, action: 'page.created', targetType: 'page', targetId: id, ip, metadata: { title: name, parentId: parent?.id ?? null } });
     await this.bridge.treeChanged();
     return { id };
@@ -214,6 +222,7 @@ export class PagesService {
     const now = new Date();
     await this.db.updateTable('pages').set({ deleted_at: now, deleted_by: auth.user.id }).where('id', 'in', branch.map((b) => b.id)).execute();
     await this.audit.record({ workspaceId: auth.user.workspace_id, actorId: auth.user.id, action: 'page.deleted', targetType: 'page', targetId: page.id, ip, metadata: { title: page.title, pages: branch.length } });
+    await this.events.emit({ event: 'page.deleted', workspaceId: auth.user.workspace_id, projectId: page.project_id, actorId: auth.user.id, pageId: page.id });
     // Les connexions ouvertes sur ces pages sont fermées, et les navigateurs relisent leur page.
     await this.bridge.accessChanged();
     return { pages: branch.length, parentId: page.parent_id };

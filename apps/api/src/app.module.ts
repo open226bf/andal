@@ -25,10 +25,24 @@ import { MailService } from './mail.service.js';
 import { NotificationsController } from './notifications/notifications.controller.js';
 import { NotificationsService } from './notifications/notifications.service.js';
 import { PagesController } from './pages/pages.controller.js';
+import { ContentService } from './pages/content.service.js';
 import { PagesService } from './pages/pages.service.js';
 import { ProjectsController } from './projects/projects.controller.js';
 import { RayonsController } from './rayons/rayons.controller.js';
 import { RayonsService } from './rayons/rayons.service.js';
+import { SpecsController } from './specs/specs.controller.js';
+import { SpecsService } from './specs/specs.service.js';
+import { TokensController } from './tokens/tokens.controller.js';
+import { TokensService } from './tokens/tokens.service.js';
+import { AskController } from './ask/ask.controller.js';
+import { AskService } from './ask/ask.service.js';
+import { GitController } from './git/git.controller.js';
+import { GitService } from './git/git.service.js';
+import { UnfurlController } from './unfurl/unfurl.controller.js';
+import { UnfurlService } from './unfurl/unfurl.service.js';
+import { EventsService } from './webhooks/events.service.js';
+import { WebhooksController } from './webhooks/webhooks.controller.js';
+import { WebhooksService } from './webhooks/webhooks.service.js';
 import { ProjectsService } from './projects/projects.service.js';
 import { VersionsService } from './pages/versions.service.js';
 
@@ -48,6 +62,12 @@ import { VersionsService } from './pages/versions.service.js';
     CommentsController,
     NotificationsController,
     FilesController,
+    SpecsController,
+    TokensController,
+    WebhooksController,
+    UnfurlController,
+    GitController,
+    AskController,
   ],
   providers: [
     AuditService,
@@ -56,12 +76,20 @@ import { VersionsService } from './pages/versions.service.js';
     DocsService,
     AccessService,
     PagesService,
+    ContentService,
     ProjectsService,
     RayonsService,
     VersionsService,
     CommentsService,
     NotificationsService,
     FilesService,
+    SpecsService,
+    TokensService,
+    WebhooksService,
+    EventsService,
+    UnfurlService,
+    GitService,
+    AskService,
     AccountsService,
     GroupsService,
     SessionsService,

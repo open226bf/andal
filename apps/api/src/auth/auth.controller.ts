@@ -16,7 +16,7 @@ import { AuditService } from '../audit.service.js';
 import { config } from '../env.js';
 import { DB, VALKEY } from '../infra.module.js';
 import { MailService } from '../mail.service.js';
-import { type AuthContext, CurrentAuth, Public } from './auth.guard.js';
+import { type AuthContext, CurrentAuth, Public, SessionOnly } from './auth.guard.js';
 import { LoginThrottleService } from './login-throttle.service.js';
 import { OIDC_FLOW_COOKIE, OIDC_FLOW_TTL_SECONDS, OidcService } from './oidc.service.js';
 import { SessionsService } from './sessions.service.js';
@@ -105,6 +105,7 @@ export class AuthController {
     return { user: publicUser(user) };
   }
 
+  @SessionOnly()
   @Post('auth/logout')
   @HttpCode(200)
   async logout(@CurrentAuth() auth: AuthContext, @Req() req: FastifyRequest, @Res({ passthrough: true }) reply: FastifyReply) {
@@ -116,6 +117,7 @@ export class AuthController {
   }
 
   /** Change le mot de passe et ferme toutes les autres sessions du compte. */
+  @SessionOnly()
   @Post('auth/password')
   @HttpCode(204)
   async changePassword(@CurrentAuth() auth: AuthContext, @Body() body: Record<string, unknown> | undefined, @Req() req: FastifyRequest, @Res({ passthrough: true }) reply: FastifyReply) {

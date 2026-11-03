@@ -1,15 +1,18 @@
 import { canManageAccounts, type WorkspaceRole } from '@andal/authz';
 import { Avatar } from '@andal/ui';
-import { CaretRightIcon, CopyIcon, DotsThreeIcon, KeyIcon, ProhibitIcon, UserPlusIcon, ArrowCounterClockwiseIcon, XIcon } from '@phosphor-icons/react';
+import { CaretRightIcon, DotsThreeIcon, KeyIcon, ProhibitIcon, UserPlusIcon, ArrowCounterClockwiseIcon, XIcon } from '@phosphor-icons/react';
 import * as Dialog from '@radix-ui/react-dialog';
 import * as Popover from '@radix-ui/react-popover';
 import { useQueryClient } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import { FormError, FormOk } from '../components/AuthCard';
+import { CopyField } from '../components/CopyField';
 import { Shelf } from '../components/Shelf';
 import { api, errorMessage, useAccounts, useMe, useProjects, type AdminInvitation, type AdminUser, type LinkResult } from '../lib/api';
 import { GroupsSection } from './GroupsSection';
+import { AssistantSection } from './AssistantSection';
+import { IntegrationsSection } from './IntegrationsSection';
 import { ConfirmDialog, Modal, type Confirmation } from '../components/Dialog';
 import { relative, ROLE_HELP, roleLabel, until } from '../lib/format';
 
@@ -22,7 +25,7 @@ interface Issued {
   linkText: string;
 }
 
-const SECTIONS = { comptes: 'Comptes', groupes: 'Groupes' } as const;
+const SECTIONS = { comptes: 'Comptes', groupes: 'Groupes', integrations: 'Intégrations', assistant: 'Assistant' } as const;
 
 /** Administration de l'espace (comptes, groupes): réservée aux propriétaires et admins. */
 export function AdminPage({ section }: { section: keyof typeof SECTIONS }) {
@@ -62,8 +65,14 @@ export function AdminPage({ section }: { section: keyof typeof SECTIONS }) {
                   <Link to="/admin/groupes" activeProps={{ 'aria-current': 'page' }}>
                     Groupes
                   </Link>
+                  <Link to="/admin/integrations" activeProps={{ 'aria-current': 'page' }}>
+                    Intégrations
+                  </Link>
+                  <Link to="/admin/assistant" activeProps={{ 'aria-current': 'page' }}>
+                    Assistant
+                  </Link>
                 </nav>
-                {section === 'comptes' ? <Accounts /> : <GroupsSection />}
+                {section === 'comptes' ? <Accounts /> : section === 'groupes' ? <GroupsSection /> : section === 'integrations' ? <IntegrationsSection /> : <AssistantSection />}
               </>
             ) : (
               <FormError>Cette page est réservée aux admins de l’espace.</FormError>
@@ -431,7 +440,7 @@ function IssuedDialog({ issued, onClose }: { issued: Issued | null; onClose: () 
       {issued && (
         <div className="dialog-body">
           {issued.result.emailed ? <FormOk>{issued.emailedText}</FormOk> : <p className="dialog-text">{issued.linkText}</p>}
-          {issued.result.link && <LinkBox link={issued.result.link} />}
+          {issued.result.link && <CopyField label="Lien à transmettre" value={issued.result.link} />}
           <Dialog.Close className="btn-ink">Terminé</Dialog.Close>
         </div>
       )}
@@ -439,24 +448,3 @@ function IssuedDialog({ issued, onClose }: { issued: Issued | null; onClose: () 
   );
 }
 
-function LinkBox({ link }: { link: string }) {
-  const [copied, setCopied] = useState(false);
-  const copy = async () => {
-    try {
-      await navigator.clipboard.writeText(link);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      // Presse-papiers refusé: le champ reste sélectionnable à la main.
-    }
-  };
-  return (
-    <div className="linkbox">
-      <input className="input" readOnly value={link} aria-label="Lien à transmettre" onFocus={(e) => e.currentTarget.select()} />
-      <button type="button" className="btn-line" onClick={() => void copy()}>
-        <CopyIcon size={16} aria-hidden />
-        <span aria-live="polite">{copied ? 'Copié' : 'Copier'}</span>
-      </button>
-    </div>
-  );
-}

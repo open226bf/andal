@@ -8,6 +8,7 @@ import { CollabBridgeService } from '../collab-bridge.service.js';
 import { DocsService } from '../docs/docs.service.js';
 import { DB } from '../infra.module.js';
 import { NotificationsService } from '../notifications/notifications.service.js';
+import { EventsService } from '../webhooks/events.service.js';
 
 const BODY_MAX = 4000;
 /** Position relative Yjs encodée en base64: quelques dizaines d'octets. */
@@ -37,7 +38,13 @@ export class CommentsService {
     private readonly bridge: CollabBridgeService,
     private readonly audit: AuditService,
     private readonly notifications: NotificationsService,
+    private readonly events: EventsService,
   ) {}
+
+  private async announceToIntegrations(auth: AuthContext, pageId: string, commentId: string) {
+    const page = await this.db.selectFrom('pages').select('project_id').where('id', '=', pageId).executeTakeFirst();
+    if (page) await this.events.emit({ event: 'comment.created', workspaceId: auth.user.workspace_id, projectId: page.project_id, actorId: auth.user.id, pageId, commentId });
+  }
 
   /** Droit de commenter, avec un message clair pour qui ne peut que lire. */
   private async requireComment(subject: Subject, pageId: string) {
@@ -164,6 +171,7 @@ export class CommentsService {
     await this.audit.record({ workspaceId: auth.user.workspace_id, actorId: auth.user.id, action: 'comment.thread_created', targetType: 'page', targetId: pageId, ip, metadata: { threadId: thread.id } });
     const { unreachable } = await this.announce(auth, pageId, thread.id, thread.commentId, text);
     await this.bridge.notifyThreads(pageId);
+    await this.announceToIntegrations(auth, pageId, thread.commentId);
     return { id: thread.id, unreachable };
   }
 
@@ -176,6 +184,7 @@ export class CommentsService {
     await this.audit.record({ workspaceId: auth.user.workspace_id, actorId: auth.user.id, action: 'comment.replied', targetType: 'page', targetId: thread.page_id, ip, metadata: { threadId } });
     const { unreachable } = await this.announce(auth, thread.page_id, thread.id, created.id, text);
     await this.bridge.notifyThreads(thread.page_id);
+    await this.announceToIntegrations(auth, thread.page_id, created.id);
     return { id: created.id, unreachable };
   }
 

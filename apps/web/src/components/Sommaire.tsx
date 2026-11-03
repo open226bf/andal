@@ -1,9 +1,9 @@
 import { AccessMark, accessLabel, accessLevel } from '@andal/ui';
-import { GearSixIcon, LockSimpleIcon, MagnifyingGlassIcon, PlusIcon, PushPinIcon, TrashIcon } from '@phosphor-icons/react';
+import { BracketsCurlyIcon, GearSixIcon, LockSimpleIcon, MagnifyingGlassIcon, PlusIcon, PushPinIcon, TrashIcon } from '@phosphor-icons/react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate } from '@tanstack/react-router';
 import { useState, type DragEvent } from 'react';
-import { api, canEdit, errorMessage, useProjects, type Tree, type TreePage } from '../lib/api';
+import { api, canEdit, errorMessage, useProjects, useProjectSpecs, type Tree, type TreePage } from '../lib/api';
 import { age } from '../lib/format';
 import { useTogglePin } from '../lib/volumes';
 import { descendants, PageDialogs, PageMenu, type PageDialog } from './PageActions';
@@ -226,6 +226,7 @@ export function Sommaire({ tree, currentPageId, onSearch }: { tree: Tree; curren
           </div>
         )}
       </div>
+      <VolumeSpecs projectId={tree.project.id} />
       <div className="toc-foot">
         <AccessMark level="write" /> écrire
         <AccessMark level="comment" /> commenter
@@ -262,5 +263,27 @@ export function Sommaire({ tree, currentPageId, onSearch }: { tree: Tree; curren
         }}
       />
     </nav>
+  );
+}
+
+/** Les specs OpenAPI du volume, sous le sommaire: chacune s'ouvre dans Redoc. */
+function VolumeSpecs({ projectId }: { projectId: string }) {
+  const specs = useProjectSpecs(projectId);
+  if (!specs.data?.specs.length) return null;
+  return (
+    <section className="toc-specs" aria-labelledby="toc-specs-title">
+      <h2 id="toc-specs-title">Specs API</h2>
+      <ul>
+        {specs.data.specs.map((s) => (
+          <li key={s.id}>
+            <Link to="/specs/$specId" params={{ specId: s.id }} activeProps={{ 'aria-current': 'page' }}>
+              <BracketsCurlyIcon size={16} aria-hidden />
+              <span>{s.title}</span>
+              <small>v{s.label || s.sequence}</small>
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }

@@ -2,12 +2,14 @@ import type { QueryClient } from '@tanstack/react-query';
 import { Outlet, createRootRouteWithContext, createRoute, createRouter, redirect } from '@tanstack/react-router';
 import { ApiError, api, type Me, type PagePreview, type Tree } from './lib/api';
 import { ForgotPasswordPage, InvitationPage, ResetPasswordPage } from './pages/AccountLinkPages';
+import { AccountPage } from './pages/AccountPage';
 import { AdminPage } from './pages/AdminPage';
 import { DocPage } from './pages/DocPage';
 import { EmptyVolumePage } from './pages/EmptyVolumePage';
 import { LoginPage } from './pages/LoginPage';
 import { LibraryPage } from './pages/LibraryPage';
 import { MissingPage } from './pages/MissingPage';
+import { SpecPage } from './pages/SpecPage';
 
 interface RouterContext {
   queryClient: QueryClient;
@@ -118,15 +120,33 @@ const pageLinkRoute = createRoute({
   component: MissingPage,
 });
 
+/** Une spec OpenAPI rendue par Redoc. `version`: une publication précise; `op`: l'opération où descendre. */
+const specRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: '/specs/$specId',
+  validateSearch: (search: Record<string, unknown>): { version?: number; op?: string } => ({
+    version: Number.isInteger(Number(search.version)) && Number(search.version) > 0 ? Number(search.version) : undefined,
+    op: typeof search.op === 'string' ? search.op : undefined,
+  }),
+  component: function SpecRoute() {
+    const { specId } = specRoute.useParams();
+    const { version, op } = specRoute.useSearch();
+    return <SpecPage key={specId} specId={specId} version={version} op={op} />;
+  },
+});
+
 const adminRoute = createRoute({ getParentRoute: () => appRoute, path: '/admin', component: () => <AdminPage section="comptes" /> });
 const groupsRoute = createRoute({ getParentRoute: () => appRoute, path: '/admin/groupes', component: () => <AdminPage section="groupes" /> });
+const integrationsRoute = createRoute({ getParentRoute: () => appRoute, path: '/admin/integrations', component: () => <AdminPage section="integrations" /> });
+const assistantRoute = createRoute({ getParentRoute: () => appRoute, path: '/admin/assistant', component: () => <AdminPage section="assistant" /> });
+const accountRoute = createRoute({ getParentRoute: () => appRoute, path: '/compte', component: AccountPage });
 
 const routeTree = rootRoute.addChildren([
   loginRoute,
   invitationRoute,
   resetRoute,
   forgotRoute,
-  appRoute.addChildren([homeRoute, volumeRoute, pageRoute, pageLinkRoute, adminRoute, groupsRoute]),
+  appRoute.addChildren([homeRoute, volumeRoute, pageRoute, pageLinkRoute, specRoute, adminRoute, groupsRoute, integrationsRoute, assistantRoute, accountRoute]),
 ]);
 
 export function createAppRouter(queryClient: QueryClient) {

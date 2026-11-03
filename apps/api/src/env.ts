@@ -62,8 +62,35 @@ export const config = {
   uploadMaxBytes: Math.max(1, Number(process.env.UPLOAD_MAX_MB ?? 25)) * 1024 * 1024,
   /** Adresse d'écoute: 127.0.0.1 en dev, 0.0.0.0 dans un conteneur. */
   host: process.env.HOST?.trim() || '127.0.0.1',
+  /** Webhooks vers le réseau interne (Mattermost sur le LAN, tests): désactivé par défaut, contre le SSRF. */
+  webhookAllowPrivate: process.env.WEBHOOK_ALLOW_PRIVATE === 'true',
+  /**
+   * Assistant de questions-réponses, si les admins ne l'ont pas réglé dans
+   * l'interface: AI_PROVIDER=anthropic (Claude) ou openai (API compatible, locale comprise).
+   */
+  ai: aiFromEnv(),
+  /** Synchro Git depuis le réseau interne ou en file:// (forge interne, tests). Désactivé par défaut. */
+  gitAllowLocal: process.env.GIT_ALLOW_LOCAL === 'true',
+  /** Aperçu des liens GitHub: sans jeton, seulement les dépôts publics (60 requêtes/heure). */
+  githubToken: process.env.GITHUB_TOKEN?.trim() || null,
+  /** Aperçu des liens Jira (Cloud ou Data Center): les trois variables, ou rien. */
+  jira:
+    process.env.JIRA_BASE_URL?.trim() && process.env.JIRA_EMAIL?.trim() && process.env.JIRA_API_TOKEN?.trim()
+      ? { baseUrl: process.env.JIRA_BASE_URL.trim().replace(/\/+$/, ''), email: process.env.JIRA_EMAIL.trim(), token: process.env.JIRA_API_TOKEN.trim() }
+      : null,
 };
 
 if (!config.databaseUrl) throw new Error('DATABASE_URL manquant (copier .env.example en .env).');
 if (!config.passwordLogin && !config.oidc) throw new Error('Aucun mode de connexion: laissez AUTH_PASSWORD actif ou renseignez OIDC_ISSUER.');
 if (config.oidc && production && !config.oidc.issuer.startsWith('https://')) throw new Error('OIDC_ISSUER doit être en HTTPS en production.');
+
+function aiFromEnv(): { provider: 'anthropic' | 'openai'; model: string; baseUrl: string | null; apiKey: string | null } | null {
+  const provider = process.env.AI_PROVIDER?.trim();
+  if (provider !== 'anthropic' && provider !== 'openai') return null;
+  return {
+    provider,
+    model: process.env.AI_MODEL?.trim() || (provider === 'anthropic' ? 'claude-opus-5-5' : 'llama3.1'),
+    baseUrl: process.env.AI_BASE_URL?.trim() || null,
+    apiKey: process.env.AI_API_KEY?.trim() || null,
+  };
+}

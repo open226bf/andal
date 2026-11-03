@@ -6,7 +6,7 @@ Un serveur Linux avec Docker suffit : Caddy obtient le certificat TLS, sert l'in
 navigateur ──HTTPS──▶ web (Caddy) ──▶ /api      api      ─┐
                                    ──▶ /collab   collab   ─┼─▶ postgres, valkey, rustfs
                                    ──▶ /drawio   drawio    │
-                                                 worker   ─┘   (indexation, emails, purges)
+                                                 worker   ─┘   (indexation, emails, purges, webhooks, synchro Git)
 ```
 
 ## Installer
@@ -78,10 +78,14 @@ Les migrations passent toutes seules avant le redémarrage des services. Sauvega
 - **S3 externe** (MinIO, Garage, Scaleway, R2…) : renseignez `S3_ENDPOINT`, `S3_REGION`, `S3_BUCKET` et les clés, puis supprimez le service `rustfs` du compose.
 - **SSO** : `OIDC_ISSUER`, `OIDC_CLIENT_ID`, `OIDC_CLIENT_SECRET`. L'URL de retour à déclarer chez le fournisseur est `https://<ANDAL_DOMAIN>/api/auth/callback`.
 - **Essai local** à côté d'autres services : `ANDAL_DOMAIN=localhost`, `HTTP_PORT=58880`, `HTTPS_PORT=58443`, `ANDAL_ORIGIN=https://localhost:58443`. Caddy signe alors avec sa propre autorité locale : le navigateur demande d'accepter le certificat.
-- **Derrière un autre reverse proxy** : publiez seulement le port 80 du service `web` et laissez le proxy terminer TLS ; `ANDAL_ORIGIN` reste l'adresse publique en `https://`.
+- **Derrière un autre reverse proxy** : publiez seulement le port 80 du service `web` et laissez le proxy terminer TLS ; `ANDAL_ORIGIN` reste l'adresse publique en `https://`. Laissez passer les réponses en flux (`text/event-stream`) sans tampon : l'assistant répond ainsi.
+- **Assistant** : `AI_PROVIDER=anthropic` et `AI_API_KEY` pour Claude ; `AI_PROVIDER=openai`, `AI_BASE_URL` et `AI_MODEL` pour un modèle compatible OpenAI, local compris (Ollama sur l'hôte : `AI_BASE_URL=http://host.docker.internal:11434/v1`, avec `extra_hosts: ["host.docker.internal:host-gateway"]` sur le service `api`). Les admins peuvent aussi le régler dans l'interface.
+- **Aperçus GitHub et Jira** : `GITHUB_TOKEN` (lecture seule suffit), `JIRA_BASE_URL`, `JIRA_EMAIL`, `JIRA_API_TOKEN`.
+- **Webhooks vers le réseau interne** (Mattermost sur le LAN, par exemple) : `WEBHOOK_ALLOW_PRIVATE=true`. Par défaut, Andal refuse d'appeler une adresse privée, pour qu'un webhook ne serve pas à sonder le réseau du serveur.
+- **Synchro Git** : le worker clone les dépôts en `https://` ; il lui faut une sortie vers la forge (GitHub, GitLab, Gitea…). Pour une synchro à chaque push, la forge doit joindre `https://<ANDAL_DOMAIN>/api/git/hooks/…`.
 
 ## Sécurité
 
 - Seul Caddy est exposé ; les autres services n'ont aucun port publié.
 - Cookies de session `Secure` et `HttpOnly`, CSP stricte sur l'interface, fichiers envoyés servis sous `CSP: sandbox`.
-- Les secrets ne vivent que dans `deploy/.env`, jamais dans les images.
+- Les secrets ne vivent que dans `deploy/.env`, jamais dans les images. Les jetons d'API ne sont gardés qu'en empreinte ; les clés de l'assistant et les jetons des dépôts restent côté serveur, jamais renvoyés au navigateur.

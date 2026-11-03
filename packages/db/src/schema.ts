@@ -132,6 +132,9 @@ export interface PagesTable {
   /** Corbeille: la page et ses sous-pages, supprimées ensemble, partagent la même date. */
   deleted_at: Date | null;
   deleted_by: string | null;
+  /** Page tenue par la synchro Git du volume: son fichier dans le dépôt. */
+  git_sync_id: ColumnType<string | null, string | null | undefined, string | null>;
+  git_path: ColumnType<string | null, string | null | undefined, string | null>;
 }
 
 /**
@@ -236,6 +239,131 @@ export interface PageLinksTable {
   target_id: string;
 }
 
+/** Spec OpenAPI d'un volume, publiée par la CI ou envoyée à la main; chaque publication différente ajoute une version. */
+export interface ApiSpecsTable {
+  id: Generated<string>;
+  project_id: string;
+  /** Nom court, unique dans le volume (« paiements »): la CI publie toujours sous le même. */
+  name: string;
+  /** info.title de la dernière version. */
+  title: string;
+  created_by: string | null;
+  created_at: Generated<Date>;
+  updated_at: Generated<Date>;
+}
+
+export interface ApiSpecVersionsTable {
+  id: Generated<string>;
+  spec_id: string;
+  /** 1, 2, 3… dans l'ordre de publication. */
+  sequence: number;
+  /** info.version du document (« 2.3 »), tel quel. */
+  label: string;
+  /** Le document analysé (YAML ou JSON d'origine). */
+  content: Json<Record<string, unknown>>;
+  /** SHA-256 du document normalisé: republier la même spec ne crée pas de version. */
+  content_hash: string;
+  created_by: string | null;
+  created_at: Generated<Date>;
+}
+
+export type TokenScope = 'read' | 'write';
+
+/** Jeton d'API personnel: il agit au nom de son auteur, avec ses droits, en lecture seule ou non. */
+export interface ApiTokensTable {
+  id: Generated<string>;
+  user_id: string;
+  name: string;
+  /** Empreinte SHA-256: le jeton n'est montré qu'une fois, à sa création. */
+  token_hash: string;
+  /** Début du jeton (« andal_Xy12… »), pour le reconnaître dans la liste. */
+  prefix: string;
+  scope: TokenScope;
+  expires_at: Date | null;
+  last_used_at: Date | null;
+  last_used_ip: string | null;
+  revoked_at: Date | null;
+  created_at: Generated<Date>;
+}
+
+export type WebhookKind = 'generic' | 'slack' | 'teams';
+export type WebhookEvent = 'page.created' | 'page.updated' | 'page.deleted' | 'comment.created' | 'spec.published';
+
+/** Abonnement d'une URL aux événements de l'espace (ou d'un seul volume). */
+export interface WebhooksTable {
+  id: Generated<string>;
+  workspace_id: string;
+  /** Null: tous les volumes de l'espace. */
+  project_id: string | null;
+  name: string;
+  url: string;
+  kind: WebhookKind;
+  /** Clé HMAC de la signature (format générique). */
+  secret: string;
+  events: ColumnType<WebhookEvent[], WebhookEvent[] | string, WebhookEvent[] | string>;
+  active: Generated<boolean>;
+  created_by: string | null;
+  created_at: Generated<Date>;
+}
+
+/** Une tentative d'envoi, pour le journal de l'intégration. */
+export interface WebhookDeliveriesTable {
+  id: Generated<string>;
+  webhook_id: string;
+  event: string;
+  attempt: number;
+  /** Code HTTP reçu; null si la requête n'a pas abouti. */
+  status: number | null;
+  error: string | null;
+  duration_ms: number | null;
+  created_at: Generated<Date>;
+}
+
+/** Synchro à sens unique d'un dossier de dépôt Git vers un volume (docs-as-code). */
+export interface GitSyncsTable {
+  id: Generated<string>;
+  project_id: string;
+  /** https://… (le seul protocole accepté). */
+  repo_url: string;
+  branch: Generated<string>;
+  /** Dossier du dépôt (« docs »); vide: la racine. */
+  path: Generated<string>;
+  /** Jeton d'accès en lecture pour un dépôt privé; jamais renvoyé par l'API. */
+  access_token: string | null;
+  /** Secret du webhook « push » (GitHub, GitLab, Gitea). */
+  webhook_secret: string;
+  enabled: Generated<boolean>;
+  last_commit: string | null;
+  last_synced_at: Date | null;
+  last_error: string | null;
+  created_by: string | null;
+  created_at: Generated<Date>;
+}
+
+/** Image du dépôt déjà envoyée: réutilisée tant que son contenu ne change pas. */
+export interface GitSyncAssetsTable {
+  sync_id: string;
+  path: string;
+  sha256: string;
+  attachment_id: string;
+}
+
+export type AiProvider = 'anthropic' | 'openai';
+
+/** Assistant de questions-réponses de l'espace: fournisseur et modèle choisis par les admins. */
+export interface AiSettingsTable {
+  workspace_id: string;
+  enabled: Generated<boolean>;
+  /** 'openai': toute API compatible (OpenAI, Mistral, Ollama, LM Studio, vLLM…). */
+  provider: AiProvider;
+  base_url: string | null;
+  model: string;
+  /** Jamais renvoyée par l'API. */
+  api_key: string | null;
+  updated_by: string | null;
+  updated_at: Generated<Date>;
+}
+
 export interface Database {
   workspaces: WorkspacesTable;
   users: UsersTable;
@@ -257,6 +385,14 @@ export interface Database {
   attachments: AttachmentsTable;
   storage_trash: StorageTrashTable;
   page_links: PageLinksTable;
+  api_specs: ApiSpecsTable;
+  api_spec_versions: ApiSpecVersionsTable;
+  api_tokens: ApiTokensTable;
+  webhooks: WebhooksTable;
+  webhook_deliveries: WebhookDeliveriesTable;
+  git_syncs: GitSyncsTable;
+  git_sync_assets: GitSyncAssetsTable;
+  ai_settings: AiSettingsTable;
 }
 
 export type User = Selectable<UsersTable>;

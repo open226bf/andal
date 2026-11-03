@@ -390,6 +390,138 @@ const pageLinks: Migration = {
   },
 };
 
+const apiSpecs: Migration = {
+  async up(db) {
+    await db.schema
+      .createTable('api_specs')
+      .addColumn('id', 'uuid', (c) => c.primaryKey().defaultTo(sql`gen_random_uuid()`))
+      .addColumn('project_id', 'uuid', (c) => c.notNull().references('projects.id').onDelete('cascade'))
+      .addColumn('name', 'text', (c) => c.notNull())
+      .addColumn('title', 'text', (c) => c.notNull())
+      .addColumn('created_by', 'uuid', (c) => c.references('users.id').onDelete('set null'))
+      .addColumn('created_at', 'timestamptz', (c) => c.notNull().defaultTo(sql`now()`))
+      .addColumn('updated_at', 'timestamptz', (c) => c.notNull().defaultTo(sql`now()`))
+      .addUniqueConstraint('api_specs_project_name', ['project_id', 'name'])
+      .execute();
+    await db.schema
+      .createTable('api_spec_versions')
+      .addColumn('id', 'uuid', (c) => c.primaryKey().defaultTo(sql`gen_random_uuid()`))
+      .addColumn('spec_id', 'uuid', (c) => c.notNull().references('api_specs.id').onDelete('cascade'))
+      .addColumn('sequence', 'integer', (c) => c.notNull())
+      .addColumn('label', 'text', (c) => c.notNull())
+      // json et non jsonb: l'ordre des chemins et des champs est celui de l'auteur de la spec.
+      .addColumn('content', 'json', (c) => c.notNull())
+      .addColumn('content_hash', 'text', (c) => c.notNull())
+      .addColumn('created_by', 'uuid', (c) => c.references('users.id').onDelete('set null'))
+      .addColumn('created_at', 'timestamptz', (c) => c.notNull().defaultTo(sql`now()`))
+      .addUniqueConstraint('api_spec_versions_sequence', ['spec_id', 'sequence'])
+      .execute();
+  },
+  async down(db) {
+    await db.schema.dropTable('api_spec_versions').execute();
+    await db.schema.dropTable('api_specs').execute();
+  },
+};
+
+const tokensAndWebhooks: Migration = {
+  async up(db) {
+    await db.schema
+      .createTable('api_tokens')
+      .addColumn('id', 'uuid', (c) => c.primaryKey().defaultTo(sql`gen_random_uuid()`))
+      .addColumn('user_id', 'uuid', (c) => c.notNull().references('users.id').onDelete('cascade'))
+      .addColumn('name', 'text', (c) => c.notNull())
+      .addColumn('token_hash', 'text', (c) => c.notNull().unique())
+      .addColumn('prefix', 'text', (c) => c.notNull())
+      .addColumn('scope', 'text', (c) => c.notNull().check(sql`scope in ('read', 'write')`))
+      .addColumn('expires_at', 'timestamptz')
+      .addColumn('last_used_at', 'timestamptz')
+      .addColumn('last_used_ip', 'text')
+      .addColumn('revoked_at', 'timestamptz')
+      .addColumn('created_at', 'timestamptz', (c) => c.notNull().defaultTo(sql`now()`))
+      .execute();
+    await db.schema.createIndex('api_tokens_user').on('api_tokens').column('user_id').execute();
+    await db.schema
+      .createTable('webhooks')
+      .addColumn('id', 'uuid', (c) => c.primaryKey().defaultTo(sql`gen_random_uuid()`))
+      .addColumn('workspace_id', 'uuid', (c) => c.notNull().references('workspaces.id').onDelete('cascade'))
+      .addColumn('project_id', 'uuid', (c) => c.references('projects.id').onDelete('cascade'))
+      .addColumn('name', 'text', (c) => c.notNull())
+      .addColumn('url', 'text', (c) => c.notNull())
+      .addColumn('kind', 'text', (c) => c.notNull().check(sql`kind in ('generic', 'slack', 'teams')`))
+      .addColumn('secret', 'text', (c) => c.notNull())
+      .addColumn('events', sql`text[]`, (c) => c.notNull())
+      .addColumn('active', 'boolean', (c) => c.notNull().defaultTo(true))
+      .addColumn('created_by', 'uuid', (c) => c.references('users.id').onDelete('set null'))
+      .addColumn('created_at', 'timestamptz', (c) => c.notNull().defaultTo(sql`now()`))
+      .execute();
+    await db.schema
+      .createTable('webhook_deliveries')
+      .addColumn('id', 'uuid', (c) => c.primaryKey().defaultTo(sql`gen_random_uuid()`))
+      .addColumn('webhook_id', 'uuid', (c) => c.notNull().references('webhooks.id').onDelete('cascade'))
+      .addColumn('event', 'text', (c) => c.notNull())
+      .addColumn('attempt', 'integer', (c) => c.notNull())
+      .addColumn('status', 'integer')
+      .addColumn('error', 'text')
+      .addColumn('duration_ms', 'integer')
+      .addColumn('created_at', 'timestamptz', (c) => c.notNull().defaultTo(sql`now()`))
+      .execute();
+    await db.schema.createIndex('webhook_deliveries_webhook').on('webhook_deliveries').columns(['webhook_id', 'created_at']).execute();
+  },
+  async down(db) {
+    await db.schema.dropTable('webhook_deliveries').execute();
+    await db.schema.dropTable('webhooks').execute();
+    await db.schema.dropTable('api_tokens').execute();
+  },
+};
+
+const gitAndAi: Migration = {
+  async up(db) {
+    await db.schema
+      .createTable('git_syncs')
+      .addColumn('id', 'uuid', (c) => c.primaryKey().defaultTo(sql`gen_random_uuid()`))
+      .addColumn('project_id', 'uuid', (c) => c.notNull().unique().references('projects.id').onDelete('cascade'))
+      .addColumn('repo_url', 'text', (c) => c.notNull())
+      .addColumn('branch', 'text', (c) => c.notNull().defaultTo('main'))
+      .addColumn('path', 'text', (c) => c.notNull().defaultTo(''))
+      .addColumn('access_token', 'text')
+      .addColumn('webhook_secret', 'text', (c) => c.notNull())
+      .addColumn('enabled', 'boolean', (c) => c.notNull().defaultTo(true))
+      .addColumn('last_commit', 'text')
+      .addColumn('last_synced_at', 'timestamptz')
+      .addColumn('last_error', 'text')
+      .addColumn('created_by', 'uuid', (c) => c.references('users.id').onDelete('set null'))
+      .addColumn('created_at', 'timestamptz', (c) => c.notNull().defaultTo(sql`now()`))
+      .execute();
+    await db.schema.alterTable('pages').addColumn('git_sync_id', 'uuid', (c) => c.references('git_syncs.id').onDelete('set null')).addColumn('git_path', 'text').execute();
+    await db.schema.createIndex('pages_git').on('pages').columns(['git_sync_id', 'git_path']).unique().where(sql.ref('git_sync_id'), 'is not', null).execute();
+    await db.schema
+      .createTable('git_sync_assets')
+      .addColumn('sync_id', 'uuid', (c) => c.notNull().references('git_syncs.id').onDelete('cascade'))
+      .addColumn('path', 'text', (c) => c.notNull())
+      .addColumn('sha256', 'text', (c) => c.notNull())
+      .addColumn('attachment_id', 'uuid', (c) => c.notNull().references('attachments.id').onDelete('cascade'))
+      .addPrimaryKeyConstraint('git_sync_assets_pk', ['sync_id', 'path'])
+      .execute();
+    await db.schema
+      .createTable('ai_settings')
+      .addColumn('workspace_id', 'uuid', (c) => c.primaryKey().references('workspaces.id').onDelete('cascade'))
+      .addColumn('enabled', 'boolean', (c) => c.notNull().defaultTo(true))
+      .addColumn('provider', 'text', (c) => c.notNull().check(sql`provider in ('anthropic', 'openai')`))
+      .addColumn('base_url', 'text')
+      .addColumn('model', 'text', (c) => c.notNull())
+      .addColumn('api_key', 'text')
+      .addColumn('updated_by', 'uuid', (c) => c.references('users.id').onDelete('set null'))
+      .addColumn('updated_at', 'timestamptz', (c) => c.notNull().defaultTo(sql`now()`))
+      .execute();
+  },
+  async down(db) {
+    await db.schema.dropTable('ai_settings').execute();
+    await db.schema.dropTable('git_sync_assets').execute();
+    await db.schema.alterTable('pages').dropColumn('git_path').dropColumn('git_sync_id').execute();
+    await db.schema.dropTable('git_syncs').execute();
+  },
+};
+
 const provider: MigrationProvider = {
   async getMigrations() {
     return {
@@ -404,6 +536,9 @@ const provider: MigrationProvider = {
       '0009_rayons': rayons,
       '0010_attachments': attachments,
       '0011_page_links': pageLinks,
+      '0012_api_specs': apiSpecs,
+      '0013_tokens_webhooks': tokensAndWebhooks,
+      '0014_git_ai': gitAndAi,
     };
   },
 };

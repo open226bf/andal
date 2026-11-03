@@ -12,7 +12,8 @@ export const SESSION_TTL_SECONDS = 60 * 60 * 24 * 7;
 export interface SessionData {
   userId: string;
   createdAt: string;
-  method: 'password' | 'oidc';
+  /** 'token': requête signée d'un jeton d'API, sans session ni cookie. */
+  method: 'password' | 'oidc' | 'token';
   /** Jeton d'identité OIDC, gardé pour la déconnexion côté fournisseur. */
   idToken?: string;
 }
@@ -35,6 +36,14 @@ export function newLinkToken(): { token: string; hash: string } {
 
 export function linkTokenHash(token: string): string {
   return createHash('sha256').update(token).digest('hex');
+}
+
+/** Préfixe des jetons d'API: reconnaissable par les scanners de secrets. */
+export const API_TOKEN_PREFIX = 'andal_';
+
+export function newApiToken(): { token: string; hash: string; prefix: string } {
+  const token = API_TOKEN_PREFIX + randomBytes(32).toString('base64url');
+  return { token, hash: linkTokenHash(token), prefix: token.slice(0, API_TOKEN_PREFIX.length + 6) };
 }
 
 export function newSessionId(): string {

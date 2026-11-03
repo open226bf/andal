@@ -1,8 +1,10 @@
 import { randomUUID } from 'node:crypto';
 import { sql } from 'kysely';
 import { extractPageLinks, extractText, type JSONContent } from '@andal/editor';
-import { createDb, hashPassword, ltreeLabel, requireEnv, type Cloth } from '../index.js';
+import { checkSpec, specInfo } from '@andal/editor';
+import { createDb, hashPassword, ltreeLabel, requireEnv, specHash, type Cloth } from '../index.js';
 import { authenticationPage, runbookPage, simplePage } from './demo-content.js';
+import { paymentsSpecVersions } from './demo-spec.js';
 
 /**
  * Jeu de données de démonstration. Efface tout le contenu existant:
@@ -200,9 +202,20 @@ try {
     ])
     .execute();
 
+  const minutesAgo = (m: number) => new Date(Date.now() - m * 60_000);
+  // La spec OpenAPI du volume Paiements, publiée deux fois par la CI (2.2 puis 2.3).
+  const specId = randomUUID();
+  const latest = paymentsSpecVersions.at(-1)!;
+  await db.insertInto('api_specs').values({ id: specId, project_id: projects.paiements!, name: 'paiements', title: specInfo(latest).title, created_by: users.thomas.id, created_at: minutesAgo(40 * 24 * 60), updated_at: minutesAgo(3 * 24 * 60) }).execute();
+  for (const [index, doc] of paymentsSpecVersions.entries()) {
+    if (checkSpec(doc)) throw new Error(`Spec de démo invalide: ${checkSpec(doc)}`);
+    const at = minutesAgo((index === 0 ? 40 : 3) * 24 * 60);
+    await db.insertInto('api_spec_versions').values({ spec_id: specId, sequence: index + 1, label: specInfo(doc).version, content: JSON.stringify(doc), content_hash: specHash(doc), created_by: users.thomas.id, created_at: at }).execute();
+  }
+
   const headerThread = randomUUID();
   const storageThread = randomUUID();
-  const authContent = authenticationPage({ header: headerThread, storage: storageThread }, { userTokens: keys.userTokens!, runbook: keys.runbook! });
+  const authContent = authenticationPage({ header: headerThread, storage: storageThread }, { userTokens: keys.userTokens!, runbook: keys.runbook! }, specId);
   await db.updateTable('pages').set({ content: JSON.stringify(authContent), version: 14 }).where('id', '=', keys.auth!).execute();
   await db.updateTable('pages').set({ content: JSON.stringify(runbookPage({ auth: keys.auth! })) }).where('id', '=', keys.runbook!).execute();
   await db
@@ -212,7 +225,6 @@ try {
       { id: storageThread, page_id: keys.auth!, created_by: users.aminata.id },
     ])
     .execute();
-  const minutesAgo = (m: number) => new Date(Date.now() - m * 60_000);
   const headerComment = randomUUID();
   await db
     .insertInto('comments')

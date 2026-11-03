@@ -1,11 +1,12 @@
 import { Body, Controller, Delete, Get, HttpCode, Param, ParseUUIDPipe, Patch, Post, Req, Res } from '@nestjs/common';
 import type { FastifyReply, FastifyRequest } from 'fastify';
-import { type AuthContext, CurrentAuth, Public } from '../auth/auth.guard.js';
+import { type AuthContext, CurrentAuth, Public, SessionOnly } from '../auth/auth.guard.js';
 import { LoginThrottleService } from '../auth/login-throttle.service.js';
 import { SessionsService } from '../auth/sessions.service.js';
 import { AccountsService } from './accounts.service.js';
 
 /** Administration des comptes: réservée aux propriétaires et admins de l'espace (vérifié par le service). */
+@SessionOnly()
 @Controller('admin')
 export class AdminAccountsController {
   constructor(private readonly accounts: AccountsService) {}

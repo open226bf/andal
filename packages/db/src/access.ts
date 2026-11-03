@@ -1,4 +1,4 @@
-import { archivedRole, pageRole, projectRole, type Grant, type ProjectRole, type Restriction, type Subject } from '@andal/authz';
+import { archivedRole, minRole, pageRole, projectRole, type Grant, type ProjectRole, type Restriction, type Subject } from '@andal/authz';
 import type { Kysely } from 'kysely';
 import type { Database, User } from './schema.js';
 
@@ -51,7 +51,7 @@ export async function pageRoleFor(
   const page = await db
     .selectFrom('pages')
     .innerJoin('projects', 'projects.id', 'pages.project_id')
-    .select(['pages.id', 'pages.project_id', 'pages.path', 'pages.deleted_at', 'projects.archived_at'])
+    .select(['pages.id', 'pages.project_id', 'pages.path', 'pages.deleted_at', 'pages.git_sync_id', 'projects.archived_at'])
     .where('pages.id', '=', pageId)
     .executeTakeFirst();
   if (!page) return null;
@@ -67,7 +67,7 @@ export async function pageRoleFor(
   ]);
   return {
     projectId: page.project_id,
-    role: archivedRole(pageRole(subject, grants, restrictions.map(toRestriction)), page.archived_at !== null),
+    role: gitLocked(archivedRole(pageRole(subject, grants, restrictions.map(toRestriction)), page.archived_at !== null), page.git_sync_id !== null),
   };
 }
 
@@ -79,7 +79,7 @@ export async function pageRolesForAll(db: Kysely<Database>, pageId: string): Pro
   const page = await db
     .selectFrom('pages')
     .innerJoin('projects', 'projects.id', 'pages.project_id')
-    .select(['pages.project_id', 'pages.path', 'projects.workspace_id', 'projects.archived_at'])
+    .select(['pages.project_id', 'pages.path', 'pages.git_sync_id', 'projects.workspace_id', 'projects.archived_at'])
     .where('pages.id', '=', pageId)
     .where('pages.deleted_at', 'is', null)
     .executeTakeFirst();
@@ -99,7 +99,7 @@ export async function pageRolesForAll(db: Kysely<Database>, pageId: string): Pro
   const chain = restrictions.map(toRestriction);
   for (const user of users) {
     const subject: Subject = { userId: user.id, workspaceRole: user.workspace_role, groupIds: memberships.filter((m) => m.user_id === user.id).map((m) => m.group_id) };
-    const role = archivedRole(pageRole(subject, grants, chain), page.archived_at !== null);
+    const role = gitLocked(archivedRole(pageRole(subject, grants, chain), page.archived_at !== null), page.git_sync_id !== null);
     if (role) roles.set(user.id, role);
   }
   return roles;
@@ -113,6 +113,8 @@ export interface TreeRow {
   title: string;
   updated_at: Date;
   restricted: boolean;
+  /** Synchronisée depuis un dépôt Git: lecture et commentaires seulement. */
+  git: boolean;
   role: ProjectRole;
 }
 
@@ -123,7 +125,7 @@ export async function readablePages(db: Kysely<Database>, subject: Subject, proj
     isArchived(db, projectId),
     db
       .selectFrom('pages')
-      .select(['id', 'parent_id', 'path', 'position', 'title', 'updated_at'])
+      .select(['id', 'parent_id', 'path', 'position', 'title', 'updated_at', 'git_sync_id'])
       .where('project_id', '=', projectId)
       .where('deleted_at', 'is', null)
       .orderBy('position')
@@ -140,16 +142,26 @@ export async function readablePages(db: Kysely<Database>, subject: Subject, proj
   const rows: TreeRow[] = [];
   for (const page of pages) {
     const chain = restrictions.filter((r) => page.path === r.path || page.path.startsWith(`${r.path}.`));
-    const role = archivedRole(pageRole(subject, grants, chain.map(toRestriction)), archived);
+    const role = gitLocked(archivedRole(pageRole(subject, grants, chain.map(toRestriction)), archived), page.git_sync_id !== null);
     if (!role) continue;
+    const { git_sync_id, ...rest } = page;
     rows.push({
-      ...page,
+      ...rest,
+      git: git_sync_id !== null,
       updated_at: new Date(page.updated_at),
       restricted: chain.length > 0,
       role,
     });
   }
   return rows;
+}
+
+/**
+ * Une page synchronisée depuis Git s'écrit dans le dépôt: dans Andal, on la
+ * lit et on la commente, sans la modifier (rôle plafonné à commentateur).
+ */
+export function gitLocked(role: ProjectRole | null, managed: boolean): ProjectRole | null {
+  return role && managed ? minRole(role, 'commenter') : role;
 }
 
 function toRestriction(r: { page_id: string; kind: 'view' | 'edit'; principal_type: 'user' | 'group'; principal_id: string }): Restriction {

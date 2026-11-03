@@ -1,6 +1,6 @@
 import { canManageAccounts, type WorkspaceRole } from '@andal/authz';
 import { Avatar } from '@andal/ui';
-import { ArchiveIcon, BooksIcon, KeyIcon, PlusIcon, SignOutIcon, UsersThreeIcon } from '@phosphor-icons/react';
+import { ArchiveIcon, BooksIcon, PlusIcon, ShieldCheckIcon, SignOutIcon, UsersThreeIcon } from '@phosphor-icons/react';
 import * as Popover from '@radix-ui/react-popover';
 import { useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate } from '@tanstack/react-router';
@@ -10,7 +10,6 @@ import { roleLabel } from '../lib/format';
 import { spineHeight, volumeLink } from '../lib/volumes';
 import { Logo } from './Logo';
 import { NotificationsButton } from './NotificationsButton';
-import { PasswordDialog } from './PasswordDialog';
 import { ArchivesDialog, NewVolumeDialog } from './VolumeDialogs';
 
 /**
@@ -22,7 +21,6 @@ export function Shelf({ projects, current, me, library = false }: { projects: Pr
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [menuOpen, setMenuOpen] = useState(false);
-  const [passwordOpen, setPasswordOpen] = useState(false);
   const [newOpen, setNewOpen] = useState(false);
   const [archivesOpen, setArchivesOpen] = useState(false);
   // Les invités ne créent pas de volume (voir canCreateProject).
@@ -90,7 +88,7 @@ export function Shelf({ projects, current, me, library = false }: { projects: Pr
               {canManageAccounts(me.user.workspaceRole as WorkspaceRole) && (
                 <Link to="/admin" className="menu-item" onClick={() => setMenuOpen(false)}>
                   <UsersThreeIcon size={18} aria-hidden />
-                  Gérer les comptes et les groupes
+                  Administration de l’espace
                 </Link>
               )}
               {member && (
@@ -106,19 +104,10 @@ export function Shelf({ projects, current, me, library = false }: { projects: Pr
                   Volumes archivés
                 </button>
               )}
-              {me.user.hasPassword && (
-                <button
-                  type="button"
-                  className="menu-item"
-                  onClick={() => {
-                    setMenuOpen(false);
-                    setPasswordOpen(true);
-                  }}
-                >
-                  <KeyIcon size={18} aria-hidden />
-                  Changer le mot de passe
-                </button>
-              )}
+              <Link to="/compte" className="menu-item" onClick={() => setMenuOpen(false)}>
+                <ShieldCheckIcon size={18} aria-hidden />
+                Mon compte: sécurité, jetons d’API
+              </Link>
               <button type="button" className="menu-item" onClick={() => void logout()}>
                 <SignOutIcon size={18} aria-hidden />
                 Se déconnecter
@@ -126,7 +115,6 @@ export function Shelf({ projects, current, me, library = false }: { projects: Pr
             </Popover.Content>
           </Popover.Portal>
         </Popover.Root>
-        <PasswordDialog open={passwordOpen} onOpenChange={setPasswordOpen} />
       </div>
     </aside>
   );

@@ -1,4 +1,5 @@
-import type { ApiOperation, JSONContent } from '@andal/editor';
+import { operationFromSpec, type JSONContent } from '@andal/editor';
+import { paymentsSpecVersions } from './demo-spec.js';
 
 /** Contenu fictif de démonstration. Personnes, équipes et URL n'existent pas. */
 
@@ -19,26 +20,9 @@ export function simplePage(intro: string): JSONContent {
   return { type: 'doc', content: [p(text(intro))] };
 }
 
-const tokenOperation: ApiOperation = {
-  method: 'POST',
-  path: '/oauth/token',
-  summary: "Émet un jeton d'accès",
-  contentType: 'application/x-www-form-urlencoded',
-  requestBody: [
-    { name: 'grant_type', type: 'string', required: true, description: 'Toujours client_credentials.' },
-    { name: 'client_id', type: 'string', required: true, description: 'Identifiant du service client.' },
-    { name: 'client_secret', type: 'string', required: true, description: 'Secret du service client.' },
-    { name: 'scope', type: 'string', description: 'Portées séparées par des espaces.' },
-  ],
-  responses: [
-    { status: 200, description: 'Jeton émis', example: '{\n  "access_token": "eyJhbGciOi…",\n  "token_type": "Bearer",\n  "expires_in": 900\n}' },
-    { status: 400, description: 'Requête invalide' },
-    { status: 401, description: 'Client inconnu ou secret faux' },
-    { status: 429, description: 'Trop de requêtes' },
-  ],
-};
+const tokenOperation = operationFromSpec(paymentsSpecVersions[1], 'POST /oauth/token')!;
 
-export function authenticationPage(threads: { header: string; storage: string }, links: { userTokens: string; runbook: string }): JSONContent {
+export function authenticationPage(threads: { header: string; storage: string }, links: { userTokens: string; runbook: string }, specId: string): JSONContent {
   return {
     type: 'doc',
     content: [
@@ -99,14 +83,16 @@ export function authenticationPage(threads: { header: string; storage: string },
         ],
       },
       h2("Référence de l'endpoint"),
-      p(text('La référence ci-dessous est générée depuis '), code('paiements.yaml'), text(", que la CI publie à chaque version de l'API. Personne ne la recopie à la main.")),
+      p(text('La référence ci-dessous vient de la spec '), code('paiements'), text(", que la CI publie à chaque version de l'API. Personne ne la recopie à la main.")),
       {
         type: 'openapi',
         attrs: {
-          specFile: 'paiements.yaml',
-          specVersion: '2.3',
+          specId,
+          operationKey: 'POST /oauth/token',
+          specFile: 'paiements',
+          specVersion: null,
           operation: tokenOperation,
-          caption: 'Extrait de paiements.yaml v2.3, publié par la CI.',
+          caption: 'Extrait de la spec paiements, publiée par la CI.',
         },
       },
       h2('Erreurs fréquentes'),

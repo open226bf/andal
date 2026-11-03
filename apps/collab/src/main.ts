@@ -177,29 +177,34 @@ async function anchor(pageId: string, threadId: string, from: string, to: string
 }
 
 /**
- * Remet le contenu d'une version dans le document vivant: les navigateurs
- * ouverts le reçoivent aussitôt, et l'enregistrement qui suit ouvre une
- * nouvelle version au nom de qui a restauré.
+ * Remplace le contenu du document vivant: les navigateurs ouverts le reçoivent
+ * aussitôt, et l'enregistrement qui suit ouvre une nouvelle version au nom de
+ * `userId`. Sert à restaurer une version et à écrire par l'API.
  */
-async function restoreVersion(pageId: string, versionId: string, userId: string): Promise<'ok' | 'same' | 'invalid'> {
-  const version = await db.selectFrom('page_versions').select('content').where('id', '=', versionId).where('page_id', '=', pageId).executeTakeFirst();
-  if (!version || validateDoc(version.content as JSONContent)) return 'invalid';
+async function writeContent(pageId: string, content: JSONContent, userId: string | null): Promise<'ok' | 'same' | 'invalid'> {
+  if (validateDoc(content)) return 'invalid';
   const connection = await server.hocuspocus.openDirectConnection(`page:${pageId}`, { userId, pageId, restore: true } satisfies Context);
   let result: 'ok' | 'same' = 'ok';
   try {
     await connection.transact((document) => {
       const fragment = document.getXmlFragment(FIELD);
-      if (sameDoc(yXmlFragmentToProsemirrorJSON(fragment) as JSONContent, version.content as JSONContent)) {
+      if (sameDoc(yXmlFragmentToProsemirrorJSON(fragment) as JSONContent, content)) {
         result = 'same';
         return;
       }
       // Mise à jour par différence: ce qui n'a pas changé reste en place chez les autres.
-      prosemirrorJSONToYXmlFragment(andalSchema(), version.content, fragment);
+      prosemirrorJSONToYXmlFragment(andalSchema(), content, fragment);
     });
   } finally {
     await connection.disconnect();
   }
   return result;
+}
+
+async function restoreVersion(pageId: string, versionId: string, userId: string): Promise<'ok' | 'same' | 'invalid'> {
+  const version = await db.selectFrom('page_versions').select('content').where('id', '=', versionId).where('page_id', '=', pageId).executeTakeFirst();
+  if (!version) return 'invalid';
+  return writeContent(pageId, version.content as JSONContent, userId);
 }
 
 /** Retire toutes les marques d'un fil supprimé. */
@@ -283,6 +288,7 @@ async function handle(command: CollabCommand): Promise<void> {
   try {
     if (command.op === 'anchor') reply = await anchor(command.pageId, command.threadId, command.from, command.to);
     else if (command.op === 'restore') reply = await restoreVersion(command.pageId, command.versionId, command.userId);
+    else if (command.op === 'replace') reply = await writeContent(command.pageId, command.content as JSONContent, command.userId);
     else await unanchor(command.pageId, command.threadId);
   } catch (error) {
     console.error(`Commande ${command.op} en échec:`, error);
