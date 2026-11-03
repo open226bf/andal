@@ -46,10 +46,16 @@ export function MarginNotes({
       .filter((a): a is { id: string; el: HTMLElement } => a.el !== null)
       .map((a) => ({ id: a.id, top: a.el.getBoundingClientRect().top - base }))
       .sort((a, b) => a.top - b.top);
+    // Les blocs larges (OpenAPI) occupent la marge: une note qui les croiserait passe dessous.
+    const wide = [...root.querySelectorAll<HTMLElement>('.ProseMirror > .node-openapi')].map((el) => {
+      const box = el.getBoundingClientRect();
+      return { top: box.top - base, bottom: box.bottom - base };
+    });
     for (const a of anchored) {
-      const top = Math.round(Math.max(a.top - 10, floor));
-      next[a.id] = top;
+      let top = Math.round(Math.max(a.top - 10, floor));
       const height = notesRef.current?.querySelector<HTMLElement>(`[data-note="${CSS.escape(a.id)}"]`)?.offsetHeight ?? 120;
+      for (const block of wide) if (top < block.bottom + 16 && top + height > block.top - 16) top = Math.round(block.bottom + 16);
+      next[a.id] = top;
       floor = top + height + 16;
     }
     setTops((prev) => (sameTops(prev, next) ? prev : next));

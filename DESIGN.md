@@ -264,7 +264,7 @@ components:
 
 Chaque projet est un volume relié, chaque page une section numérotée d'un livre technique, dans la lignée d'O'Reilly, No Starch, Pragmatic et des RFC. Le papier est blanc froid, l'encre bleu-noir, et la seule couleur forte vient de la toile de reliure du volume ouvert: elle habille le dos sur l'étagère, le bandeau du volume, la section courante du sommaire, les numéros de figure, les liens et l'encadré. Changer de volume, c'est tirer un autre dos de l'étagère; toute la page change de toile, rien d'autre ne bouge.
 
-La densité est celle d'un livre de référence, pas d'un tableau de bord: une colonne de lecture de 640px en Literata, une marge droite de 232px pour les notes de marge (les commentaires), et une interface en Atkinson Hyperlegible Next qui reste en retrait. Les blocs techniques (Mermaid, OpenAPI, draw.io, code) sont traités comme des figures et listings numérotés avec légende, au même niveau de soin que la prose. Le mode édition ne change pas de décor: il révèle la construction de la page (contours de blocs, poignées, étiquettes de type, menu `/`).
+La densité est celle d'un livre de référence, pas d'un tableau de bord: une colonne de lecture de 640 à 720px en Literata, selon la place, une marge droite de 232px pour les notes de marge (les commentaires), et une interface en Atkinson Hyperlegible Next qui reste en retrait. Les blocs techniques (Mermaid, OpenAPI, draw.io, code) sont traités comme des figures et listings numérotés avec légende, au même niveau de soin que la prose. Le mode édition ne change pas de décor: il révèle la construction de la page (contours de blocs, poignées, étiquettes de type, menu `/`).
 
 Les droits se lisent comme un colophon: trois colonnes Écriture, Commentaire, Lecture, chacune avec son signe d'accès (plein, hachuré, contour), juste sous le titre. Le système refuse le wiki gris à accent bleu unique: la couleur appartient au volume, jamais à l'application.
 
@@ -336,7 +336,7 @@ Le thème sombre remplace chaque neutre et chaque couleur d'état par sa variant
 - **Headline** (700, 1.5rem, 1.25, -0.01em): titres de sous-section numérotés (3.2.1), 52px au-dessus, 14px dessous; le numéro est à 0.9em.
 - **Title** (700, 1.1875rem, 1.2): nom du volume dans le bandeau. Le titre du panneau Partager est à 1.0625rem.
 - **Lede** (Literata 400, 1.25rem, 1.55; 1.125rem sous 860px): chapeau sous le titre, en `ink-2`.
-- **Body** (Literata 400, 1.125rem, 1.72): prose, colonne de 640px; ponctuation suspendue, `text-wrap: pretty`. Les explications des repères de code et l'encadré gardent Literata (1rem/1.6 pour les repères).
+- **Body** (Literata 400, 1.125rem, 1.72): prose, colonne de 640 à 720px; ponctuation suspendue, `text-wrap: pretty`. Les explications des repères de code et l'encadré gardent Literata (1rem/1.6 pour les repères).
 - **UI** (400, 1rem, 1.5) et **Nav** (0.9375rem, 1.3): base de l'interface, lignes du sommaire, fil d'Ariane, options.
 - **Caption** (0.875rem, 1.45): légendes de figures, notes de marge, tableaux OpenAPI.
 - **Label** (700, 0.8125rem): intitulés du colophon; métadonnées en 400 à la même taille en `ink-3`. Pas de capitales, pas d'interlettrage.
@@ -352,11 +352,12 @@ Le thème sombre remplace chaque neutre et chaque couleur d'état par sa variant
 
 Grille d'application en deux colonnes: une navigation collante de pleine hauteur (étagère de 64px plus sommaire de 280px) puis la zone principale. La zone principale est un conteneur (`container-type: inline-size`) qui porte le bandeau collant, puis la page (`44px 28px 96px` de padding).
 
-La feuille fait `min(100%, 640px + 232px + 28px)`, centrée: colonne de lecture de 640px, gouttière de 28px, marge de 232px.
+La feuille fait `min(100%, mesure + marge + 28px)`, centrée: colonne de lecture, gouttière de 28px, marge des notes. La mesure suit la place (`clamp(640px, 100cqi - marge - 84px, 720px)`, posée sur `.page`): 640px quand la marge tient tout juste, 720px dès que le conteneur atteint 1036px; au-delà, la ligne de Literata dépasserait 85 signes.
 
-- **Conteneur ≥ 956px:** les notes de marge flottent à droite dans la colonne de 232px (marge négative), et les blocs larges (`.wide`, le bloc OpenAPI) débordent sur la marge.
+- **Conteneur ≥ 956px:** les notes de marge flottent à droite dans la colonne de 232px (marge négative), et le bloc OpenAPI déborde sur la marge (`.node-openapi`, marge droite négative); une note qui croiserait un bloc large passe dessous.
+- **Conteneur ≥ 1240px:** la marge des notes passe à 264px, et les blocs larges avec elle (1012px avec la mesure de 720px).
 - **Fenêtre ≤ 1360px (portable):** sommaire réduit à 256px, métadonnées du volume masquées dans le bandeau, écart du bandeau à 14px. Les notes de marge gardent leur colonne.
-- **Fenêtre ≤ 860px (mobile):** la navigation devient un tiroir fixe (`min(344px, 88vw)`, `100dvh`) qui glisse depuis la gauche avec un voile `rgba(12, 14, 20, .45)`; une barre supérieure papier (menu, nom court du volume, recherche) apparaît; le bandeau passe sur plusieurs lignes, le fil d'Ariane en pleine largeur, présence masquée; padding de page `28px 20px 72px`; colophon en une colonne; OpenAPI en une colonne; pager en une colonne; poignées d'édition masquées; diagrammes à leur largeur naturelle avec défilement horizontal.
+- **Fenêtre ≤ 860px (mobile):** la navigation devient un tiroir fixe (`min(344px, 88vw)`, `100dvh`) qui glisse depuis la gauche avec un voile `rgba(12, 14, 20, .45)`; une barre supérieure papier (menu, nom court du volume, recherche) apparaît; le bandeau passe sur plusieurs lignes, le fil d'Ariane en pleine largeur, présence masquée; padding de page `28px 20px 72px`; colophon en une colonne; pager en une colonne; poignées d'édition masquées; diagrammes à leur largeur naturelle avec défilement horizontal.
 
 Rythme vertical observé: figures `30px 0 34px`, encadré `28px 0 30px`, colophon 36px dessous, titre de section 52px dessus, bloc « après la page » 60px dessus.
 
@@ -428,7 +429,7 @@ Listing à filet et rayon 14px sur `code-bg`; en-tête Mono 500 0.75rem `ink-3` 
 Fond `vol-tint`, rayon 14px, sans bordure; grille icône (1.375rem, `vol-deep`) / contenu; titre « À retenir » en UI 700 0.9375rem `vol-deep`, texte en Literata. La toile teinte l'encadré: il change avec le volume.
 
 ### Le bloc OpenAPI
-Bloc large (déborde sur la marge à partir de 956px). En-tête `desk` à filet: verbe en Mono 700 sur `ok-tint`/`ok`, route en Mono 500 1rem, résumé `ink-2`, puce de version (Mono 500 0.75rem `ink-3`, filet `rule`, rayon 6px), lien fantôme « Ouvrir dans Redoc » vers l'opération. Corps en deux colonnes `1.25fr / 1fr` séparées par un filet: paramètres puis tableau des champs (en-têtes `ink-3` 0.75rem, lignes à filet, « requis » en `err` 700 0.6875rem, type en Mono `ink-3`) et réponses (code en Mono 700 sur pastille `ok-tint` ou `err-tint`, schéma JSON sur `code-bg` rayon 6px). Une colonne sous 860px.
+Bloc large (déborde sur la marge à partir de 956px). En-tête `desk` à filet: verbe en Mono 700 sur `ok-tint`/`ok`, route en Mono 500 1rem, résumé `ink-2`, puce de version (Mono 500 0.75rem `ink-3`, filet `rule`, rayon 6px), lien fantôme « Ouvrir dans Redoc » vers l'opération. Corps réglé sur la largeur du bloc lui-même (conteneur `api`), pas sur la fenêtre: deux colonnes `1.25fr / 1fr` séparées par un filet à partir de 720px, sinon paramètres puis réponses l'un sous l'autre. Tableaux des paramètres et des champs: en-têtes `ink-3` 0.75rem, lignes à filet sans cadre (les règles des tableaux de page ne s'y appliquent pas), nom à sa largeur suivi de près du type en Mono `ink-3`, « requis » en `err` 700 0.6875rem; pas de colonne Description quand la spec n'en donne aucune. Réponses: code en Mono 700 sur pastille `ok-tint` ou `err-tint`, schéma JSON sur `code-bg` rayon 6px.
 - **Spec vivante:** le bloc relit la spec du volume à l'affichage. Si la spec ou l'opération a disparu, une bande `hl` sous l'en-tête (0.8125rem, icône) annonce « Copie gardée dans la page » et le bloc montre sa dernière copie.
 - **En mode Modifier:** un sélecteur « Opération » apparaît sous l'en-tête; la copie gardée suit la spec quand elle a changé.
 

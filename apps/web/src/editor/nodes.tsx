@@ -141,6 +141,9 @@ export function OpenApiView({ node, editor, getPos, updateAttributes }: NodeView
   const live = useSpecOperation(specId, key);
   const operations = useSpecOperations(editing ? specId : null);
   const op = live.data?.operation ?? snapshot;
+  // Pas de colonne Description vide quand la spec n'en donne aucune.
+  const paramsDescribed = (op?.parameters ?? []).some((f) => f.description);
+  const bodyDescribed = (op?.requestBody ?? []).some((f) => f.description);
   // La spec a bougé depuis l'insertion: en mode édition, la copie gardée dans la page suit.
   const fresh = live.data?.operation;
   useEffect(() => {
@@ -201,7 +204,7 @@ export function OpenApiView({ node, editor, getPos, updateAttributes }: NodeView
                         <tr>
                           <th scope="col">{t('Nom')}</th>
                           <th scope="col">{t('Type')}</th>
-                          <th scope="col">{t('Description')}</th>
+                          {paramsDescribed && <th scope="col">{t('Description')}</th>}
                         </tr>
                       </thead>
                       <tbody>
@@ -213,7 +216,7 @@ export function OpenApiView({ node, editor, getPos, updateAttributes }: NodeView
                               {f.required && <span className="req">{t('requis')}</span>}
                             </td>
                             <td className="type">{f.type}</td>
-                            <td>{f.description}</td>
+                            {paramsDescribed && <td>{f.description}</td>}
                           </tr>
                         ))}
                       </tbody>
@@ -230,7 +233,7 @@ export function OpenApiView({ node, editor, getPos, updateAttributes }: NodeView
                         <tr>
                           <th scope="col">{t('Champ')}</th>
                           <th scope="col">{t('Type')}</th>
-                          <th scope="col">{t('Description')}</th>
+                          {bodyDescribed && <th scope="col">{t('Description')}</th>}
                         </tr>
                       </thead>
                       <tbody>
@@ -241,7 +244,7 @@ export function OpenApiView({ node, editor, getPos, updateAttributes }: NodeView
                               {f.required && <span className="req">{t('requis')}</span>}
                             </td>
                             <td className="type">{f.type}</td>
-                            <td>{f.description}</td>
+                            {bodyDescribed && <td>{f.description}</td>}
                           </tr>
                         ))}
                       </tbody>
