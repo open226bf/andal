@@ -63,7 +63,7 @@ docker compose -f deploy/compose.yaml --env-file deploy/.env exec -T postgres pg
 
 ## Mettre à jour
 
-Fixez `ANDAL_VERSION` sur la nouvelle étiquette (ou gardez `latest`), puis :
+Fixez `ANDAL_VERSION` sur la nouvelle version, sans le `v` (`0.1.0`, ou `0.1` pour suivre ses correctifs), ou gardez `latest`. Ce que change chaque version est dans [CHANGELOG.fr.md](../CHANGELOG.fr.md). Puis :
 
 ```bash
 docker compose -f deploy/compose.yaml --env-file deploy/.env pull

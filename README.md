@@ -4,7 +4,7 @@
 
 Open-source documentation tool for tech teams: per-project volumes, numbered pages, collaborative editing, Mermaid, OpenAPI and draw.io blocks, and read / comment / write permissions per project and per page.
 
-This repository is the **skeleton**. The doc page works end to end (reading, real-time editing, comments and mentions, permissions, search), and so do the volume library (aisles, personal shelf, create, configure, archive, delete), the pages in the contents (create, drag and drop, trash, history), account, group and access management, and notifications. Everything else is listed further down. The visual direction is described in [DESIGN.md](DESIGN.md), the product in [PRODUCT.md](PRODUCT.md), and the reference mockup is in [maquette/index.html](maquette/index.html).
+**Version 0.1**, the first release: what it contains is in [CHANGELOG.md](CHANGELOG.md), and what it doesn't do yet is under [What's left to do](#whats-left-to-do). The visual direction is described in [DESIGN.md](DESIGN.md), the product in [PRODUCT.md](PRODUCT.md), and the reference mockup is in [maquette/index.html](maquette/index.html).
 
 **The name.** *Andal* comes from the Fulfulde word *anndal*: knowledge, science. The prototype was called Calepin; the development infrastructure identifiers (Postgres database and user, Keycloak realm and client, RustFS keys, demo password) keep that name so that existing Docker volumes don't break.
 
@@ -378,7 +378,7 @@ With the stack running: starts a second collab instance (port 3012) and checks t
 
 ## Deployment
 
-Docker images, production compose behind Caddy (automatic TLS, strict CSP), first account, backups and upgrades: see [deploy/README.md](deploy/README.md). CI publishes `ghcr.io/open226bf/andal-server` and `andal-web` on every commit to `main` (tag `edge`) and on every `v*` release.
+Docker images, production compose behind Caddy (automatic TLS, strict CSP), first account, backups and upgrades: see [deploy/README.md](deploy/README.md). CI publishes `ghcr.io/open226bf/andal-server` and `andal-web` on every commit to `main` (tag `edge`) and on every `v*` release (tags `0.1.0`, `0.1` and `latest` for `v0.1.0`).
 
 ```bash
 pnpm --filter @andal/collab check:deploy

@@ -63,7 +63,7 @@ docker compose -f deploy/compose.yaml --env-file deploy/.env exec -T postgres pg
 
 ## Upgrading
 
-Set `ANDAL_VERSION` to the new tag (or keep `latest`), then:
+Set `ANDAL_VERSION` to the new version, without the `v` (`0.1.0`, or `0.1` to follow its fixes), or keep `latest`. What each version changes is in [CHANGELOG.md](../CHANGELOG.md). Then:
 
 ```bash
 docker compose -f deploy/compose.yaml --env-file deploy/.env pull

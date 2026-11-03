@@ -4,7 +4,7 @@
 
 Outil de documentation open source pour équipes tech : volumes par projet, pages numérotées, édition collaborative, blocs Mermaid, OpenAPI et draw.io, droits lecture / commentaire / écriture par projet et par page.
 
-Ce dépôt est le **squelette** : la page de doc fonctionne de bout en bout (lecture, édition temps réel, commentaires et citations, droits, recherche), comme la bibliothèque des volumes (rayons, étagère personnelle, créer, régler, archiver, supprimer), les pages du sommaire (créer, glisser-déposer, corbeille, historique), la gestion des comptes, des groupes et des accès, et les notifications ; le reste est listé plus bas. La direction visuelle est décrite dans [DESIGN.md](DESIGN.md), le produit dans [PRODUCT.md](PRODUCT.md), et la maquette de référence est dans [maquette/index.html](maquette/index.html).
+**Version 0.1**, la première : son contenu est dans [CHANGELOG.fr.md](CHANGELOG.fr.md), et ce qu'elle ne fait pas encore sous [Ce qui reste à faire](#ce-qui-reste-à-faire). La direction visuelle est décrite dans [DESIGN.md](DESIGN.md), le produit dans [PRODUCT.md](PRODUCT.md), et la maquette de référence est dans [maquette/index.html](maquette/index.html).
 
 **Le nom.** *Andal* vient du fulfulde *anndal* : le savoir, la science. Le prototype s'appelait Calepin ; les identifiants de l'infra de développement (base et utilisateur Postgres, realm et client Keycloak, clés RustFS, mot de passe de démo) gardent ce nom pour ne pas casser les volumes Docker déjà créés.
 
@@ -378,7 +378,7 @@ Avec la stack lancée : démarre une seconde instance collab (port 3012) et vér
 
 ## Déployer
 
-Images Docker, compose de production derrière Caddy (TLS automatique, CSP stricte), premier compte, sauvegardes et mises à jour : voir [deploy/README.fr.md](deploy/README.fr.md). La CI publie `ghcr.io/open226bf/andal-server` et `andal-web` à chaque commit sur `main` (étiquette `edge`) et à chaque version `v*`.
+Images Docker, compose de production derrière Caddy (TLS automatique, CSP stricte), premier compte, sauvegardes et mises à jour : voir [deploy/README.fr.md](deploy/README.fr.md). La CI publie `ghcr.io/open226bf/andal-server` et `andal-web` à chaque commit sur `main` (étiquette `edge`) et à chaque version `v*` (étiquettes `0.1.0`, `0.1` et `latest` pour `v0.1.0`).
 
 ```bash
 pnpm --filter @andal/collab check:deploy
