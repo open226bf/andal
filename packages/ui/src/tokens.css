@@ -1,0 +1,85 @@
+/*
+ * Jetons d'Andal, direction « Édition technique ». Source: DESIGN.md.
+ * Thème: data-theme="light|dark" sur <html>, sinon prefers-color-scheme.
+ * Volume ouvert: data-vol="<toile>" sur <html> (et sur chaque dos de l'étagère).
+ */
+:root {
+  --font-ui: "Atkinson Hyperlegible Next Variable", "Atkinson Hyperlegible Next", system-ui, sans-serif;
+  --font-text: "Literata Variable", "Literata", Georgia, serif;
+  --font-mono: "Atkinson Hyperlegible Mono", ui-monospace, "SF Mono", monospace;
+
+  --paper: #FFFFFF;
+  --desk: #F3F4F7;
+  --shelf: #E4E7EE;
+  --ink: #1C2230;
+  --ink-2: #4A5266;
+  --ink-3: #646C80;
+  --rule: #DDE1E8;
+  --rule-2: #C6CCD7;
+  --hover: #E8EBF1;
+  --code-bg: #F6F7FA;
+  --hl: #FFF0BF;
+  --hl-line: #D99A1E;
+
+  --ok: #1D7A46;
+  --ok-tint: #E3F3EA;
+  --err: #B3261E;
+  --err-tint: #FBE9E7;
+
+  --t-cmd: #3A2FA3;
+  --t-flag: #8E2A19;
+  --t-str: #0B5A51;
+  --t-var: #7A5408;
+
+  --vol-tint: var(--vol-tint-l);
+  --vol-deep: var(--vol-deep-l);
+
+  --r-s: 6px;
+  --r: 10px;
+  --r-l: 14px;
+  --shadow-pop: 0 14px 36px rgba(20, 26, 40, .16), 0 2px 6px rgba(20, 26, 40, .08);
+  --shadow-card: 0 8px 18px rgba(20, 26, 40, .14), 0 1px 3px rgba(20, 26, 40, .10);
+  --shadow-pull: 4px 2px 12px rgba(20, 26, 40, .22);
+  --ease: cubic-bezier(.16, 1, .3, 1);
+
+  --measure: 640px;
+  --margin-col: 232px;
+
+  color-scheme: light;
+}
+
+[data-vol="paiements"] { --vol: #157F73; --vol-on: #FFFFFF; --vol-tint-l: #E2F3F0; --vol-deep-l: #0B5A51; --vol-tint-d: #133A36; --vol-deep-d: #72D3C5; }
+[data-vol="identite"] { --vol: #5B4FD6; --vol-on: #FFFFFF; --vol-tint-l: #ECEAFC; --vol-deep-l: #3A2FA3; --vol-tint-d: #29244D; --vol-deep-d: #B6AEF6; }
+[data-vol="donnees"] { --vol: #F2B33D; --vol-on: #1C2230; --vol-tint-l: #FDF3DD; --vol-deep-l: #7A5408; --vol-tint-d: #3B3016; --vol-deep-d: #F6CB73; }
+[data-vol="mobile"] { --vol: #C2366A; --vol-on: #FFFFFF; --vol-tint-l: #FBE7EF; --vol-deep-l: #8F1E48; --vol-tint-d: #45182A; --vol-deep-d: #F3A0BF; }
+[data-vol="plateforme"] { --vol: #3B6FB6; --vol-on: #FFFFFF; --vol-tint-l: #E6EEF8; --vol-deep-l: #1E4377; --vol-tint-d: #1A2C46; --vol-deep-d: #9FC2F1; }
+[data-vol="design"] { --vol: #C93F28; --vol-on: #FFFFFF; --vol-tint-l: #FBE9E5; --vol-deep-l: #8E2A19; --vol-tint-d: #46201A; --vol-deep-d: #F5A797; }
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #151922; --desk: #10131A; --shelf: #0B0D12;
+    --ink: #E7E9EF; --ink-2: #B3B9C7; --ink-3: #8D94A6;
+    --rule: #272D3A; --rule-2: #3A4151; --hover: #1E2330; --code-bg: #0F1219;
+    --hl: #43381A; --hl-line: #D9A440; --hl-ink: #F6E3B0;
+    --ok: #6CCB94; --ok-tint: #16301F; --err: #F28B82; --err-tint: #3A1A18;
+    --t-cmd: #B6AEF6; --t-flag: #F5A797; --t-str: #72D3C5; --t-var: #F6CB73;
+    --vol-tint: var(--vol-tint-d); --vol-deep: var(--vol-deep-d);
+    --shadow-pop: 0 14px 36px rgba(0, 0, 0, .5), 0 2px 6px rgba(0, 0, 0, .4);
+    --shadow-card: 0 8px 18px rgba(0, 0, 0, .45), 0 1px 3px rgba(0, 0, 0, .4);
+    --shadow-pull: 4px 2px 14px rgba(0, 0, 0, .6);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #151922; --desk: #10131A; --shelf: #0B0D12;
+  --ink: #E7E9EF; --ink-2: #B3B9C7; --ink-3: #8D94A6;
+  --rule: #272D3A; --rule-2: #3A4151; --hover: #1E2330; --code-bg: #0F1219;
+  --hl: #43381A; --hl-line: #D9A440; --hl-ink: #F6E3B0;
+  --ok: #6CCB94; --ok-tint: #16301F; --err: #F28B82; --err-tint: #3A1A18;
+  --t-cmd: #B6AEF6; --t-flag: #F5A797; --t-str: #72D3C5; --t-var: #F6CB73;
+  --vol-tint: var(--vol-tint-d); --vol-deep: var(--vol-deep-d);
+  --shadow-pop: 0 14px 36px rgba(0, 0, 0, .5), 0 2px 6px rgba(0, 0, 0, .4);
+  --shadow-card: 0 8px 18px rgba(0, 0, 0, .45), 0 1px 3px rgba(0, 0, 0, .4);
+  --shadow-pull: 4px 2px 14px rgba(0, 0, 0, .6);
+  color-scheme: dark;
+}

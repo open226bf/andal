@@ -1,0 +1,955 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-02T20:40:53+00:00",
+  "title": "Design System: Andal",
+  "extensions": {
+    "colorMeta": {
+      "vol-paiements": {
+        "role": "primary",
+        "displayName": "Sarcelle Paiements",
+        "canonical": "#157F73",
+        "tonalRamp": [
+          "#133A36",
+          "#0B5A51",
+          "#157F73",
+          "#72D3C5",
+          "#E2F3F0"
+        ],
+        "cssVar": "--vol",
+        "scope": "[data-vol=\"paiements\"]"
+      },
+      "vol-paiements-on": {
+        "role": "primary",
+        "displayName": "Sarcelle Paiements, texte posé",
+        "cssVar": "--vol-on"
+      },
+      "vol-paiements-tint": {
+        "role": "primary",
+        "displayName": "Sarcelle Paiements, fond pâle",
+        "cssVar": "--vol-tint-l (via --vol-tint)"
+      },
+      "vol-paiements-deep": {
+        "role": "primary",
+        "displayName": "Sarcelle Paiements, encre",
+        "cssVar": "--vol-deep-l (via --vol-deep)"
+      },
+      "vol-paiements-tint-dark": {
+        "role": "primary",
+        "displayName": "Sarcelle Paiements, fond pâle sombre",
+        "cssVar": "--vol-tint-d (via --vol-tint)"
+      },
+      "vol-paiements-deep-dark": {
+        "role": "primary",
+        "displayName": "Sarcelle Paiements, encre sombre",
+        "cssVar": "--vol-deep-d (via --vol-deep)"
+      },
+      "vol-identite": {
+        "role": "primary",
+        "displayName": "Indigo Identité",
+        "canonical": "#5B4FD6",
+        "tonalRamp": [
+          "#29244D",
+          "#3A2FA3",
+          "#5B4FD6",
+          "#B6AEF6",
+          "#ECEAFC"
+        ],
+        "cssVar": "--vol",
+        "scope": "[data-vol=\"identite\"]"
+      },
+      "vol-identite-on": {
+        "role": "primary",
+        "displayName": "Indigo Identité, texte posé",
+        "cssVar": "--vol-on"
+      },
+      "vol-identite-tint": {
+        "role": "primary",
+        "displayName": "Indigo Identité, fond pâle",
+        "cssVar": "--vol-tint-l (via --vol-tint)"
+      },
+      "vol-identite-deep": {
+        "role": "primary",
+        "displayName": "Indigo Identité, encre",
+        "cssVar": "--vol-deep-l (via --vol-deep)"
+      },
+      "vol-identite-tint-dark": {
+        "role": "primary",
+        "displayName": "Indigo Identité, fond pâle sombre",
+        "cssVar": "--vol-tint-d (via --vol-tint)"
+      },
+      "vol-identite-deep-dark": {
+        "role": "primary",
+        "displayName": "Indigo Identité, encre sombre",
+        "cssVar": "--vol-deep-d (via --vol-deep)"
+      },
+      "vol-donnees": {
+        "role": "primary",
+        "displayName": "Moutarde Données",
+        "canonical": "#F2B33D",
+        "tonalRamp": [
+          "#3B3016",
+          "#7A5408",
+          "#F2B33D",
+          "#F6CB73",
+          "#FDF3DD"
+        ],
+        "cssVar": "--vol",
+        "scope": "[data-vol=\"donnees\"]"
+      },
+      "vol-donnees-on": {
+        "role": "primary",
+        "displayName": "Moutarde Données, texte posé",
+        "cssVar": "--vol-on"
+      },
+      "vol-donnees-tint": {
+        "role": "primary",
+        "displayName": "Moutarde Données, fond pâle",
+        "cssVar": "--vol-tint-l (via --vol-tint)"
+      },
+      "vol-donnees-deep": {
+        "role": "primary",
+        "displayName": "Moutarde Données, encre",
+        "cssVar": "--vol-deep-l (via --vol-deep)"
+      },
+      "vol-donnees-tint-dark": {
+        "role": "primary",
+        "displayName": "Moutarde Données, fond pâle sombre",
+        "cssVar": "--vol-tint-d (via --vol-tint)"
+      },
+      "vol-donnees-deep-dark": {
+        "role": "primary",
+        "displayName": "Moutarde Données, encre sombre",
+        "cssVar": "--vol-deep-d (via --vol-deep)"
+      },
+      "vol-mobile": {
+        "role": "primary",
+        "displayName": "Framboise Mobile",
+        "canonical": "#C2366A",
+        "tonalRamp": [
+          "#45182A",
+          "#8F1E48",
+          "#C2366A",
+          "#F3A0BF",
+          "#FBE7EF"
+        ],
+        "cssVar": "--vol",
+        "scope": "[data-vol=\"mobile\"]"
+      },
+      "vol-mobile-on": {
+        "role": "primary",
+        "displayName": "Framboise Mobile, texte posé",
+        "cssVar": "--vol-on"
+      },
+      "vol-mobile-tint": {
+        "role": "primary",
+        "displayName": "Framboise Mobile, fond pâle",
+        "cssVar": "--vol-tint-l (via --vol-tint)"
+      },
+      "vol-mobile-deep": {
+        "role": "primary",
+        "displayName": "Framboise Mobile, encre",
+        "cssVar": "--vol-deep-l (via --vol-deep)"
+      },
+      "vol-mobile-tint-dark": {
+        "role": "primary",
+        "displayName": "Framboise Mobile, fond pâle sombre",
+        "cssVar": "--vol-tint-d (via --vol-tint)"
+      },
+      "vol-mobile-deep-dark": {
+        "role": "primary",
+        "displayName": "Framboise Mobile, encre sombre",
+        "cssVar": "--vol-deep-d (via --vol-deep)"
+      },
+      "vol-plateforme": {
+        "role": "primary",
+        "displayName": "Bleu de Prusse Plateforme",
+        "canonical": "#3B6FB6",
+        "tonalRamp": [
+          "#1A2C46",
+          "#1E4377",
+          "#3B6FB6",
+          "#9FC2F1",
+          "#E6EEF8"
+        ],
+        "cssVar": "--vol",
+        "scope": "[data-vol=\"plateforme\"]"
+      },
+      "vol-plateforme-on": {
+        "role": "primary",
+        "displayName": "Bleu de Prusse Plateforme, texte posé",
+        "cssVar": "--vol-on"
+      },
+      "vol-plateforme-tint": {
+        "role": "primary",
+        "displayName": "Bleu de Prusse Plateforme, fond pâle",
+        "cssVar": "--vol-tint-l (via --vol-tint)"
+      },
+      "vol-plateforme-deep": {
+        "role": "primary",
+        "displayName": "Bleu de Prusse Plateforme, encre",
+        "cssVar": "--vol-deep-l (via --vol-deep)"
+      },
+      "vol-plateforme-tint-dark": {
+        "role": "primary",
+        "displayName": "Bleu de Prusse Plateforme, fond pâle sombre",
+        "cssVar": "--vol-tint-d (via --vol-tint)"
+      },
+      "vol-plateforme-deep-dark": {
+        "role": "primary",
+        "displayName": "Bleu de Prusse Plateforme, encre sombre",
+        "cssVar": "--vol-deep-d (via --vol-deep)"
+      },
+      "vol-design": {
+        "role": "primary",
+        "displayName": "Tomate Design",
+        "canonical": "#C93F28",
+        "tonalRamp": [
+          "#46201A",
+          "#8E2A19",
+          "#C93F28",
+          "#F5A797",
+          "#FBE9E5"
+        ],
+        "cssVar": "--vol",
+        "scope": "[data-vol=\"design\"]"
+      },
+      "vol-design-on": {
+        "role": "primary",
+        "displayName": "Tomate Design, texte posé",
+        "cssVar": "--vol-on"
+      },
+      "vol-design-tint": {
+        "role": "primary",
+        "displayName": "Tomate Design, fond pâle",
+        "cssVar": "--vol-tint-l (via --vol-tint)"
+      },
+      "vol-design-deep": {
+        "role": "primary",
+        "displayName": "Tomate Design, encre",
+        "cssVar": "--vol-deep-l (via --vol-deep)"
+      },
+      "vol-design-tint-dark": {
+        "role": "primary",
+        "displayName": "Tomate Design, fond pâle sombre",
+        "cssVar": "--vol-tint-d (via --vol-tint)"
+      },
+      "vol-design-deep-dark": {
+        "role": "primary",
+        "displayName": "Tomate Design, encre sombre",
+        "cssVar": "--vol-deep-d (via --vol-deep)"
+      },
+      "paper": {
+        "role": "neutral",
+        "displayName": "Papier",
+        "cssVar": "--paper",
+        "tonalRamp": [
+          "#1C2230",
+          "#4A5266",
+          "#646C80",
+          "#C6CCD7",
+          "#DDE1E8",
+          "#E4E7EE",
+          "#F3F4F7",
+          "#FFFFFF"
+        ]
+      },
+      "paper-dark": {
+        "role": "neutral",
+        "displayName": "Papier (sombre)",
+        "cssVar": "--paper",
+        "theme": "dark",
+        "tonalRamp": [
+          "#0B0D12",
+          "#10131A",
+          "#151922",
+          "#272D3A",
+          "#3A4151",
+          "#8D94A6",
+          "#B3B9C7",
+          "#E7E9EF"
+        ]
+      },
+      "desk": {
+        "role": "neutral",
+        "displayName": "Bureau",
+        "cssVar": "--desk",
+        "tonalRamp": [
+          "#1C2230",
+          "#4A5266",
+          "#646C80",
+          "#C6CCD7",
+          "#DDE1E8",
+          "#E4E7EE",
+          "#F3F4F7",
+          "#FFFFFF"
+        ]
+      },
+      "desk-dark": {
+        "role": "neutral",
+        "displayName": "Bureau (sombre)",
+        "cssVar": "--desk",
+        "theme": "dark",
+        "tonalRamp": [
+          "#0B0D12",
+          "#10131A",
+          "#151922",
+          "#272D3A",
+          "#3A4151",
+          "#8D94A6",
+          "#B3B9C7",
+          "#E7E9EF"
+        ]
+      },
+      "shelf": {
+        "role": "neutral",
+        "displayName": "Étagère",
+        "cssVar": "--shelf",
+        "tonalRamp": [
+          "#1C2230",
+          "#4A5266",
+          "#646C80",
+          "#C6CCD7",
+          "#DDE1E8",
+          "#E4E7EE",
+          "#F3F4F7",
+          "#FFFFFF"
+        ]
+      },
+      "shelf-dark": {
+        "role": "neutral",
+        "displayName": "Étagère (sombre)",
+        "cssVar": "--shelf",
+        "theme": "dark",
+        "tonalRamp": [
+          "#0B0D12",
+          "#10131A",
+          "#151922",
+          "#272D3A",
+          "#3A4151",
+          "#8D94A6",
+          "#B3B9C7",
+          "#E7E9EF"
+        ]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Encre",
+        "cssVar": "--ink",
+        "tonalRamp": [
+          "#1C2230",
+          "#4A5266",
+          "#646C80",
+          "#C6CCD7",
+          "#DDE1E8",
+          "#E4E7EE",
+          "#F3F4F7",
+          "#FFFFFF"
+        ]
+      },
+      "ink-dark": {
+        "role": "neutral",
+        "displayName": "Encre (sombre)",
+        "cssVar": "--ink",
+        "theme": "dark",
+        "tonalRamp": [
+          "#0B0D12",
+          "#10131A",
+          "#151922",
+          "#272D3A",
+          "#3A4151",
+          "#8D94A6",
+          "#B3B9C7",
+          "#E7E9EF"
+        ]
+      },
+      "ink-2": {
+        "role": "neutral",
+        "displayName": "Encre 2",
+        "cssVar": "--ink-2",
+        "tonalRamp": [
+          "#1C2230",
+          "#4A5266",
+          "#646C80",
+          "#C6CCD7",
+          "#DDE1E8",
+          "#E4E7EE",
+          "#F3F4F7",
+          "#FFFFFF"
+        ]
+      },
+      "ink-2-dark": {
+        "role": "neutral",
+        "displayName": "Encre 2 (sombre)",
+        "cssVar": "--ink-2",
+        "theme": "dark",
+        "tonalRamp": [
+          "#0B0D12",
+          "#10131A",
+          "#151922",
+          "#272D3A",
+          "#3A4151",
+          "#8D94A6",
+          "#B3B9C7",
+          "#E7E9EF"
+        ]
+      },
+      "ink-3": {
+        "role": "neutral",
+        "displayName": "Encre 3",
+        "cssVar": "--ink-3",
+        "tonalRamp": [
+          "#1C2230",
+          "#4A5266",
+          "#646C80",
+          "#C6CCD7",
+          "#DDE1E8",
+          "#E4E7EE",
+          "#F3F4F7",
+          "#FFFFFF"
+        ]
+      },
+      "ink-3-dark": {
+        "role": "neutral",
+        "displayName": "Encre 3 (sombre)",
+        "cssVar": "--ink-3",
+        "theme": "dark",
+        "tonalRamp": [
+          "#0B0D12",
+          "#10131A",
+          "#151922",
+          "#272D3A",
+          "#3A4151",
+          "#8D94A6",
+          "#B3B9C7",
+          "#E7E9EF"
+        ]
+      },
+      "rule": {
+        "role": "neutral",
+        "displayName": "Filet",
+        "cssVar": "--rule",
+        "tonalRamp": [
+          "#1C2230",
+          "#4A5266",
+          "#646C80",
+          "#C6CCD7",
+          "#DDE1E8",
+          "#E4E7EE",
+          "#F3F4F7",
+          "#FFFFFF"
+        ]
+      },
+      "rule-dark": {
+        "role": "neutral",
+        "displayName": "Filet (sombre)",
+        "cssVar": "--rule",
+        "theme": "dark",
+        "tonalRamp": [
+          "#0B0D12",
+          "#10131A",
+          "#151922",
+          "#272D3A",
+          "#3A4151",
+          "#8D94A6",
+          "#B3B9C7",
+          "#E7E9EF"
+        ]
+      },
+      "rule-2": {
+        "role": "neutral",
+        "displayName": "Filet appuyé",
+        "cssVar": "--rule-2",
+        "tonalRamp": [
+          "#1C2230",
+          "#4A5266",
+          "#646C80",
+          "#C6CCD7",
+          "#DDE1E8",
+          "#E4E7EE",
+          "#F3F4F7",
+          "#FFFFFF"
+        ]
+      },
+      "rule-2-dark": {
+        "role": "neutral",
+        "displayName": "Filet appuyé (sombre)",
+        "cssVar": "--rule-2",
+        "theme": "dark",
+        "tonalRamp": [
+          "#0B0D12",
+          "#10131A",
+          "#151922",
+          "#272D3A",
+          "#3A4151",
+          "#8D94A6",
+          "#B3B9C7",
+          "#E7E9EF"
+        ]
+      },
+      "hover": {
+        "role": "neutral",
+        "displayName": "Survol",
+        "cssVar": "--hover",
+        "tonalRamp": [
+          "#1C2230",
+          "#4A5266",
+          "#646C80",
+          "#C6CCD7",
+          "#DDE1E8",
+          "#E4E7EE",
+          "#F3F4F7",
+          "#FFFFFF"
+        ]
+      },
+      "hover-dark": {
+        "role": "neutral",
+        "displayName": "Survol (sombre)",
+        "cssVar": "--hover",
+        "theme": "dark",
+        "tonalRamp": [
+          "#0B0D12",
+          "#10131A",
+          "#151922",
+          "#272D3A",
+          "#3A4151",
+          "#8D94A6",
+          "#B3B9C7",
+          "#E7E9EF"
+        ]
+      },
+      "code-bg": {
+        "role": "neutral",
+        "displayName": "Fond de code",
+        "cssVar": "--code-bg",
+        "tonalRamp": [
+          "#1C2230",
+          "#4A5266",
+          "#646C80",
+          "#C6CCD7",
+          "#DDE1E8",
+          "#E4E7EE",
+          "#F3F4F7",
+          "#FFFFFF"
+        ]
+      },
+      "code-bg-dark": {
+        "role": "neutral",
+        "displayName": "Fond de code (sombre)",
+        "cssVar": "--code-bg",
+        "theme": "dark",
+        "tonalRamp": [
+          "#0B0D12",
+          "#10131A",
+          "#151922",
+          "#272D3A",
+          "#3A4151",
+          "#8D94A6",
+          "#B3B9C7",
+          "#E7E9EF"
+        ]
+      },
+      "hl": {
+        "role": "secondary",
+        "displayName": "Surligné papier",
+        "cssVar": "--hl"
+      },
+      "hl-dark": {
+        "role": "secondary",
+        "displayName": "Surligné papier (sombre)",
+        "cssVar": "--hl",
+        "theme": "dark"
+      },
+      "hl-line": {
+        "role": "secondary",
+        "displayName": "Fil ambre",
+        "cssVar": "--hl-line"
+      },
+      "hl-line-dark": {
+        "role": "secondary",
+        "displayName": "Fil ambre (sombre)",
+        "cssVar": "--hl-line",
+        "theme": "dark"
+      },
+      "ok": {
+        "role": "tertiary",
+        "displayName": "Vert validé",
+        "cssVar": "--ok"
+      },
+      "ok-dark": {
+        "role": "tertiary",
+        "displayName": "Vert validé (sombre)",
+        "cssVar": "--ok",
+        "theme": "dark"
+      },
+      "ok-tint": {
+        "role": "tertiary",
+        "displayName": "Vert validé, fond",
+        "cssVar": "--ok-tint"
+      },
+      "ok-tint-dark": {
+        "role": "tertiary",
+        "displayName": "Vert validé, fond (sombre)",
+        "cssVar": "--ok-tint",
+        "theme": "dark"
+      },
+      "err": {
+        "role": "tertiary",
+        "displayName": "Rouge refus",
+        "cssVar": "--err"
+      },
+      "err-dark": {
+        "role": "tertiary",
+        "displayName": "Rouge refus (sombre)",
+        "cssVar": "--err",
+        "theme": "dark"
+      },
+      "err-tint": {
+        "role": "tertiary",
+        "displayName": "Rouge refus, fond",
+        "cssVar": "--err-tint"
+      },
+      "err-tint-dark": {
+        "role": "tertiary",
+        "displayName": "Rouge refus, fond (sombre)",
+        "cssVar": "--err-tint",
+        "theme": "dark"
+      },
+      "t-cmd": {
+        "role": "tertiary",
+        "displayName": "Code: commande",
+        "cssVar": "--t-cmd"
+      },
+      "t-cmd-dark": {
+        "role": "tertiary",
+        "displayName": "Code: commande (sombre)",
+        "cssVar": "--t-cmd",
+        "theme": "dark"
+      },
+      "t-flag": {
+        "role": "tertiary",
+        "displayName": "Code: option",
+        "cssVar": "--t-flag"
+      },
+      "t-flag-dark": {
+        "role": "tertiary",
+        "displayName": "Code: option (sombre)",
+        "cssVar": "--t-flag",
+        "theme": "dark"
+      },
+      "t-str": {
+        "role": "tertiary",
+        "displayName": "Code: chaîne",
+        "cssVar": "--t-str"
+      },
+      "t-str-dark": {
+        "role": "tertiary",
+        "displayName": "Code: chaîne (sombre)",
+        "cssVar": "--t-str",
+        "theme": "dark"
+      },
+      "t-var": {
+        "role": "tertiary",
+        "displayName": "Code: variable",
+        "cssVar": "--t-var"
+      },
+      "t-var-dark": {
+        "role": "tertiary",
+        "displayName": "Code: variable (sombre)",
+        "cssVar": "--t-var",
+        "theme": "dark"
+      },
+      "hl-ink-dark": {
+        "role": "secondary",
+        "displayName": "Texte surligné (sombre)",
+        "cssVar": "--hl-ink",
+        "theme": "dark"
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "Titre de page numéroté. 1.875rem sous 860px."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Titres de sous-section numérotés (3.2.1)."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Nom du volume dans le bandeau."
+      },
+      "lede": {
+        "displayName": "Lede",
+        "purpose": "Chapeau sous le titre, ink-2. 1.125rem sous 860px."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Prose en Literata, colonne de 640px."
+      },
+      "ui": {
+        "displayName": "UI",
+        "purpose": "Base de l'interface."
+      },
+      "nav": {
+        "displayName": "Nav",
+        "purpose": "Sommaire, fil d'Ariane, options, recherche."
+      },
+      "caption": {
+        "displayName": "Caption",
+        "purpose": "Légendes, notes de marge, tableaux OpenAPI."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Intitulés du colophon; sans capitales."
+      },
+      "spine": {
+        "displayName": "Spine",
+        "purpose": "Titre vertical des dos."
+      },
+      "code": {
+        "displayName": "Code",
+        "purpose": "Listings et schémas; inline à 0.88em."
+      }
+    },
+    "shadows": [
+      {
+        "name": "shadow-pull",
+        "value": "4px 2px 12px rgba(20, 26, 40, .22)",
+        "dark": "4px 2px 14px rgba(0, 0, 0, .6)",
+        "purpose": "Dos survolé ou courant, tiré de l'étagère."
+      },
+      {
+        "name": "shadow-card",
+        "value": "0 8px 18px rgba(20, 26, 40, .14), 0 1px 3px rgba(20, 26, 40, .10)",
+        "dark": "0 8px 18px rgba(0, 0, 0, .45), 0 1px 3px rgba(0, 0, 0, .4)",
+        "purpose": "Menu / et panneau Partager."
+      },
+      {
+        "name": "shadow-pop",
+        "value": "0 14px 36px rgba(20, 26, 40, .16), 0 2px 6px rgba(20, 26, 40, .08)",
+        "dark": "0 14px 36px rgba(0, 0, 0, .5), 0 2px 6px rgba(0, 0, 0, .4)",
+        "purpose": "Tiroir de navigation ouvert sur mobile."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease-book",
+        "value": "cubic-bezier(.16, 1, .3, 1)",
+        "purpose": "Courbe unique: dos, révélations, bascule, panneau, tiroir, bouton papier."
+      },
+      {
+        "name": "duration-hover",
+        "value": "150ms",
+        "purpose": "Fonds, couleurs et bordures au survol."
+      },
+      {
+        "name": "duration-reveal",
+        "value": "180ms",
+        "purpose": "Zone révélée du sommaire, bascule Lire/Modifier, interrupteur, apparition du panneau."
+      },
+      {
+        "name": "duration-pull",
+        "value": "220ms",
+        "purpose": "Tirer un dos; révéler la construction des blocs en édition."
+      },
+      {
+        "name": "duration-drawer",
+        "value": "260ms",
+        "purpose": "Tiroir de navigation mobile."
+      },
+      {
+        "name": "blink",
+        "value": "1.1s steps(1) infinite",
+        "purpose": "Curseur de la ligne de saisie du menu /."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "prefers-reduced-motion: reduce => animation et transition: none",
+        "purpose": "Coupe tout mouvement."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "mobile",
+        "value": "860px",
+        "query": "@media (max-width: 860px)",
+        "purpose": "Tiroir, barre supérieure, colonnes uniques, diagrammes à largeur naturelle."
+      },
+      {
+        "name": "laptop",
+        "value": "1360px",
+        "query": "@media (max-width: 1360px)",
+        "purpose": "Sommaire à 256px, métadonnées du bandeau masquées."
+      },
+      {
+        "name": "margin-notes",
+        "value": "956px",
+        "query": "@container (min-width: 956px) sur main",
+        "purpose": "Notes de marge flottantes et blocs larges débordant sur la marge."
+      }
+    ],
+    "layout": {
+      "measure": "640px",
+      "marginCol": "232px",
+      "gutter": "28px",
+      "sheet": "min(100%, calc(640px + 232px + 28px))",
+      "shelf": "64px",
+      "toc": "280px (256px <= 1360px)",
+      "mobileDrawer": "min(344px, 88vw)"
+    },
+    "themes": {
+      "light": ":root",
+      "dark": "@media (prefers-color-scheme: dark) :root:not([data-theme=\"light\"]), :root[data-theme=\"dark\"]",
+      "volume": "[data-vol=\"<id>\"] pose --vol, --vol-on, --vol-tint-l/-d, --vol-deep-l/-d; --vol-tint et --vol-deep basculent selon le thème"
+    },
+    "prototypeOnly": [
+      "Polices via Google Fonts: à auto-héberger",
+      "Icônes Phosphor en police via unpkg: passer à @phosphor-icons/react",
+      "Mermaid 11.4.1 via unpkg: dépendance npm",
+      "Panneau popover, tiroir et menu / natifs: à porter en Radix Popover/Dialog et extensions TipTap"
+    ]
+  },
+  "components": [
+    {
+      "name": "Étagère des dos",
+      "kind": "nav",
+      "refersTo": "spine",
+      "description": "Colonne de dos de volumes; le courant est tiré de 14px.",
+      "html": "<div class=\"ds-shelf\"><button class=\"ds-spine\" style=\"--vol:#5B4FD6;--h:124px\"><b>1</b><span>Identité</span></button><button class=\"ds-spine is-current\" style=\"--vol:#157F73;--h:150px\"><b>3</b><span>Paiements</span></button><button class=\"ds-spine\" style=\"--vol:#F2B33D;--vol-on:#1C2230;--h:132px\"><b>5</b><span>Données</span></button></div>",
+      "css": ".ds-shelf{background:var(--shelf,#E4E7EE);width:64px;padding:14px 0 16px 12px;display:flex;flex-direction:column;gap:6px}.ds-spine{position:relative;width:38px;height:var(--h,120px);background:var(--vol,#157F73);color:var(--vol-on,#fff);border:0;border-radius:4px 6px 6px 4px;display:grid;place-items:center;cursor:pointer;transition:transform .22s cubic-bezier(.16,1,.3,1),box-shadow .22s cubic-bezier(.16,1,.3,1),width .22s cubic-bezier(.16,1,.3,1)}.ds-spine::before,.ds-spine::after{content:\"\";position:absolute;left:6px;right:6px;height:2px;border-radius:1px;background:color-mix(in srgb,var(--vol-on,#fff) 55%,transparent)}.ds-spine::before{top:9px;box-shadow:0 5px 0 color-mix(in srgb,var(--vol-on,#fff) 55%,transparent)}.ds-spine::after{bottom:9px}.ds-spine b{position:absolute;top:21px;left:0;right:0;text-align:center;font:700 .75rem/1 'Atkinson Hyperlegible Next',system-ui,sans-serif}.ds-spine span{margin-top:20px;writing-mode:vertical-rl;transform:rotate(180deg);font:700 .78rem/1 'Atkinson Hyperlegible Next',system-ui,sans-serif;letter-spacing:.01em;white-space:nowrap}.ds-spine:hover{transform:translateX(5px);box-shadow:4px 2px 12px rgba(20,26,40,.22)}.ds-spine.is-current{transform:translateX(14px);width:42px;box-shadow:4px 2px 12px rgba(20,26,40,.22)}.ds-spine:focus-visible{outline:2px solid var(--vol-deep,#0B5A51);outline-offset:2px}"
+    },
+    {
+      "name": "Nœud du sommaire",
+      "kind": "nav",
+      "refersTo": "toc-node",
+      "description": "Ligne numérotée; signe d'accès et fraîcheur révélés au survol et au focus.",
+      "html": "<ol class=\"ds-tree\"><li><a class=\"ds-node\" href=\"#\"><span class=\"n\">3.1</span><span>Conventions</span><span class=\"rv\"><i class=\"ds-mark w\"></i>21 j</span></a></li><li><a class=\"ds-node\" href=\"#\" aria-current=\"page\"><span class=\"n\">3.2</span><span>Authentification</span><span class=\"rv\"><i class=\"ds-mark w\"></i>2 h</span></a></li><li><a class=\"ds-node\" href=\"#\"><span class=\"n\">3.3</span><span>Webhooks</span><span class=\"rv\"><i class=\"ds-mark c\"></i>6 j</span></a></li></ol>",
+      "css": ".ds-tree{list-style:none;margin:0;padding:10px;background:var(--desk,#F3F4F7);width:280px}.ds-node{display:grid;grid-template-columns:3em minmax(0,1fr) auto;align-items:baseline;gap:4px;min-height:34px;padding:5px 8px 5px 20px;border-radius:8px;color:var(--ink,#1C2230);text-decoration:none;font:400 .9375rem/1.3 'Atkinson Hyperlegible Next',system-ui,sans-serif;transition:background .15s}.ds-node .n{color:var(--ink-3,#646C80);font-size:.875rem;font-variant-numeric:tabular-nums}.ds-node .rv{display:flex;align-items:center;gap:6px;color:var(--ink-3,#646C80);font-size:.75rem;opacity:0;transform:translateX(4px);transition:opacity .18s cubic-bezier(.16,1,.3,1),transform .18s cubic-bezier(.16,1,.3,1)}.ds-node:hover{background:var(--hover,#E8EBF1)}.ds-node:hover .rv,.ds-node:focus-visible .rv{opacity:1;transform:none}.ds-node:focus-visible{outline:2px solid var(--vol-deep,#0B5A51);outline-offset:2px}.ds-node[aria-current=page]{background:var(--vol-tint,#E2F3F0);color:var(--vol-deep,#0B5A51);font-weight:600}.ds-node[aria-current=page] .n,.ds-node[aria-current=page] .rv{color:var(--vol-deep,#0B5A51);opacity:1;transform:none}.ds-mark{display:inline-block;width:12px;height:12px;border-radius:3px;border:1.5px solid currentColor}.ds-mark.w{background:currentColor}.ds-mark.c{background:repeating-linear-gradient(135deg,currentColor 0 1.5px,transparent 1.5px 4px)}"
+    },
+    {
+      "name": "Bandeau du volume",
+      "kind": "nav",
+      "refersTo": "volume-band",
+      "description": "Barre collante en toile: volume, fil d'Ariane, bascule Lire/Modifier, Partager.",
+      "html": "<header class=\"ds-band\"><span class=\"t\">Plateforme Paiements</span><span class=\"m\">Vol. 3 · 42 pages</span><nav class=\"cr\">3 API › <b>3.2 Authentification</b></nav><div class=\"ds-seg\"><button aria-pressed=\"true\">Lire</button><button aria-pressed=\"false\">Modifier</button></div><button class=\"ds-btn-paper\">Partager</button></header>",
+      "css": ".ds-band{display:flex;align-items:center;gap:18px;min-height:64px;padding:10px 28px;background:var(--vol,#157F73);color:var(--vol-on,#fff);font:400 1rem/1.5 'Atkinson Hyperlegible Next',system-ui,sans-serif}.ds-band .t{font:700 1.1875rem/1.2 'Atkinson Hyperlegible Next',system-ui,sans-serif;letter-spacing:-.005em}.ds-band .m{font-size:.8125rem;margin-left:-8px}.ds-band .cr{padding-left:18px;border-left:1px solid color-mix(in srgb,var(--vol-on,#fff) 40%,transparent);font-size:.9375rem}.ds-band .cr b{font-weight:600}.ds-seg{margin-left:auto;display:inline-flex;padding:3px;gap:2px;border-radius:999px;background:color-mix(in srgb,var(--vol-on,#fff) 14%,transparent);border:1px solid color-mix(in srgb,var(--vol-on,#fff) 35%,transparent)}.ds-seg button{padding:5px 12px;border-radius:999px;border:0;background:none;font:600 .875rem 'Atkinson Hyperlegible Next',system-ui,sans-serif;color:var(--vol-on,#fff);cursor:pointer;transition:background .18s cubic-bezier(.16,1,.3,1),color .18s cubic-bezier(.16,1,.3,1)}.ds-seg button[aria-pressed=true]{background:var(--paper,#fff);color:var(--ink,#1C2230)}.ds-btn-paper{padding:7px 14px;border-radius:999px;border:0;background:var(--paper,#fff);color:var(--ink,#1C2230);font:600 .875rem 'Atkinson Hyperlegible Next',system-ui,sans-serif;cursor:pointer;transition:transform .15s cubic-bezier(.16,1,.3,1)}.ds-btn-paper:hover{transform:translateY(-1px)}.ds-band :focus-visible{outline:2px solid var(--vol-on,#fff);outline-offset:2px}"
+    },
+    {
+      "name": "Colophon des droits",
+      "kind": "custom",
+      "refersTo": "you-badge",
+      "description": "Écriture, Commentaire, Lecture avec signes plein, hachuré, contour.",
+      "html": "<section class=\"ds-colo\"><dl><div><dt><i class=\"ds-mk w\"></i>Écriture</dt><dd>Équipe Paiements <span class=\"ct\">6</span><span class=\"you\">vous</span></dd></div><div><dt><i class=\"ds-mk c\"></i>Commentaire</dt><dd>Sécurité <span class=\"ct\">4</span></dd></div><div><dt><i class=\"ds-mk r\"></i>Lecture</dt><dd>Ingénierie <span class=\"ct\">58</span></dd></div></dl><p>Droits hérités du volume, sans restriction · v14, modifiée le 28 oct. 2026</p></section>",
+      "css": ".ds-colo{border-top:1px solid var(--ink,#1C2230);border-bottom:1px solid var(--rule,#DDE1E8);padding:14px 0 12px;font-family:'Atkinson Hyperlegible Next',system-ui,sans-serif;max-width:640px}.ds-colo dl{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px 20px;margin:0}.ds-colo dt{display:flex;align-items:center;gap:8px;font-size:.8125rem;font-weight:700;color:var(--ink-2,#4A5266)}.ds-colo dd{margin:4px 0 0;font-size:.9375rem;color:var(--ink,#1C2230)}.ds-colo .ct{color:var(--ink-3,#646C80);font-size:.8125rem;font-variant-numeric:tabular-nums}.ds-colo .you{display:inline-block;font-size:.75rem;font-weight:700;color:var(--vol-deep,#0B5A51);background:var(--vol-tint,#E2F3F0);border-radius:999px;padding:1px 8px;margin-left:4px}.ds-colo p{margin:12px 0 0;padding-top:10px;border-top:1px dashed var(--rule,#DDE1E8);font-size:.8125rem;color:var(--ink-3,#646C80)}.ds-mk{display:inline-block;width:12px;height:12px;border-radius:3px;border:1.5px solid currentColor;color:var(--vol-deep,#0B5A51)}.ds-mk.w{background:currentColor}.ds-mk.c{background:repeating-linear-gradient(135deg,currentColor 0 1.5px,transparent 1.5px 4px)}"
+    },
+    {
+      "name": "Listing avec repères",
+      "kind": "card",
+      "refersTo": "code-block",
+      "description": "Bloc de code numéroté, repères en cercles d'encre, légende Listing.",
+      "html": "<figure class=\"ds-fig\"><div class=\"ds-code\"><div class=\"hd\"><span>bash</span></div><pre><span class=\"c\">curl</span> <span class=\"f\">-X</span> POST <span class=\"s\">https://api.paiements.exemple/oauth/token</span> \\\n  <span class=\"f\">-d</span> <span class=\"s\">grant_type=client_credentials</span> <span class=\"ds-co\">1</span></pre></div><figcaption><b>Listing 3.1</b>Demander un jeton avec curl.</figcaption><ol class=\"ds-cos\"><li><span class=\"ds-co\">1</span><span>Le flux entre machines, sans utilisateur.</span></li></ol></figure>",
+      "css": ".ds-fig{margin:0;max-width:640px}.ds-code{border:1px solid var(--rule,#DDE1E8);border-radius:14px;background:var(--code-bg,#F6F7FA);overflow:hidden}.ds-code .hd{padding:8px 14px;border-bottom:1px solid var(--rule,#DDE1E8);font:500 .75rem 'Atkinson Hyperlegible Mono',ui-monospace,monospace;color:var(--ink-3,#646C80)}.ds-code pre{margin:0;padding:14px 16px 16px;font:400 .875rem/1.7 'Atkinson Hyperlegible Mono',ui-monospace,monospace;color:var(--ink,#1C2230);overflow-x:auto}.ds-code .c{color:var(--t-cmd,#3A2FA3);font-weight:500}.ds-code .f{color:var(--t-flag,#8E2A19)}.ds-code .s{color:var(--t-str,#0B5A51)}.ds-co{display:inline-grid;place-items:center;width:20px;height:20px;border-radius:50%;background:var(--ink,#1C2230);color:var(--paper,#fff);font:700 .6875rem/1 'Atkinson Hyperlegible Next',system-ui,sans-serif}.ds-fig figcaption{display:flex;gap:12px;margin-top:10px;font:400 .875rem/1.45 'Atkinson Hyperlegible Next',system-ui,sans-serif;color:var(--ink-2,#4A5266)}.ds-fig figcaption b{color:var(--vol-deep,#0B5A51)}.ds-cos{list-style:none;margin:14px 0 0;padding:0}.ds-cos li{display:grid;grid-template-columns:28px 1fr;align-items:baseline;font:400 1rem/1.6 Literata,Georgia,serif;color:var(--ink,#1C2230)}"
+    },
+    {
+      "name": "Encadré",
+      "kind": "card",
+      "refersTo": "note-box",
+      "description": "Fond teinté par la toile du volume, titre en encre deep, texte Literata.",
+      "html": "<div class=\"ds-note\"><svg viewBox=\"0 0 24 24\" width=\"22\" height=\"22\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\"><path d=\"M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z\"/></svg><div><strong>À retenir</strong><p>Un jeton expire au bout de 15 minutes. Ne le stockez jamais côté navigateur.</p></div></div>",
+      "css": ".ds-note{display:grid;grid-template-columns:30px 1fr;gap:4px 10px;background:var(--vol-tint,#E2F3F0);border-radius:14px;padding:16px 20px 6px 16px;max-width:640px;color:var(--vol-deep,#0B5A51)}.ds-note svg{margin-top:2px}.ds-note strong{display:block;font:700 .9375rem/1.4 'Atkinson Hyperlegible Next',system-ui,sans-serif;margin:3px 0 2px}.ds-note p{margin:0 0 .7em;font:400 1.125rem/1.72 Literata,Georgia,serif;color:var(--ink,#1C2230)}"
+    },
+    {
+      "name": "En-tête OpenAPI",
+      "kind": "card",
+      "refersTo": "api-head",
+      "description": "Verbe, route, résumé et réponses colorées par statut.",
+      "html": "<div class=\"ds-api\"><div class=\"hd\"><span class=\"vb\">POST</span><code>/oauth/token</code><span class=\"sm\">Émet un jeton d'accès</span></div><ul><li><span class=\"cn ok\">200</span>Jeton émis</li><li><span class=\"cn er\">401</span>Client inconnu ou secret faux</li></ul></div>",
+      "css": ".ds-api{border:1px solid var(--rule,#DDE1E8);border-radius:14px;background:var(--paper,#fff);overflow:hidden;font-family:'Atkinson Hyperlegible Next',system-ui,sans-serif;max-width:640px}.ds-api .hd{display:flex;align-items:center;gap:12px;padding:14px 16px;border-bottom:1px solid var(--rule,#DDE1E8);background:var(--desk,#F3F4F7)}.ds-api .vb{font:700 .75rem/1 'Atkinson Hyperlegible Mono',ui-monospace,monospace;letter-spacing:.04em;padding:5px 8px;border-radius:6px;background:var(--ok-tint,#E3F3EA);color:var(--ok,#1D7A46)}.ds-api code{font:500 1rem 'Atkinson Hyperlegible Mono',ui-monospace,monospace;color:var(--ink,#1C2230)}.ds-api .sm{color:var(--ink-2,#4A5266);font-size:.9375rem}.ds-api ul{list-style:none;margin:0;padding:6px 18px}.ds-api li{display:flex;align-items:center;gap:10px;padding:9px 0;font-size:.875rem;border-bottom:1px solid var(--rule,#DDE1E8)}.ds-api li:last-child{border-bottom:0}.ds-api .cn{font:700 .8125rem/1 'Atkinson Hyperlegible Mono',ui-monospace,monospace;padding:4px 6px;border-radius:5px}.ds-api .ok{background:var(--ok-tint,#E3F3EA);color:var(--ok,#1D7A46)}.ds-api .er{background:var(--err-tint,#FBE9E7);color:var(--err,#B3261E)}"
+    },
+    {
+      "name": "Note de marge",
+      "kind": "custom",
+      "refersTo": "",
+      "description": "Commentaire dans la colonne de 232px, ancré par une pastille numérotée.",
+      "html": "<aside class=\"ds-side\"><div class=\"who\"><span class=\"av\">TR</span><b>Thomas R.</b><time>il y a 25 min</time><span class=\"anc\">1</span></div><p>Précisons le format exact: Bearer, une espace, puis le jeton.</p><div class=\"acts\"><button>Répondre</button><button>Résoudre</button></div></aside>",
+      "css": ".ds-side{width:232px;font:400 .875rem/1.5 'Atkinson Hyperlegible Next',system-ui,sans-serif;color:var(--ink-2,#4A5266);border-top:1px solid var(--rule,#DDE1E8);padding-top:10px}.ds-side .who{display:flex;align-items:center;gap:8px}.ds-side .av{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;background:#5B4FD6;color:#fff;font:700 .625rem/1 'Atkinson Hyperlegible Next',system-ui,sans-serif}.ds-side b{color:var(--ink,#1C2230)}.ds-side time{color:var(--ink-3,#646C80);font-size:.8125rem}.ds-side .anc{margin-left:auto;display:inline-grid;place-items:center;width:17px;height:17px;border-radius:50%;background:var(--hl-line,#D99A1E);color:#1C2230;font:700 .625rem/1 'Atkinson Hyperlegible Next',system-ui,sans-serif}.ds-side p{margin:5px 0 0;color:var(--ink,#1C2230)}.ds-side .acts{display:flex;gap:2px;margin:8px 0 0 -9px}.ds-side button{padding:4px 9px;border:0;border-radius:7px;background:none;font:600 .8125rem 'Atkinson Hyperlegible Next',system-ui,sans-serif;color:var(--ink-2,#4A5266);cursor:pointer}.ds-side button:hover{background:var(--hover,#E8EBF1);color:var(--ink,#1C2230)}.ds-side button:focus-visible{outline:2px solid var(--vol-deep,#0B5A51);outline-offset:2px}"
+    },
+    {
+      "name": "Menu /",
+      "kind": "custom",
+      "refersTo": "slash-option-active",
+      "description": "Insertion de bloc en édition; filet haut en toile, option active teintée.",
+      "html": "<div class=\"ds-slash\"><div class=\"opt on\"><span class=\"ico\">M</span><span><b>Diagramme Mermaid</b><small>Séquence, flux ou états, écrits en texte</small></span><kbd>↵</kbd></div><div class=\"opt\"><span class=\"ico\">{}</span><span><b>Référence OpenAPI</b><small>Depuis un fichier YAML ou la CI</small></span></div></div>",
+      "css": ".ds-slash{position:relative;overflow:hidden;width:360px;padding:9px 6px 6px;background:var(--paper,#fff);border:1px solid var(--rule,#DDE1E8);border-radius:8px;box-shadow:0 8px 18px rgba(20,26,40,.14),0 1px 3px rgba(20,26,40,.10);font-family:'Atkinson Hyperlegible Next',system-ui,sans-serif}.ds-slash::before{content:\"\";position:absolute;inset:0 0 auto 0;height:3px;background:var(--vol,#157F73)}.ds-slash .opt{display:grid;grid-template-columns:34px 1fr auto;align-items:center;gap:10px;padding:8px 10px;border-radius:10px;cursor:pointer}.ds-slash .opt:hover{background:var(--hover,#E8EBF1)}.ds-slash .ico{width:34px;height:34px;border-radius:9px;display:grid;place-items:center;background:var(--desk,#F3F4F7);color:var(--ink-2,#4A5266);font:600 .8125rem 'Atkinson Hyperlegible Mono',monospace}.ds-slash b{display:block;font-size:.9375rem;color:var(--ink,#1C2230)}.ds-slash small{display:block;font-size:.8125rem;color:var(--ink-3,#646C80)}.ds-slash .on{background:var(--vol-tint,#E2F3F0)}.ds-slash .on .ico{background:var(--vol,#157F73);color:var(--vol-on,#fff)}.ds-slash .on b{color:var(--vol-deep,#0B5A51)}.ds-slash kbd{font:500 .75rem/1 'Atkinson Hyperlegible Mono',monospace;padding:3px 6px 2px;border:1px solid var(--rule-2,#C6CCD7);border-bottom-width:2px;border-radius:5px;color:var(--ink-2,#4A5266)}"
+    },
+    {
+      "name": "Ajout au partage",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Champ et bouton encre du panneau Partager.",
+      "html": "<div class=\"ds-add\"><input placeholder=\"Personne ou groupe\"><button class=\"ds-btn-ink\">Inviter</button></div>",
+      "css": ".ds-add{display:flex;gap:8px;width:384px}.ds-add input{flex:1;min-width:0;font:400 .9375rem 'Atkinson Hyperlegible Next',system-ui,sans-serif;color:var(--ink,#1C2230);padding:9px 12px;border-radius:10px;border:1px solid var(--rule-2,#C6CCD7);background:var(--paper,#fff)}.ds-add input::placeholder{color:var(--ink-3,#646C80)}.ds-add input:focus-visible{outline:2px solid var(--vol-deep,#0B5A51);outline-offset:0;border-color:transparent}.ds-btn-ink{padding:9px 14px;border-radius:10px;border:0;background:var(--ink,#1C2230);color:var(--paper,#fff);font:600 .9375rem 'Atkinson Hyperlegible Next',system-ui,sans-serif;cursor:pointer}.ds-btn-ink:hover{background:color-mix(in srgb,var(--ink,#1C2230) 85%,var(--paper,#fff))}.ds-btn-ink:focus-visible{outline:2px solid var(--vol-deep,#0B5A51);outline-offset:2px}"
+    }
+  ],
+  "narrative": {
+    "northStar": "L'Édition technique",
+    "overview": "Chaque projet est un volume relié, chaque page une section numérotée d'un livre technique, dans la lignée d'O'Reilly, No Starch, Pragmatic et des RFC. Le papier est blanc froid, l'encre bleu-noir, et la seule couleur forte vient de la toile de reliure du volume ouvert: elle habille le dos sur l'étagère, le bandeau du volume, la section courante du sommaire, les numéros de figure, les liens et l'encadré. Changer de volume, c'est tirer un autre dos de l'étagère; toute la page change de toile, rien d'autre ne bouge.\n\nLa densité est celle d'un livre de référence, pas d'un tableau de bord: une colonne de lecture de 640px en Literata, une marge droite de 232px pour les notes de marge (les commentaires), et une interface en Atkinson Hyperlegible Next qui reste en retrait. Les blocs techniques (Mermaid, OpenAPI, draw.io, code) sont traités comme des figures et listings numérotés avec légende, au même niveau de soin que la prose. Le mode édition ne change pas de décor: il révèle la construction de la page (contours de blocs, poignées, étiquettes de type, menu `/`).\n\nLes droits se lisent comme un colophon: trois colonnes Écriture, Commentaire, Lecture, chacune avec son signe d'accès (plein, hachuré, contour), juste sous le titre. Le système refuse le wiki gris à accent bleu unique: la couleur appartient au volume, jamais à l'application.",
+    "keyCharacteristics": [
+      "Une toile saturée par volume, appliquée par variables (`--vol`, `--vol-on`, `--vol-tint`, `--vol-deep`) et jamais codée en dur dans un composant.",
+      "Numérotation partout: dos (1 à 5), sommaire (3.2), titres (3.2.1), figures et listings (Figure 3.2, Listing 3.1), repères de code (1, 2), ancres de commentaire.",
+      "Trois familles: Literata pour lire, Atkinson Hyperlegible Next pour agir, Atkinson Hyperlegible Mono pour le code.",
+      "Surfaces plates; l'ombre n'existe que pour ce qui sort du plan (dos tiré, panneau, menu, tiroir mobile).",
+      "Clair et sombre complets; les toiles restent identiques, seules leurs variantes tint et deep basculent."
+    ],
+    "rules": [
+      {
+        "name": "La règle de la toile",
+        "body": "La seule couleur saturée d'un écran est la toile du volume ouvert. Aucun composant ne porte un accent global de l'application; un composant qui a besoin de couleur lit `--vol`, `--vol-tint` ou `--vol-deep`.",
+        "section": "colors"
+      },
+      {
+        "name": "La règle de l'encre deep",
+        "body": "Sur papier, un texte coloré (lien, numéro de section, numéro de figure, marque d'accès, indice de défilement) utilise `vol-deep`, jamais `vol`. La toile pleine ne sert qu'en aplat (dos, bandeau, interrupteur actif, icône d'option active) ou en trait (bordures de nœuds de diagramme, survol du pager, filet haut des panneaux).",
+        "section": "colors"
+      },
+      {
+        "name": "La règle du texte posé",
+        "body": "Sur une toile, le texte est `vol-on`; c'est ce qui permet à la moutarde de porter de l'encre et aux autres toiles du blanc.",
+        "section": "colors"
+      },
+      {
+        "name": "La règle des chiffres alignés",
+        "body": "Tout numéro (section, volume, compte, date, code HTTP) est en chiffres tabulaires (`font-variant-numeric: tabular-nums`).",
+        "section": "typography"
+      },
+      {
+        "name": "La règle des deux voix",
+        "body": "Literata pour ce qu'on lit, Atkinson pour ce qu'on manipule ou qui étiquette. Un titre, un bouton ou une légende n'est jamais en Literata; un paragraphe de doc n'est jamais en Atkinson.",
+        "section": "typography"
+      },
+      {
+        "name": "La règle du plan",
+        "body": "Une surface posée sur la page n'a pas d'ombre. Seuls un dos tiré, un panneau flottant et le tiroir mobile en portent, et toujours avec une ombre douce et teintée d'encre, jamais un décalage dur.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "**Do** faire porter toute couleur d'accent par `--vol`, `--vol-on`, `--vol-tint` et `--vol-deep`, posés par `data-vol` sur la racine; un nouveau volume ajoute ses six valeurs, clair et sombre.",
+      "**Do** numéroter: section dans le titre et le sommaire, « Figure n.n » pour un diagramme, « Listing n.n » pour du code ou une spécification, repères numérotés dans le code.",
+      "**Do** écrire le texte coloré sur papier en `vol-deep` et le texte sur toile en `vol-on`.",
+      "**Do** composer la prose en Literata 1.125rem/1.72 sur 640px maximum, et l'interface en Atkinson Hyperlegible Next.",
+      "**Do** montrer les droits avec les trois signes d'accès (plein, hachuré, contour), toujours accompagnés d'un libellé.",
+      "**Do** placer les commentaires dans la marge de 232px à partir de 956px de conteneur, ancrés au texte par une pastille numérotée.",
+      "**Do** passer les diagrammes Mermaid et draw.io par les tokens, et garder leur largeur naturelle sur mobile avec l'indice « Faire défiler » et le fondu de bord.",
+      "**Do** utiliser la courbe `cubic-bezier(.16, 1, .3, 1)` et les durées 0.15 à 0.26s, et respecter `prefers-reduced-motion`."
+    ],
+    "donts": [
+      "**Don't** introduire un accent global de l'application (le wiki gris à accent bleu unique est le contre-modèle); le bleu de Prusse est la toile d'un volume, pas la couleur d'Andal.",
+      "**Don't** écrire du texte en `vol` pleine sur papier: la moutarde y devient illisible.",
+      "**Don't** mettre d'ombre sur une surface posée dans la page (cadre, listing, encadré, carte du pager); l'ombre est réservée au dos tiré, aux panneaux flottants et au tiroir.",
+      "**Don't** utiliser de bulles de commentaire flottantes par-dessus le texte.",
+      "**Don't** reprendre le logo, les icônes ou le nom d'Atlassian.",
+      "**Don't** livrer les polices, les icônes ou Mermaid depuis un CDN dans le produit auto-hébergé."
+    ]
+  }
+}

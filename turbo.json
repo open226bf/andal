@@ -1,0 +1,22 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "globalEnv": ["NODE_ENV"],
+  "globalPassThroughEnv": ["DATABASE_URL", "VALKEY_URL", "AUTH_PASSWORD", "DEMO_PASSWORD", "OIDC_*", "SMTP_URL", "MAIL_FROM", "NOTIFY_EMAIL_DELAY", "TRASH_RETENTION_DAYS", "API_PORT", "COLLAB_PORT", "WEB_ORIGIN"],
+  "tasks": {
+    "build": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**"]
+    },
+    "typecheck": {
+      "dependsOn": ["^build"]
+    },
+    "test": {
+      "dependsOn": ["^build"]
+    },
+    "dev": {
+      "dependsOn": ["^build"],
+      "cache": false,
+      "persistent": true
+    }
+  }
+}

@@ -1,0 +1,43 @@
+/*
+ * Thème Tailwind v4 branché sur les jetons: `bg-paper`, `text-ink-2`,
+ * `border-rule`, `bg-vol`, `text-vol-deep`, `font-text`, `rounded-l`…
+ * Les valeurs suivent le thème et le volume courants via les variables CSS.
+ */
+@import "./tokens.css";
+
+@theme inline {
+  --font-ui: var(--font-ui);
+  --font-text: var(--font-text);
+  --font-mono: var(--font-mono);
+
+  --color-paper: var(--paper);
+  --color-desk: var(--desk);
+  --color-shelf: var(--shelf);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-rule: var(--rule);
+  --color-rule-2: var(--rule-2);
+  --color-hover: var(--hover);
+  --color-code: var(--code-bg);
+  --color-hl: var(--hl);
+  --color-ok: var(--ok);
+  --color-ok-tint: var(--ok-tint);
+  --color-err: var(--err);
+  --color-err-tint: var(--err-tint);
+
+  --color-vol: var(--vol);
+  --color-vol-on: var(--vol-on);
+  --color-vol-tint: var(--vol-tint);
+  --color-vol-deep: var(--vol-deep);
+
+  --radius-s: var(--r-s);
+  --radius-m: var(--r);
+  --radius-l: var(--r-l);
+
+  --shadow-card: var(--shadow-card);
+  --shadow-pop: var(--shadow-pop);
+  --shadow-pull: var(--shadow-pull);
+
+  --ease-book: var(--ease);
+}

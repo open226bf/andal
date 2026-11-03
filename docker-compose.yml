@@ -1,0 +1,74 @@
+# Infra de développement d'Andal. Ports exposés sur 127.0.0.1 uniquement.
+# Keycloak ne démarre qu'avec le profil sso: `docker compose --profile sso up -d`.
+
+services:
+  postgres:
+    image: postgres:18
+    environment:
+      POSTGRES_DB: calepin
+      POSTGRES_USER: calepin
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-calepin_dev}
+    ports:
+      - "127.0.0.1:55432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U calepin -d calepin"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    volumes:
+      - pg_data:/var/lib/postgresql
+
+  valkey:
+    image: valkey/valkey:8.1-alpine
+    command: ["valkey-server", "--appendonly", "yes", "--maxmemory-policy", "noeviction"]
+    ports:
+      - "127.0.0.1:56379:6379"
+    healthcheck:
+      test: ["CMD", "valkey-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    volumes:
+      - valkey_data:/data
+
+  rustfs:
+    image: rustfs/rustfs:latest
+    environment:
+      RUSTFS_ACCESS_KEY: ${RUSTFS_ACCESS_KEY:-calepin-dev}
+      RUSTFS_SECRET_KEY: ${RUSTFS_SECRET_KEY:-calepin-dev-secret}
+      RUSTFS_VOLUMES: /data
+    ports:
+      - "127.0.0.1:59000:9000"
+      - "127.0.0.1:59001:9001"
+    volumes:
+      - rustfs_data:/data
+
+  drawio:
+    image: jgraph/drawio:latest
+    ports:
+      - "127.0.0.1:58081:8080"
+
+  # Boîte aux lettres de développement: attrape les emails (invitations,
+  # réinitialisations) sans rien envoyer dehors. Interface: http://localhost:58025
+  mailpit:
+    image: axllent/mailpit:latest
+    ports:
+      - "127.0.0.1:51025:1025"
+      - "127.0.0.1:58025:8025"
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.0.7
+    profiles: ["sso"]
+    command: ["start-dev", "--import-realm"]
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-calepin_dev}
+    ports:
+      - "127.0.0.1:58080:8080"
+    volumes:
+      - ./infra/keycloak:/opt/keycloak/data/import:ro
+
+volumes:
+  pg_data:
+  valkey_data:
+  rustfs_data:

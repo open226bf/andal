@@ -1,0 +1,1237 @@
+<!doctype html>
+<html lang="fr" data-vol="paiements">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Andal · 3.2 Authentification</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Mono:wght@400;500&family=Atkinson+Hyperlegible+Next:wght@400;500;600;700&family=Literata:ital,opsz,wght@0,7..72,400;0,7..72,500;1,7..72,400&display=swap">
+<link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css">
+<style>
+:root {
+  --font-ui: "Atkinson Hyperlegible Next", system-ui, sans-serif;
+  --font-text: "Literata", Georgia, serif;
+  --font-mono: "Atkinson Hyperlegible Mono", ui-monospace, "SF Mono", monospace;
+
+  --paper: #FFFFFF;
+  --desk: #F3F4F7;
+  --shelf: #E4E7EE;
+  --ink: #1C2230;
+  --ink-2: #4A5266;
+  --ink-3: #646C80;
+  --rule: #DDE1E8;
+  --rule-2: #C6CCD7;
+  --hover: #E8EBF1;
+  --code-bg: #F6F7FA;
+  --hl: #FFF0BF;
+  --hl-line: #D99A1E;
+
+  --ok: #1D7A46;
+  --ok-tint: #E3F3EA;
+  --err: #B3261E;
+  --err-tint: #FBE9E7;
+
+  --t-cmd: #3A2FA3;
+  --t-flag: #8E2A19;
+  --t-str: #0B5A51;
+  --t-var: #7A5408;
+
+  --vol-tint: var(--vol-tint-l);
+  --vol-deep: var(--vol-deep-l);
+
+  --r-s: 6px;
+  --r: 10px;
+  --r-l: 14px;
+  --shadow-pop: 0 14px 36px rgba(20, 26, 40, .16), 0 2px 6px rgba(20, 26, 40, .08);
+  --shadow-card: 0 8px 18px rgba(20, 26, 40, .14), 0 1px 3px rgba(20, 26, 40, .10);
+  --shadow-pull: 4px 2px 12px rgba(20, 26, 40, .22);
+  --ease: cubic-bezier(.16, 1, .3, 1);
+
+  --measure: 640px;
+  --margin-col: 232px;
+  --gutter: 28px;
+
+  color-scheme: light;
+  scrollbar-color: var(--rule-2) transparent;
+}
+
+[data-vol="paiements"] { --vol: #157F73; --vol-on: #FFFFFF; --vol-tint-l: #E2F3F0; --vol-deep-l: #0B5A51; --vol-tint-d: #133A36; --vol-deep-d: #72D3C5; }
+[data-vol="identite"] { --vol: #5B4FD6; --vol-on: #FFFFFF; --vol-tint-l: #ECEAFC; --vol-deep-l: #3A2FA3; --vol-tint-d: #29244D; --vol-deep-d: #B6AEF6; }
+[data-vol="donnees"] { --vol: #F2B33D; --vol-on: #1C2230; --vol-tint-l: #FDF3DD; --vol-deep-l: #7A5408; --vol-tint-d: #3B3016; --vol-deep-d: #F6CB73; }
+[data-vol="mobile"] { --vol: #C2366A; --vol-on: #FFFFFF; --vol-tint-l: #FBE7EF; --vol-deep-l: #8F1E48; --vol-tint-d: #45182A; --vol-deep-d: #F3A0BF; }
+[data-vol="plateforme"] { --vol: #3B6FB6; --vol-on: #FFFFFF; --vol-tint-l: #E6EEF8; --vol-deep-l: #1E4377; --vol-tint-d: #1A2C46; --vol-deep-d: #9FC2F1; }
+[data-vol="design"] { --vol: #C93F28; --vol-on: #FFFFFF; --vol-tint-l: #FBE9E5; --vol-deep-l: #8E2A19; --vol-tint-d: #46201A; --vol-deep-d: #F5A797; }
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #151922; --desk: #10131A; --shelf: #0B0D12;
+    --ink: #E7E9EF; --ink-2: #B3B9C7; --ink-3: #8D94A6;
+    --rule: #272D3A; --rule-2: #3A4151; --hover: #1E2330; --code-bg: #0F1219;
+    --hl: #43381A; --hl-line: #D9A440; --hl-ink: #F6E3B0;
+    --ok: #6CCB94; --ok-tint: #16301F; --err: #F28B82; --err-tint: #3A1A18;
+    --t-cmd: #B6AEF6; --t-flag: #F5A797; --t-str: #72D3C5; --t-var: #F6CB73;
+    --vol-tint: var(--vol-tint-d); --vol-deep: var(--vol-deep-d);
+    --shadow-pop: 0 14px 36px rgba(0, 0, 0, .5), 0 2px 6px rgba(0, 0, 0, .4);
+    --shadow-card: 0 8px 18px rgba(0, 0, 0, .45), 0 1px 3px rgba(0, 0, 0, .4);
+    --shadow-pull: 4px 2px 14px rgba(0, 0, 0, .6);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #151922; --desk: #10131A; --shelf: #0B0D12;
+  --ink: #E7E9EF; --ink-2: #B3B9C7; --ink-3: #8D94A6;
+  --rule: #272D3A; --rule-2: #3A4151; --hover: #1E2330; --code-bg: #0F1219;
+  --hl: #43381A; --hl-line: #D9A440; --hl-ink: #F6E3B0;
+  --ok: #6CCB94; --ok-tint: #16301F; --err: #F28B82; --err-tint: #3A1A18;
+  --t-cmd: #B6AEF6; --t-flag: #F5A797; --t-str: #72D3C5; --t-var: #F6CB73;
+  --vol-tint: var(--vol-tint-d); --vol-deep: var(--vol-deep-d);
+  --shadow-pop: 0 14px 36px rgba(0, 0, 0, .5), 0 2px 6px rgba(0, 0, 0, .4);
+  --shadow-card: 0 8px 18px rgba(0, 0, 0, .45), 0 1px 3px rgba(0, 0, 0, .4);
+  --shadow-pull: 4px 2px 14px rgba(0, 0, 0, .6);
+  color-scheme: dark;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font: 400 1rem/1.5 var(--font-ui);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+::selection { background: color-mix(in srgb, var(--vol) 30%, transparent); color: var(--ink); }
+:focus-visible { outline: 2px solid var(--vol-deep); outline-offset: 2px; border-radius: 4px; }
+button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
+a { color: var(--vol-deep); text-decoration-thickness: 1px; text-underline-offset: 3px; }
+a:hover { text-decoration-thickness: 2px; }
+kbd {
+  font: 500 .75rem/1 var(--font-mono);
+  padding: 3px 6px 2px;
+  border: 1px solid var(--rule-2);
+  border-bottom-width: 2px;
+  border-radius: 5px;
+  color: var(--ink-2);
+  background: var(--paper);
+}
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.ph { font-size: 1.125rem; line-height: 1; }
+
+/* Layout */
+.app { display: grid; grid-template-columns: auto minmax(0, 1fr); min-height: 100vh; }
+.nav-wrap {
+  position: sticky; top: 0; height: 100vh;
+  display: grid; grid-template-columns: 64px 280px;
+  z-index: 20;
+}
+main { min-width: 0; container-type: inline-size; }
+
+/* Shelf of volumes */
+.shelf {
+  background: var(--shelf);
+  display: flex; flex-direction: column; align-items: center;
+  padding: 14px 0 16px;
+  gap: 18px;
+  overflow: visible;
+}
+.logo { width: 36px; height: 36px; display: grid; place-items: center; color: var(--ink); border-radius: 9px; }
+.logo svg { width: 28px; height: 28px; }
+.spines { display: flex; flex-direction: column; gap: 6px; align-self: stretch; padding-left: 12px; flex: 1; min-height: 0; overflow: visible; }
+.spine {
+  position: relative;
+  width: 38px;
+  height: var(--h, 120px);
+  background: var(--vol);
+  color: var(--vol-on);
+  border-radius: 4px 6px 6px 4px;
+  display: grid; place-items: center;
+  transition: transform .22s var(--ease), box-shadow .22s var(--ease), width .22s var(--ease);
+}
+.spine::before, .spine::after {
+  content: ""; position: absolute; left: 6px; right: 6px; height: 2px; border-radius: 1px;
+  background: color-mix(in srgb, var(--vol-on) 55%, transparent);
+}
+.spine::before { top: 9px; box-shadow: 0 5px 0 color-mix(in srgb, var(--vol-on) 55%, transparent); }
+.spine::after { bottom: 9px; }
+.spine span {
+  writing-mode: vertical-rl; transform: rotate(180deg);
+  font: 700 .78rem/1 var(--font-ui);
+  letter-spacing: .01em;
+  white-space: nowrap;
+}
+.spine:hover { transform: translateX(5px); box-shadow: var(--shadow-pull); }
+.spine[aria-current="true"] { transform: translateX(14px); width: 42px; box-shadow: var(--shadow-pull); z-index: 2; }
+.shelf-foot { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.icon-btn {
+  width: 36px; height: 36px; border-radius: var(--r);
+  display: grid; place-items: center;
+  color: var(--ink-2);
+  transition: background .15s, color .15s;
+}
+.icon-btn:hover { background: var(--hover); color: var(--ink); }
+.icon-btn.sm { width: 30px; height: 30px; border-radius: 8px; }
+.add-vol { border: 1.5px dashed var(--rule-2); }
+.me { width: 32px; height: 32px; }
+
+/* Table of contents */
+.toc {
+  background: var(--desk);
+  border-right: 1px solid var(--rule);
+  display: flex; flex-direction: column;
+  min-height: 0;
+}
+.toc-top { padding: 16px 16px 10px; }
+.search {
+  width: 100%;
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 10px 9px 12px;
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: var(--r);
+  color: var(--ink-3);
+  font-size: .9375rem;
+  transition: border-color .15s;
+}
+.search:hover { border-color: var(--rule-2); }
+.search kbd { margin-left: auto; }
+.toc-vol {
+  display: flex; align-items: center; gap: 10px;
+  margin: 6px 16px 8px;
+  padding: 8px 4px;
+  font-weight: 700;
+  font-size: .9375rem;
+  line-height: 1.3;
+}
+.vol-swatch { width: 14px; height: 18px; border-radius: 2px 4px 4px 2px; background: var(--vol); flex: none; }
+.toc-vol-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.toc-vol .vol-count { white-space: nowrap; font-weight: 400; font-size: .8125rem; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.spine-num {
+  position: absolute; top: 21px; left: 0; right: 0;
+  text-align: center;
+  font: 700 .75rem/1 var(--font-ui); font-variant-numeric: tabular-nums;
+}
+.spine span { margin-top: 20px; }
+.tree-scroll { flex: 1; overflow: auto; padding: 0 10px 12px; scrollbar-width: thin; }
+.tree, .tree ol { list-style: none; margin: 0; padding: 0; }
+.tree ol { margin: 2px 0 6px; }
+.node {
+  display: grid;
+  grid-template-columns: 2.4em minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 4px;
+  min-height: 34px;
+  padding: 5px 8px;
+  border-radius: 8px;
+  color: var(--ink);
+  text-decoration: none;
+  font-size: .9375rem;
+  line-height: 1.3;
+  transition: background .15s;
+}
+.tree ol .node { grid-template-columns: 3em minmax(0, 1fr) auto; padding-left: 20px; }
+.node .num { color: var(--ink-3); font-variant-numeric: tabular-nums; font-size: .875rem; }
+.node .label { overflow-wrap: anywhere; }
+.node .reveal {
+  display: flex; align-items: center; gap: 6px;
+  color: var(--ink-3); font-size: .75rem; font-variant-numeric: tabular-nums;
+  opacity: 0; transform: translateX(4px);
+  transition: opacity .18s var(--ease), transform .18s var(--ease);
+}
+.node:hover { background: var(--hover); }
+.node:hover .reveal, .node:focus-visible .reveal { opacity: 1; transform: none; }
+.node[aria-current="page"] { background: var(--vol-tint); color: var(--vol-deep); font-weight: 600; }
+.node[aria-current="page"] .num { color: var(--vol-deep); }
+.node[aria-current="page"] .reveal { opacity: 1; transform: none; color: var(--vol-deep); }
+.node .lock { color: var(--ink-2); font-size: .9375rem; }
+.parent > .node .num { font-weight: 600; color: var(--ink-2); }
+.parent > .node .label { font-weight: 600; }
+.toc-foot { border-top: 1px solid var(--rule); padding: 10px 12px 14px; display: flex; gap: 6px; align-items: center; }
+.btn-new {
+  flex: 1;
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 8px 10px; border-radius: var(--r);
+  font-weight: 600; font-size: .9375rem; color: var(--ink);
+}
+.btn-new:hover { background: var(--hover); }
+
+/* Access marks: filled = write, hatched = comment, outline = read */
+.mark {
+  display: inline-block; width: 12px; height: 12px; flex: none;
+  border-radius: 3px;
+  border: 1.5px solid currentColor;
+  vertical-align: -1px;
+}
+.mark.write { background: currentColor; }
+.mark.comment { background: repeating-linear-gradient(135deg, currentColor 0 1.5px, transparent 1.5px 4px); }
+.mark.read { background: transparent; }
+
+/* Volume band */
+.band {
+  position: sticky; top: 0; z-index: 10;
+  display: flex; align-items: center; gap: 18px;
+  min-height: 64px;
+  padding: 10px 28px;
+  background: var(--vol);
+  color: var(--vol-on);
+}
+.band-vol { display: flex; align-items: baseline; gap: 10px; white-space: nowrap; }
+.band-title { font: 700 1.1875rem/1.2 var(--font-ui); letter-spacing: -.005em; }
+.band-meta { font-size: .8125rem; font-variant-numeric: tabular-nums; }
+.crumbs {
+  display: flex; align-items: center; gap: 6px; min-width: 0;
+  padding-left: 18px;
+  border-left: 1px solid color-mix(in srgb, var(--vol-on) 40%, transparent);
+  font-size: .9375rem; white-space: nowrap;
+}
+.crumbs a { color: inherit; text-decoration: none; }
+.crumbs a:hover { text-decoration: underline; }
+.crumbs .ph { font-size: .875rem; }
+.crumbs [aria-current] { font-weight: 600; overflow: hidden; text-overflow: ellipsis; }
+.band-actions { margin-left: auto; display: flex; align-items: center; gap: 12px; }
+.presence { display: flex; align-items: center; padding-right: 4px; }
+.av {
+  width: 28px; height: 28px; border-radius: 50%;
+  display: grid; place-items: center;
+  font: 700 .6875rem/1 var(--font-ui); letter-spacing: .02em;
+  background: var(--c); color: var(--c-on);
+}
+.presence .av { box-shadow: 0 0 0 2px var(--vol); margin-left: -6px; }
+.presence .av:first-child { margin-left: 0; }
+.p-ak { --c: #F2B33D; --c-on: #1C2230; }
+.p-tr { --c: #5B4FD6; --c-on: #FFFFFF; }
+.p-lm { --c: #C2366A; --c-on: #FFFFFF; }
+.seg {
+  display: inline-flex; padding: 3px; gap: 2px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--vol-on) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--vol-on) 35%, transparent);
+}
+.seg button {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 5px 12px; border-radius: 999px;
+  font-size: .875rem; font-weight: 600; color: var(--vol-on);
+  transition: background .18s var(--ease), color .18s var(--ease);
+}
+.seg button .ph { font-size: 1rem; }
+.seg button[aria-pressed="true"] { background: var(--paper); color: var(--ink); }
+.btn-paper {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 7px 14px; border-radius: 999px;
+  background: var(--paper); color: var(--ink);
+  font-weight: 600; font-size: .875rem;
+  transition: transform .15s var(--ease);
+}
+.btn-paper:hover { transform: translateY(-1px); }
+.on-band { color: var(--vol-on); }
+.on-band:hover { background: color-mix(in srgb, var(--vol-on) 16%, transparent); color: var(--vol-on); }
+.band :focus-visible { outline-color: var(--vol-on); }
+
+/* Page */
+.page { padding: 44px var(--gutter) 96px; }
+.sheet { width: min(100%, calc(var(--measure) + var(--margin-col) + 28px)); margin-inline: auto; }
+.measure { max-width: var(--measure); position: relative; }
+
+h1 {
+  font: 700 2.375rem/1.1 var(--font-ui);
+  letter-spacing: -.02em;
+  margin: 0 0 14px;
+  text-wrap: balance;
+}
+.secnum { color: var(--vol-deep); font-variant-numeric: tabular-nums; margin-right: .32em; }
+.lede {
+  font: 400 1.25rem/1.55 var(--font-text);
+  color: var(--ink-2);
+  margin: 0 0 28px;
+  text-wrap: pretty;
+}
+h2 {
+  font: 700 1.5rem/1.25 var(--font-ui);
+  letter-spacing: -.01em;
+  margin: 52px 0 14px;
+  text-wrap: balance;
+}
+h2 .secnum { font-size: .9em; }
+.prose > p, .prose > .blk > p, .note-box p {
+  font: 400 1.125rem/1.72 var(--font-text);
+  font-optical-sizing: auto;
+  text-wrap: pretty;
+  hanging-punctuation: first;
+  margin: 0 0 1.1em;
+}
+.prose > .lede { font: 400 1.25rem/1.55 var(--font-text); margin: 0 0 28px; }
+.prose .slash-line { margin: 0; }
+.prose :not(pre) > code, .params code, .callouts code {
+  font: 400 .88em var(--font-mono);
+  background: var(--desk);
+  border: 1px solid var(--rule);
+  border-radius: 5px;
+  padding: .06em .32em;
+}
+.blk { position: relative; }
+
+/* Colophon: who can read and write */
+.colophon {
+  border-top: 1px solid var(--ink);
+  border-bottom: 1px solid var(--rule);
+  padding: 14px 0 12px;
+  margin: 0 0 36px;
+}
+.access { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px 20px; margin: 0; }
+.access div { min-width: 0; }
+.access dt { display: flex; align-items: center; gap: 8px; font-size: .8125rem; font-weight: 700; color: var(--ink-2); }
+.access dt .mark { color: var(--vol-deep); }
+.access dd { margin: 4px 0 0; font-size: .9375rem; color: var(--ink); }
+.access .count { color: var(--ink-3); font-variant-numeric: tabular-nums; font-size: .8125rem; margin-left: 2px; }
+.you { display: inline-block; font-size: .75rem; font-weight: 700; color: var(--vol-deep); background: var(--vol-tint); border-radius: 999px; padding: 1px 8px; margin-left: 4px; vertical-align: 1px; }
+.colophon-meta {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px;
+  margin: 12px 0 0; padding-top: 10px;
+  border-top: 1px dashed var(--rule);
+  font-size: .8125rem; color: var(--ink-3);
+  font-variant-numeric: tabular-nums;
+}
+.colophon-meta .ph { font-size: .9375rem; vertical-align: -2px; margin-right: 4px; }
+.colophon-meta a { color: var(--ink-2); }
+
+/* Figures, listings */
+.fig { margin: 30px 0 34px; }
+.frame {
+  border: 1px solid var(--rule);
+  border-radius: var(--r-l);
+  background: var(--paper);
+  padding: 16px 12px 12px;
+  overflow-x: auto;
+}
+.mermaid-out { display: block; }
+.mermaid-out:empty { min-height: 260px; }
+.mermaid-out svg { display: block; margin-inline: auto; max-width: 100%; height: auto; }
+figcaption {
+  display: flex; align-items: baseline; gap: 12px;
+  margin-top: 10px;
+  font-size: .875rem; line-height: 1.45; color: var(--ink-2);
+}
+.fignum { font-weight: 700; color: var(--vol-deep); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.cap-text { flex: 1; }
+.cap-actions { display: flex; gap: 4px; flex: none; }
+.ghost {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 4px 9px; border-radius: 7px;
+  font-size: .8125rem; font-weight: 600; color: var(--ink-2);
+  text-decoration: none;
+}
+.ghost:hover { background: var(--hover); color: var(--ink); }
+.ghost .ph { font-size: 1rem; }
+.scroll-hint { display: none; align-items: center; gap: 6px; padding: 4px 9px; font-size: .8125rem; font-weight: 600; color: var(--vol-deep); }
+.fig.scrollable .scroll-hint { display: inline-flex; }
+.frame.scroll-r { -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 56px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 56px), transparent); }
+.frame.scroll-l { -webkit-mask-image: linear-gradient(to right, transparent, #000 56px); mask-image: linear-gradient(to right, transparent, #000 56px); }
+.frame.scroll-l.scroll-r { -webkit-mask-image: linear-gradient(to right, transparent, #000 56px, #000 calc(100% - 56px), transparent); mask-image: linear-gradient(to right, transparent, #000 56px, #000 calc(100% - 56px), transparent); }
+details.src { margin-top: 8px; }
+details.src summary { list-style: none; }
+details.src summary::-webkit-details-marker { display: none; }
+details.src pre { margin: 8px 0 0; }
+
+.code { border: 1px solid var(--rule); border-radius: var(--r-l); background: var(--code-bg); overflow: hidden; }
+.code-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 4px 6px 4px 14px;
+  border-bottom: 1px solid var(--rule);
+  font: 500 .75rem var(--font-mono); color: var(--ink-3);
+}
+pre { margin: 0; }
+.code pre, details.src pre, .schema {
+  font: 400 .875rem/1.7 var(--font-mono);
+  color: var(--ink);
+  overflow-x: auto;
+  tab-size: 2;
+}
+.code pre { padding: 14px 16px 16px; }
+details.src pre { background: var(--code-bg); border: 1px solid var(--rule); border-radius: var(--r); padding: 12px 14px; }
+.t-cmd { color: var(--t-cmd); font-weight: 500; }
+.t-flag { color: var(--t-flag); }
+.t-str { color: var(--t-str); }
+.t-var { color: var(--t-var); }
+.t-key { color: var(--t-cmd); }
+.co {
+  display: inline-grid; place-items: center;
+  width: 20px; height: 20px; border-radius: 50%;
+  background: var(--ink); color: var(--paper);
+  font: 700 .6875rem/1 var(--font-ui);
+  vertical-align: 1px;
+  user-select: none;
+}
+.callouts { list-style: none; margin: 14px 0 0; padding: 0; display: grid; gap: 8px; }
+.callouts li { display: grid; grid-template-columns: 28px 1fr; align-items: baseline; font: 400 1rem/1.6 var(--font-text); color: var(--ink); }
+
+/* Note box */
+.note-box {
+  display: grid; grid-template-columns: 30px 1fr; gap: 4px 10px;
+  background: var(--vol-tint);
+  border-radius: var(--r-l);
+  padding: 16px 20px 6px 16px;
+  margin: 28px 0 30px;
+}
+.note-box .ph { color: var(--vol-deep); font-size: 1.375rem; margin-top: 2px; }
+.note-box strong { display: block; font: 700 .9375rem/1.4 var(--font-ui); color: var(--vol-deep); margin: 3px 0 2px; }
+.note-box p { margin-bottom: .7em !important; color: var(--ink); }
+mark.anchor {
+  background: var(--hl); color: var(--hl-ink, inherit);
+  text-decoration: underline 2px var(--hl-line);
+  text-underline-offset: 4px;
+  padding: 0 .1em;
+}
+.anchor-num {
+  display: inline-grid; place-items: center;
+  width: 17px; height: 17px; border-radius: 50%;
+  background: var(--hl-line); color: #1C2230;
+  font: 700 .625rem/1 var(--font-ui);
+  vertical-align: super; margin-left: 2px;
+}
+
+/* OpenAPI block */
+.api { border: 1px solid var(--rule); border-radius: var(--r-l); background: var(--paper); overflow: hidden; }
+.api-head {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 10px 12px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--rule);
+  background: var(--desk);
+}
+.verb { font: 700 .75rem/1 var(--font-mono); letter-spacing: .04em; padding: 5px 8px; border-radius: 6px; background: var(--ok-tint); color: var(--ok); }
+.route { font: 500 1rem var(--font-mono); color: var(--ink); }
+.api-sum { color: var(--ink-2); font-size: .9375rem; }
+.api-head .ghost { margin-left: auto; }
+.api-cols { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); }
+.api-cols > section { padding: 16px 18px 18px; min-width: 0; }
+.api-cols > section + section { border-left: 1px solid var(--rule); }
+.api h3 { margin: 0 0 10px; font: 700 .875rem/1.3 var(--font-ui); display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; }
+.mime { font: 400 .75rem var(--font-mono); color: var(--ink-3); }
+.params { width: 100%; border-collapse: collapse; font-size: .875rem; }
+.params th { text-align: left; font-weight: 600; color: var(--ink-3); font-size: .75rem; padding: 0 8px 6px 0; border-bottom: 1px solid var(--rule); }
+.params td { padding: 9px 8px 9px 0; border-bottom: 1px solid var(--rule); vertical-align: top; color: var(--ink-2); line-height: 1.45; }
+.params tr:last-child td { border-bottom: 0; }
+.params td:first-child { white-space: nowrap; color: var(--ink); }
+.params code { font-size: .8125rem; }
+.req { display: block; font-size: .6875rem; font-weight: 700; color: var(--err); margin-top: 3px; }
+.type { font: 400 .8125rem var(--font-mono); color: var(--ink-3); }
+.resp { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--rule); }
+.resp li { border-bottom: 1px solid var(--rule); }
+.resp li:last-child { border-bottom: 0; }
+.resp .row { display: flex; align-items: center; gap: 10px; padding: 9px 0; font-size: .875rem; }
+.code-n { font: 700 .8125rem/1 var(--font-mono); font-variant-numeric: tabular-nums; padding: 4px 6px; border-radius: 5px; }
+.ok .code-n { background: var(--ok-tint); color: var(--ok); }
+.err .code-n { background: var(--err-tint); color: var(--err); }
+.schema { margin: 0 0 10px; padding: 10px 12px; background: var(--code-bg); font-size: .8125rem; border-radius: var(--r-s); }
+
+/* draw.io diagram */
+.drawio svg { display: block; width: 100%; height: auto; }
+.dz-zone { fill: none; stroke: var(--rule-2); stroke-dasharray: 5 5; }
+.dz-zone-label { fill: var(--ink-3); font: 600 12px var(--font-ui); }
+.dz-node rect { fill: var(--paper); stroke: var(--ink-2); stroke-width: 1.25; }
+.dz-svc rect { fill: var(--vol-tint); stroke: var(--vol); stroke-width: 1.5; }
+.dz-store rect { fill: var(--desk); stroke: var(--ink-3); stroke-width: 1.25; }
+.dz-node text { fill: var(--ink); font: 600 13px var(--font-ui); }
+.dz-edge { fill: none; stroke: var(--ink-3); stroke-width: 1.5; }
+.dz-edge.check { stroke-dasharray: 4 4; }
+.dz-arrow { fill: var(--ink-3); }
+.dz-edge-label { fill: var(--ink-3); font: 500 11.5px var(--font-ui); }
+
+/* Margin notes (comments live in the margin, not in floating bubbles) */
+.side {
+  font-size: .875rem; line-height: 1.5; color: var(--ink-2);
+  border-top: 1px solid var(--rule);
+  padding-top: 10px;
+  margin: 8px 0 24px;
+}
+.side .who { display: flex; align-items: center; gap: 8px; }
+.side .av { width: 24px; height: 24px; font-size: .625rem; }
+.side .name { font-weight: 700; color: var(--ink); }
+.side time { color: var(--ink-3); font-size: .8125rem; font-variant-numeric: tabular-nums; }
+.side p { margin: 5px 0 0; color: var(--ink); }
+.side .reply { margin-top: 10px; padding-left: 14px; border-left: 1px solid var(--rule); }
+.side .acts { display: flex; gap: 2px; margin: 8px 0 0 -9px; }
+.side .num-badge { margin-left: auto; }
+.side.quiet p { color: var(--ink-2); }
+
+@container (min-width: 956px) {
+  .side {
+    float: right; clear: right;
+    width: var(--margin-col);
+    margin: 4px calc(-1 * (var(--margin-col) + 28px)) 18px 0;
+  }
+  .wide { clear: both; margin-right: calc(-1 * (var(--margin-col) + 28px)); }
+}
+
+/* Pager, backlinks */
+.after { margin-top: 60px; border-top: 1px solid var(--rule); padding-top: 22px; clear: both; }
+.after h2 { font-size: 1rem; margin: 0 0 10px; color: var(--ink-2); }
+.cited { list-style: none; margin: 0 0 30px; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+.cited a {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 7px 12px; border: 1px solid var(--rule); border-radius: 999px;
+  color: var(--ink); text-decoration: none; font-size: .9375rem;
+}
+.cited a:hover { border-color: var(--rule-2); background: var(--desk); }
+.cited .num { color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.pager { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.pager a {
+  display: flex; align-items: center; gap: 10px;
+  padding: 14px 16px; border: 1px solid var(--rule); border-radius: var(--r-l);
+  color: var(--ink); text-decoration: none; font-weight: 600;
+  transition: border-color .15s, background .15s;
+}
+.pager a:hover { border-color: var(--vol); background: var(--vol-tint); }
+.pager a.next { justify-content: flex-end; text-align: right; }
+.pager .num { color: var(--vol-deep); font-variant-numeric: tabular-nums; }
+.fiction { margin-top: 28px; font-size: .8125rem; color: var(--ink-3); }
+
+/* Edit mode reveals how the page is built */
+.handle, .blk-type, .caret, .slash { display: none; }
+[data-mode="edit"] .blk { outline: 1px dashed var(--rule-2); outline-offset: 8px; border-radius: 4px; animation: reveal .22s var(--ease); }
+[data-mode="edit"] .measure > p.blk, [data-mode="edit"] .measure > h2.blk { outline-color: var(--rule); outline-offset: 5px; }
+[data-mode="edit"] h2.blk .handle { top: 0; }
+[data-mode="edit"] .handle {
+  display: grid; place-items: center;
+  position: absolute; left: -44px; top: -4px;
+  width: 24px; height: 28px; border-radius: 6px;
+  color: var(--ink-3); cursor: grab;
+}
+[data-mode="edit"] .handle:hover { background: var(--hover); color: var(--ink); }
+[data-mode="edit"] .blk-type {
+  display: inline-flex; align-items: center; gap: 5px;
+  position: absolute; top: -22px; left: -10px;
+  padding: 1px 8px; border-radius: 999px;
+  background: var(--paper); border: 1px solid var(--rule-2);
+  font: 600 .6875rem/1.5 var(--font-ui); color: var(--ink-2);
+}
+[data-mode="edit"] .blk-type .ph { font-size: .8125rem; }
+[data-mode="edit"] .caret {
+  display: inline-block; position: relative;
+  width: 2px; height: 1.2em; vertical-align: -.2em;
+  background: #5B4FD6; margin: 0 1px;
+}
+[data-mode="edit"] .caret::after {
+  content: attr(data-name);
+  position: absolute; left: 0; bottom: calc(100% + 2px);
+  white-space: nowrap;
+  padding: 1px 6px; border-radius: 4px 4px 4px 0;
+  background: #5B4FD6; color: #fff;
+  font: 700 .6875rem/1.4 var(--font-ui);
+}
+[data-mode="edit"] .slash { display: block; margin: 28px 0 8px; }
+@keyframes reveal { from { outline-color: transparent; } to { outline-color: var(--rule-2); } }
+.slash-line { font: 400 1.125rem/1.72 var(--font-text); color: var(--ink); margin: 0; }
+.slash-line .typed { color: var(--vol-deep); font-weight: 500; }
+.slash-line .blink { display: inline-block; width: 2px; height: 1.15em; background: var(--ink); vertical-align: -.2em; margin-left: 1px; animation: blink 1.1s steps(1) infinite; }
+@keyframes blink { 50% { opacity: 0; } }
+.slash-menu {
+  position: relative;
+  overflow: hidden;
+  width: min(100%, 360px);
+  margin-top: 8px;
+  padding: 9px 6px 6px;
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  box-shadow: var(--shadow-card);
+}
+.slash-menu::before, .pop::before {
+  content: ""; position: absolute; inset: 0 0 auto 0; height: 3px;
+  background: var(--vol);
+}
+.opt { display: grid; grid-template-columns: 34px 1fr auto; align-items: center; gap: 10px; padding: 8px 10px; border-radius: var(--r); }
+.opt .ico { width: 34px; height: 34px; border-radius: 9px; display: grid; place-items: center; background: var(--desk); color: var(--ink-2); }
+.opt b { display: block; font-size: .9375rem; }
+.opt small { display: block; font-size: .8125rem; color: var(--ink-3); }
+.opt.active { background: var(--vol-tint); }
+.opt.active .ico { background: var(--vol); color: var(--vol-on); }
+.opt.active b { color: var(--vol-deep); }
+.opt.active small { color: var(--ink-2); }
+
+/* Share panel */
+.pop {
+  position: fixed; inset: 72px 20px auto auto; margin: 0;
+  width: min(420px, calc(100vw - 32px));
+  padding: 3px 0 0;
+  overflow: hidden;
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  background: var(--paper); color: var(--ink);
+  box-shadow: var(--shadow-card);
+}
+.pop:popover-open { animation: pop .18s var(--ease); }
+@keyframes pop { from { opacity: 0; transform: translateY(-6px); } }
+.pop-head { display: flex; align-items: center; justify-content: space-between; padding: 14px 14px 10px 18px; }
+.pop-head h2 { margin: 0; font-size: 1.0625rem; }
+.pop-add { display: flex; gap: 8px; padding: 0 18px 14px; }
+.pop-add input {
+  flex: 1; min-width: 0;
+  font: inherit; font-size: .9375rem; color: var(--ink);
+  padding: 9px 12px; border-radius: var(--r);
+  border: 1px solid var(--rule-2); background: var(--paper);
+}
+.pop-add input::placeholder { color: var(--ink-3); }
+.pop-add input:focus-visible { outline: 2px solid var(--vol-deep); outline-offset: 0; border-color: transparent; }
+.btn-ink {
+  padding: 9px 14px; border-radius: var(--r);
+  background: var(--ink); color: var(--paper);
+  font-weight: 600; font-size: .9375rem;
+}
+.btn-ink:hover { background: color-mix(in srgb, var(--ink) 85%, var(--paper)); }
+.members { list-style: none; margin: 0; padding: 4px 8px 8px; border-top: 1px solid var(--rule); }
+.members li { display: grid; grid-template-columns: 32px 1fr auto; align-items: center; gap: 10px; padding: 8px 10px; border-radius: var(--r); }
+.members .grp { width: 32px; height: 32px; border-radius: 9px; display: grid; place-items: center; background: var(--desk); color: var(--ink-2); }
+.members .av { width: 32px; height: 32px; }
+.members b { display: block; font-size: .9375rem; }
+.members small { color: var(--ink-3); font-size: .8125rem; font-variant-numeric: tabular-nums; }
+.role {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 6px 8px 6px 10px; border-radius: 8px;
+  font-size: .875rem; font-weight: 600; color: var(--ink);
+}
+.role:hover { background: var(--hover); }
+.role .mark { color: var(--vol-deep); }
+.role .ph { font-size: .875rem; color: var(--ink-3); }
+.pop-foot { border-top: 1px solid var(--rule); padding: 12px 18px 16px; display: grid; gap: 12px; }
+.switch-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: .9375rem; }
+.switch-row small { display: block; color: var(--ink-3); font-size: .8125rem; }
+.switch { position: relative; width: 38px; height: 22px; border-radius: 999px; background: var(--rule-2); flex: none; transition: background .18s; }
+.switch::after { content: ""; position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; border-radius: 50%; background: var(--paper); transition: transform .18s var(--ease); box-shadow: 0 1px 2px rgba(0,0,0,.2); }
+.switch[aria-checked="true"] { background: var(--vol); }
+.switch[aria-checked="true"]::after { transform: translateX(16px); }
+.restrict { display: inline-flex; align-items: center; gap: 8px; font-weight: 600; font-size: .9375rem; color: var(--ink); }
+.pop-note { margin: 0; font-size: .8125rem; color: var(--ink-3); }
+
+/* Laptop widths: slimmer sommaire so the margin notes keep their column */
+@media (max-width: 1360px) {
+  .nav-wrap { grid-template-columns: 64px 256px; }
+  .band-meta { display: none; }
+  .band { gap: 14px; }
+}
+
+/* Mobile */
+.topbar, .scrim { display: none; }
+@media (max-width: 860px) {
+  .app { grid-template-columns: minmax(0, 1fr); }
+  .nav-wrap {
+    position: fixed; inset: 0 auto 0 0;
+    width: min(344px, 88vw); height: 100dvh;
+    grid-template-columns: 64px minmax(0, 1fr);
+    transform: translateX(-102%);
+    transition: transform .26s var(--ease);
+  }
+  .nav-open .nav-wrap { transform: none; box-shadow: var(--shadow-pop); }
+  .mermaid-out svg, .drawio svg { width: var(--nat, 640px) !important; max-width: none !important; }
+  .nav-open .scrim { display: block; position: fixed; inset: 0; background: rgba(12, 14, 20, .45); z-index: 15; }
+  .topbar {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 12px;
+    background: var(--paper); border-bottom: 1px solid var(--rule);
+  }
+  .topbar-vol { display: flex; align-items: center; gap: 8px; font-weight: 700; }
+  .topbar .search-mini { margin-left: auto; }
+  .band { flex-wrap: wrap; gap: 10px 14px; padding: 12px 16px; min-height: 0; top: 0; }
+  .band-vol { display: none; }
+  .crumbs { border-left: 0; padding-left: 0; flex: 1 1 100%; font-size: .875rem; }
+  .band-actions { margin-left: 0; width: 100%; }
+  .presence { display: none; }
+  .band-actions .btn-paper { margin-left: auto; }
+  .page { padding: 28px 20px 72px; }
+  h1 { font-size: 1.875rem; }
+  .lede { font-size: 1.125rem; }
+  .access { grid-template-columns: 1fr; gap: 10px; }
+  .access div { display: flex; align-items: baseline; gap: 10px; }
+  .access dt { min-width: 118px; }
+  .access dd { margin: 0; }
+  .api-cols { grid-template-columns: 1fr; }
+  .api-cols > section + section { border-left: 0; border-top: 1px solid var(--rule); }
+  .api-head .ghost { margin-left: 0; }
+  .params td:first-child { white-space: normal; }
+  .params td, .params th { padding-right: 6px; }
+  figcaption { flex-wrap: wrap; }
+  .cap-actions { width: 100%; margin-left: -9px; }
+  .pager { grid-template-columns: 1fr; }
+  [data-mode="edit"] .handle { display: none; }
+  .pop { inset: 64px 16px auto 16px; width: auto; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+
+  <div class="nav-wrap" id="nav">
+    <aside class="shelf" aria-label="Volumes">
+      <a class="logo" href="#" aria-label="Andal, accueil">
+        <svg viewBox="0 0 28 28" aria-hidden="true"><rect x="5" y="3" width="17" height="22" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M9 3v22" stroke="currentColor" stroke-width="2"/><path d="M18.5 3v22" stroke="#F2B33D" stroke-width="2.4"/></svg>
+      </a>
+      <div class="spines" role="list">
+        <button class="spine" role="listitem" data-vol="identite" style="--h:124px" data-title="Identité et accès" data-short="Identité" data-meta="Vol. 1 · 27 pages"><b class="spine-num" aria-hidden="true">1</b><span>Identité</span></button>
+        <button class="spine" role="listitem" data-vol="plateforme" style="--h:144px" data-title="Plateforme et infra" data-short="Plateforme" data-meta="Vol. 2 · 58 pages"><b class="spine-num" aria-hidden="true">2</b><span>Plateforme</span></button>
+        <button class="spine" role="listitem" data-vol="paiements" style="--h:150px" aria-current="true" data-title="Plateforme Paiements" data-short="Paiements" data-meta="Vol. 3 · 42 pages"><b class="spine-num" aria-hidden="true">3</b><span>Paiements</span></button>
+        <button class="spine" role="listitem" data-vol="mobile" style="--h:140px" data-title="Application mobile" data-short="App mobile" data-meta="Vol. 4 · 31 pages"><b class="spine-num" aria-hidden="true">4</b><span>App mobile</span></button>
+        <button class="spine" role="listitem" data-vol="donnees" style="--h:132px" data-title="Données et analytics" data-short="Données" data-meta="Vol. 5 · 63 pages"><b class="spine-num" aria-hidden="true">5</b><span>Données</span></button>
+      </div>
+      <div class="shelf-foot">
+        <button class="icon-btn add-vol" aria-label="Nouveau volume"><i class="ph ph-plus" aria-hidden="true"></i></button>
+        <button class="av p-ak me" aria-label="Votre compte">AK</button>
+      </div>
+    </aside>
+
+    <nav class="toc" aria-label="Sommaire du volume">
+      <div class="toc-top">
+        <button class="search"><i class="ph ph-magnifying-glass" aria-hidden="true"></i>Rechercher<kbd>⌘K</kbd></button>
+      </div>
+      <div class="toc-vol"><span class="vol-swatch" aria-hidden="true"></span><span class="toc-vol-text"><span data-bind="title">Plateforme Paiements</span><span class="vol-count" data-bind="meta">Vol. 3 · 42 pages</span></span></div>
+      <div class="tree-scroll">
+        <ol class="tree">
+          <li><a class="node" href="#"><span class="num">1</span><span class="label">Présentation</span><span class="reveal"><span class="mark write" aria-hidden="true"></span>12 j</span></a></li>
+          <li class="parent"><a class="node" href="#"><span class="num">2</span><span class="label">Architecture</span><span class="reveal"><span class="mark write" aria-hidden="true"></span>3 j</span></a>
+            <ol>
+              <li><a class="node" href="#"><span class="num">2.1</span><span class="label">Vue d'ensemble</span><span class="reveal"><span class="mark write" aria-hidden="true"></span>3 j</span></a></li>
+              <li><a class="node" href="#"><span class="num">2.2</span><span class="label">Services</span><span class="reveal"><span class="mark write" aria-hidden="true"></span>9 j</span></a></li>
+            </ol>
+          </li>
+          <li class="parent"><a class="node" href="#"><span class="num">3</span><span class="label">API</span><span class="reveal"><span class="mark write" aria-hidden="true"></span>1 j</span></a>
+            <ol>
+              <li><a class="node" href="#"><span class="num">3.1</span><span class="label">Conventions</span><span class="reveal"><span class="mark write" aria-hidden="true"></span>21 j</span></a></li>
+              <li><a class="node" href="#" aria-current="page"><span class="num">3.2</span><span class="label">Authentification</span><span class="reveal"><span class="mark write" aria-hidden="true"></span>2 h</span></a></li>
+              <li><a class="node" href="#"><span class="num">3.3</span><span class="label">Webhooks</span><span class="reveal"><span class="mark comment" aria-hidden="true"></span>6 j</span></a></li>
+              <li><a class="node" href="#"><span class="num">3.4</span><span class="label">Jetons utilisateur</span><span class="reveal"><span class="mark write" aria-hidden="true"></span>8 j</span></a></li>
+            </ol>
+          </li>
+          <li class="parent"><a class="node" href="#"><span class="num">4</span><span class="label">Exploitation</span><span class="reveal"><span class="mark write" aria-hidden="true"></span>2 j</span></a>
+            <ol>
+              <li><a class="node" href="#" aria-label="4.1 Runbook incident, restreinte, lecture seule pour vous"><span class="num">4.1</span><span class="label">Runbook incident</span><span class="reveal" style="opacity:1;transform:none"><i class="ph ph-lock-simple lock" aria-hidden="true"></i><span class="mark read" aria-hidden="true"></span></span></a></li>
+              <li><a class="node" href="#"><span class="num">4.2</span><span class="label">Astreinte</span><span class="reveal"><span class="mark write" aria-hidden="true"></span>2 j</span></a></li>
+            </ol>
+          </li>
+          <li><a class="node" href="#"><span class="num">5</span><span class="label">Décisions d'architecture</span><span class="reveal"><span class="mark write" aria-hidden="true"></span>5 j</span></a></li>
+          <li><a class="node" href="#"><span class="num">6</span><span class="label">Glossaire</span><span class="reveal"><span class="mark write" aria-hidden="true"></span>40 j</span></a></li>
+        </ol>
+      </div>
+      <div class="toc-foot">
+        <button class="btn-new"><i class="ph ph-plus" aria-hidden="true"></i>Nouvelle page</button>
+        <button class="icon-btn sm" aria-label="Corbeille"><i class="ph ph-trash" aria-hidden="true"></i></button>
+        <button class="icon-btn sm" aria-label="Réglages du volume"><i class="ph ph-gear-six" aria-hidden="true"></i></button>
+      </div>
+    </nav>
+  </div>
+  <div class="scrim" id="scrim"></div>
+
+  <main id="main" data-mode="read">
+    <div class="topbar">
+      <button class="icon-btn" id="open-nav" aria-label="Ouvrir le sommaire" aria-controls="nav" aria-expanded="false"><i class="ph ph-list" aria-hidden="true"></i></button>
+      <span class="topbar-vol"><span class="vol-swatch" aria-hidden="true"></span><span data-bind="short">Paiements</span></span>
+      <button class="icon-btn search-mini" aria-label="Rechercher"><i class="ph ph-magnifying-glass" aria-hidden="true"></i></button>
+    </div>
+
+    <header class="band">
+      <div class="band-vol"><span class="band-title" data-bind="title">Plateforme Paiements</span><span class="band-meta" data-bind="meta">Vol. 3 · 42 pages</span></div>
+      <nav class="crumbs" aria-label="Fil d'Ariane">
+        <a href="#">3 API</a><i class="ph ph-caret-right" aria-hidden="true"></i><span aria-current="page">3.2 Authentification</span>
+      </nav>
+      <div class="band-actions">
+        <div class="presence" aria-label="3 personnes sur cette page">
+          <span class="av p-ak" title="Aminata K.">AK</span>
+          <span class="av p-tr" title="Thomas R.">TR</span>
+          <span class="av p-lm" title="Léa M.">LM</span>
+        </div>
+        <div class="seg" role="group" aria-label="Mode de la page">
+          <button type="button" aria-pressed="true" data-mode="read"><i class="ph ph-book-open" aria-hidden="true"></i>Lire</button>
+          <button type="button" aria-pressed="false" data-mode="edit"><i class="ph ph-pencil-simple" aria-hidden="true"></i>Modifier</button>
+        </div>
+        <button class="btn-paper" popovertarget="share"><i class="ph ph-users-three" aria-hidden="true"></i>Partager</button>
+        <button class="icon-btn on-band" id="theme" aria-label="Passer en thème sombre"><i class="ph ph-moon" aria-hidden="true"></i></button>
+      </div>
+    </header>
+
+    <div class="page">
+      <article class="sheet">
+        <div class="measure prose">
+
+          <h1><span class="secnum">3.2</span>Authentification</h1>
+          <p class="lede">Comment un service client obtient un jeton d'accès pour appeler l'API Paiements, et combien de temps ce jeton reste valable.</p>
+
+          <section class="colophon" aria-label="Accès et historique de la page">
+            <dl class="access">
+              <div><dt><span class="mark write" aria-hidden="true"></span>Écriture</dt><dd>Équipe Paiements <span class="count">6</span><span class="you">vous</span></dd></div>
+              <div><dt><span class="mark comment" aria-hidden="true"></span>Commentaire</dt><dd>Sécurité <span class="count">4</span></dd></div>
+              <div><dt><span class="mark read" aria-hidden="true"></span>Lecture</dt><dd>Ingénierie <span class="count">58</span></dd></div>
+            </dl>
+            <p class="colophon-meta">
+              <span><i class="ph ph-arrow-bend-down-right" aria-hidden="true"></i>Droits hérités du volume, sans restriction</span>
+              <span><i class="ph ph-clock-counter-clockwise" aria-hidden="true"></i>v14, modifiée le 28 oct. 2026 par Aminata K.</span>
+              <a href="#">Historique</a>
+            </p>
+          </section>
+
+          <aside class="side" aria-label="Commentaire sur l'en-tête Authorization">
+            <div class="who"><span class="av p-tr" aria-hidden="true">TR</span><span class="name">Thomas R.</span><time>il y a 25 min</time><span class="anchor-num num-badge" aria-hidden="true">1</span></div>
+            <p>Précisons le format exact: <code>Bearer</code>, une espace, puis le jeton.</p>
+            <div class="acts"><button class="ghost" type="button">Répondre</button><button class="ghost" type="button"><i class="ph ph-check" aria-hidden="true"></i>Résoudre</button></div>
+          </aside>
+
+          <p>Tous les appels à l'API Paiements exigent un jeton d'accès OAuth 2.0. Un service client l'obtient auprès du service Auth avec ses propres identifiants, puis l'envoie dans <mark class="anchor">l'en-tête <code>Authorization</code></mark><span class="anchor-num" aria-label="commentaire 1">1</span> de chaque requête.</p>
+          <p>Ce flux ne concerne que les échanges entre machines. Les applications qui agissent au nom d'une personne utilisent des jetons utilisateur, décrits en <a href="#">3.4</a>.</p>
+
+          <h2><span class="secnum">3.2.1</span>Obtenir un jeton</h2>
+          <p>Le service client envoie ses identifiants à la passerelle, qui les transmet au service Auth. Celui-ci vérifie le secret dans le coffre<span class="caret" data-name="Thomas R."></span>, puis signe un jeton valable quinze minutes (figure 3.2).</p>
+
+          <figure class="fig blk" data-type="Mermaid">
+            <span class="handle" aria-hidden="true"><i class="ph ph-dots-six-vertical"></i></span>
+            <span class="blk-type"><i class="ph ph-graph" aria-hidden="true"></i>Mermaid</span>
+            <div class="frame">
+              <div class="mermaid-out" id="seq-out" role="img" aria-label="Diagramme de séquence: le service client demande un jeton à la passerelle, qui interroge le service Auth, lequel lit le secret dans le coffre puis renvoie un jeton signé."></div>
+            </div>
+            <figcaption>
+              <span class="fignum">Figure 3.2</span>
+              <span class="cap-text">Échange des identifiants client contre un jeton d'accès.</span>
+              <span class="cap-actions">
+                <span class="scroll-hint"><i class="ph ph-arrows-left-right" aria-hidden="true"></i>Faire défiler</span>
+                <button class="ghost" type="button" data-toggle-src="seq-src"><i class="ph ph-code" aria-hidden="true"></i>Source</button>
+                <button class="ghost" type="button"><i class="ph ph-arrows-out" aria-hidden="true"></i>Agrandir</button>
+              </span>
+            </figcaption>
+            <details class="src" id="seq-src"><summary class="sr">Source Mermaid de la figure 3.2</summary><pre id="seq">sequenceDiagram
+  autonumber
+  participant C as Service client
+  participant P as Passerelle API
+  participant A as Service Auth
+  participant V as Coffre
+  C->>P: POST /oauth/token
+  P->>A: Identifiants
+  A->>V: Lit le secret
+  V-->>A: Secret haché
+  A-->>P: Jeton signé, 15 min
+  P-->>C: 200 access_token</pre></details>
+          </figure>
+
+          <p>En pratique, une seule requête suffit:</p>
+
+          <figure class="fig blk" data-type="Code">
+            <span class="handle" aria-hidden="true"><i class="ph ph-dots-six-vertical"></i></span>
+            <span class="blk-type"><i class="ph ph-code" aria-hidden="true"></i>Code</span>
+            <div class="code">
+              <div class="code-head"><span>bash</span><button class="icon-btn sm" aria-label="Copier le code"><i class="ph ph-copy" aria-hidden="true"></i></button></div>
+<pre><code><span class="t-cmd">curl</span> <span class="t-flag">-X</span> POST <span class="t-str">https://api.paiements.exemple/oauth/token</span> \
+  <span class="t-flag">-d</span> <span class="t-str">grant_type=client_credentials</span> \   <span class="co" aria-label="repère 1">1</span>
+  <span class="t-flag">-d</span> client_id=<span class="t-var">$CLIENT_ID</span> \
+  <span class="t-flag">-d</span> client_secret=<span class="t-var">$CLIENT_SECRET</span> \
+  <span class="t-flag">-d</span> <span class="t-str">scope=paiements:lecture</span>        <span class="co" aria-label="repère 2">2</span></code></pre>
+            </div>
+            <figcaption><span class="fignum">Listing 3.1</span><span class="cap-text">Demander un jeton avec curl.</span></figcaption>
+            <ol class="callouts">
+              <li><span class="co" aria-hidden="true">1</span><span><code>client_credentials</code> désigne le flux entre machines, sans utilisateur.</span></li>
+              <li><span class="co" aria-hidden="true">2</span><span>La portée limite le jeton à la lecture des paiements.</span></li>
+            </ol>
+          </figure>
+
+          <aside class="side" aria-label="Commentaires sur l'encadré">
+            <div class="who"><span class="av p-ak" aria-hidden="true">AK</span><span class="name">Aminata K.</span><time>il y a 2 h</time><span class="anchor-num num-badge" aria-hidden="true">2</span></div>
+            <p>On parle aussi du jeton de rafraîchissement ici, ou seulement en 3.4&nbsp;?</p>
+            <div class="reply">
+              <div class="who"><span class="av p-tr" aria-hidden="true">TR</span><span class="name">Thomas R.</span><time>il y a 1 h</time></div>
+              <p>En 3.4: ce flux machine n'en émet pas.</p>
+            </div>
+            <div class="acts"><button class="ghost" type="button">Répondre</button><button class="ghost" type="button"><i class="ph ph-check" aria-hidden="true"></i>Résoudre</button></div>
+          </aside>
+
+          <div class="note-box blk" data-type="Encadré">
+            <span class="handle" aria-hidden="true"><i class="ph ph-dots-six-vertical"></i></span>
+            <span class="blk-type"><i class="ph ph-lightbulb" aria-hidden="true"></i>Encadré</span>
+            <i class="ph ph-lightbulb" aria-hidden="true"></i>
+            <div>
+              <strong>À retenir</strong>
+              <p>Un jeton expire au bout de 15 minutes. Gardez-le en mémoire côté serveur et <mark class="anchor">ne le stockez jamais côté navigateur</mark><span class="anchor-num" aria-label="commentaire 2">2</span>.</p>
+            </div>
+          </div>
+
+          <h2><span class="secnum">3.2.2</span>Référence de l'endpoint</h2>
+          <p>La référence ci-dessous est générée depuis <code>paiements.yaml</code>, que la CI publie à chaque version de l'API. Personne ne la recopie à la main.</p>
+
+          <figure class="fig wide blk" data-type="OpenAPI">
+            <span class="handle" aria-hidden="true"><i class="ph ph-dots-six-vertical"></i></span>
+            <span class="blk-type"><i class="ph ph-brackets-curly" aria-hidden="true"></i>OpenAPI</span>
+            <div class="api">
+              <div class="api-head">
+                <span class="verb">POST</span><code class="route">/oauth/token</code><span class="api-sum">Émet un jeton d'accès</span>
+                <a class="ghost" href="#"><i class="ph ph-book-open-text" aria-hidden="true"></i>Ouvrir dans Redoc</a>
+              </div>
+              <div class="api-cols">
+                <section>
+                  <h3>Corps de la requête <span class="mime">application/x-www-form-urlencoded</span></h3>
+                  <table class="params">
+                    <thead><tr><th scope="col">Champ</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead>
+                    <tbody>
+                      <tr><td><code>grant_type</code><span class="req">requis</span></td><td class="type">string</td><td>Toujours <code>client_credentials</code>.</td></tr>
+                      <tr><td><code>client_id</code><span class="req">requis</span></td><td class="type">string</td><td>Identifiant du service client.</td></tr>
+                      <tr><td><code>client_secret</code><span class="req">requis</span></td><td class="type">string</td><td>Secret du service client.</td></tr>
+                      <tr><td><code>scope</code></td><td class="type">string</td><td>Portées séparées par des espaces.</td></tr>
+                    </tbody>
+                  </table>
+                </section>
+                <section>
+                  <h3>Réponses</h3>
+                  <ul class="resp">
+                    <li class="ok"><div class="row"><span class="code-n">200</span>Jeton émis</div>
+<pre class="schema">{
+  <span class="t-key">"access_token"</span>: <span class="t-str">"eyJhbGciOi…"</span>,
+  <span class="t-key">"token_type"</span>: <span class="t-str">"Bearer"</span>,
+  <span class="t-key">"expires_in"</span>: <span class="t-var">900</span>
+}</pre></li>
+                    <li class="err"><div class="row"><span class="code-n">400</span>Requête invalide</div></li>
+                    <li class="err"><div class="row"><span class="code-n">401</span>Client inconnu ou secret faux</div></li>
+                    <li class="err"><div class="row"><span class="code-n">429</span>Trop de requêtes</div></li>
+                  </ul>
+                </section>
+              </div>
+            </div>
+            <figcaption><span class="fignum">Listing 3.2</span><span class="cap-text">Extrait de <code>paiements.yaml</code> v2.3, publié par la CI le 27 oct. 2026.</span></figcaption>
+          </figure>
+
+          <h2><span class="secnum">3.2.3</span>Où passe le trafic</h2>
+
+          <aside class="side quiet" aria-label="Note sur la figure 3.3">
+            <div class="who"><span class="av p-lm" aria-hidden="true">LM</span><span class="name">Léa M.</span><time>hier</time></div>
+            <p>Schéma mis à jour après l'ajout du coffre.</p>
+          </aside>
+
+          <p>Le jeton ne sort jamais du réseau privé. Seule la passerelle est exposée, derrière Caddy, et chaque service vérifie la signature du jeton avant de répondre (figure 3.3).</p>
+
+          <figure class="fig blk drawio" data-type="draw.io">
+            <span class="handle" aria-hidden="true"><i class="ph ph-dots-six-vertical"></i></span>
+            <span class="blk-type"><i class="ph ph-flow-arrow" aria-hidden="true"></i>draw.io</span>
+            <div class="frame">
+              <svg viewBox="0 0 640 250" role="img" aria-labelledby="dz-t" style="--nat:640px">
+                <title id="dz-t">Topologie: Internet vers Caddy, puis la passerelle API dans le réseau privé, qui dessert le service Auth et le service Paiements; Auth lit le coffre, Paiements écrit dans PostgreSQL.</title>
+                <defs><marker id="dz-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="dz-arrow" d="M0 0L10 5L0 10z"/></marker></defs>
+                <rect class="dz-zone" x="214" y="12" width="420" height="226" rx="12"/>
+                <text class="dz-zone-label" x="228" y="34">Réseau privé</text>
+                <g class="dz-node"><rect x="6" y="103" width="82" height="44" rx="8"/><text x="47" y="129" text-anchor="middle">Internet</text></g>
+                <g class="dz-node"><rect x="112" y="103" width="84" height="44" rx="8"/><text x="154" y="129" text-anchor="middle">Caddy</text></g>
+                <g class="dz-node"><rect x="232" y="103" width="104" height="44" rx="8"/><text x="284" y="129" text-anchor="middle">Passerelle API</text></g>
+                <g class="dz-node dz-svc"><rect x="378" y="50" width="104" height="44" rx="8"/><text x="430" y="76" text-anchor="middle">Service Auth</text></g>
+                <g class="dz-node dz-svc"><rect x="378" y="156" width="104" height="44" rx="8"/><text x="430" y="182" text-anchor="middle">Paiements</text></g>
+                <g class="dz-node dz-store"><rect x="518" y="50" width="100" height="44" rx="8"/><text x="568" y="76" text-anchor="middle">Coffre</text></g>
+                <g class="dz-node dz-store"><rect x="518" y="156" width="100" height="44" rx="8"/><text x="568" y="182" text-anchor="middle">PostgreSQL</text></g>
+                <path class="dz-edge" d="M88 125H110" marker-end="url(#dz-a)"/>
+                <path class="dz-edge" d="M196 125H230" marker-end="url(#dz-a)"/>
+                <path class="dz-edge" d="M336 116H356V72H376" marker-end="url(#dz-a)"/>
+                <path class="dz-edge" d="M336 134H356V178H376" marker-end="url(#dz-a)"/>
+                <path class="dz-edge" d="M482 72H516" marker-end="url(#dz-a)"/>
+                <path class="dz-edge" d="M482 178H516" marker-end="url(#dz-a)"/>
+                <path class="dz-edge check" d="M430 156V96" marker-end="url(#dz-a)"/>
+                <text class="dz-edge-label" x="438" y="130">vérifie</text>
+                <text class="dz-edge-label" x="120" y="96">TLS</text>
+              </svg>
+            </div>
+            <figcaption>
+              <span class="fignum">Figure 3.3</span>
+              <span class="cap-text">Topologie réseau. Diagramme draw.io, modifiable dans l'éditeur intégré.</span>
+              <span class="cap-actions"><span class="scroll-hint"><i class="ph ph-arrows-left-right" aria-hidden="true"></i>Faire défiler</span><button class="ghost" type="button"><i class="ph ph-pencil-simple" aria-hidden="true"></i>Modifier dans draw.io</button></span>
+            </figcaption>
+          </figure>
+
+          <div class="slash blk" data-type="Paragraphe">
+            <span class="handle" aria-hidden="true"><i class="ph ph-dots-six-vertical"></i></span>
+            <p class="slash-line"><span class="typed">/</span><span class="blink" aria-hidden="true"></span></p>
+            <div class="slash-menu" role="listbox" aria-label="Insérer un bloc">
+              <div class="opt active" role="option" aria-selected="true"><span class="ico"><i class="ph ph-graph" aria-hidden="true"></i></span><span><b>Diagramme Mermaid</b><small>Séquence, flux ou états, écrits en texte</small></span><kbd>↵</kbd></div>
+              <div class="opt" role="option" aria-selected="false"><span class="ico"><i class="ph ph-brackets-curly" aria-hidden="true"></i></span><span><b>Référence OpenAPI</b><small>Depuis un fichier YAML ou la CI</small></span></div>
+              <div class="opt" role="option" aria-selected="false"><span class="ico"><i class="ph ph-flow-arrow" aria-hidden="true"></i></span><span><b>Schéma draw.io</b><small>Dessin libre dans l'éditeur intégré</small></span></div>
+              <div class="opt" role="option" aria-selected="false"><span class="ico"><i class="ph ph-code" aria-hidden="true"></i></span><span><b>Bloc de code</b><small>Avec repères numérotés</small></span></div>
+              <div class="opt" role="option" aria-selected="false"><span class="ico"><i class="ph ph-lightbulb" aria-hidden="true"></i></span><span><b>Encadré</b><small>À retenir, attention, astuce</small></span></div>
+            </div>
+          </div>
+
+          <footer class="after">
+            <h2>Citée dans 2 pages</h2>
+            <ul class="cited">
+              <li><a href="#"><span class="num">4.1</span>Runbook incident<i class="ph ph-lock-simple" aria-label="restreinte"></i></a></li>
+              <li><a href="#"><span class="num">2.2</span>Services</a></li>
+            </ul>
+            <nav class="pager" aria-label="Pages voisines">
+              <a href="#"><i class="ph ph-arrow-left" aria-hidden="true"></i><span><span class="num">3.1</span> Conventions</span></a>
+              <a href="#" class="next"><span><span class="num">3.3</span> Webhooks</span><i class="ph ph-arrow-right" aria-hidden="true"></i></a>
+            </nav>
+            <p class="fiction">Maquette Andal. Personnes, équipes et URL sont fictives.</p>
+          </footer>
+        </div>
+      </article>
+    </div>
+  </main>
+</div>
+
+<div id="share" popover class="pop" aria-labelledby="share-title">
+  <div class="pop-head">
+    <h2 id="share-title">Partager « 3.2 Authentification »</h2>
+    <button class="icon-btn sm" popovertarget="share" popovertargetaction="hide" aria-label="Fermer"><i class="ph ph-x" aria-hidden="true"></i></button>
+  </div>
+  <div class="pop-add">
+    <input type="text" placeholder="Personne ou groupe" aria-label="Ajouter une personne ou un groupe">
+    <button class="btn-ink" type="button">Inviter</button>
+  </div>
+  <ul class="members">
+    <li><span class="grp"><i class="ph ph-users-three" aria-hidden="true"></i></span><span><b>Équipe Paiements</b><small>6 personnes, dont vous</small></span><button class="role" type="button"><span class="mark write" aria-hidden="true"></span>Écriture<i class="ph ph-caret-down" aria-hidden="true"></i></button></li>
+    <li><span class="grp"><i class="ph ph-shield-check" aria-hidden="true"></i></span><span><b>Sécurité</b><small>4 personnes</small></span><button class="role" type="button"><span class="mark comment" aria-hidden="true"></span>Commentaire<i class="ph ph-caret-down" aria-hidden="true"></i></button></li>
+    <li><span class="grp"><i class="ph ph-buildings" aria-hidden="true"></i></span><span><b>Ingénierie</b><small>58 personnes</small></span><button class="role" type="button"><span class="mark read" aria-hidden="true"></span>Lecture<i class="ph ph-caret-down" aria-hidden="true"></i></button></li>
+  </ul>
+  <div class="pop-foot">
+    <div class="switch-row"><span>Lien public en lecture seule<small>Désactivé par l'admin du volume</small></span><button class="switch" role="switch" aria-checked="false" aria-label="Lien public" disabled></button></div>
+    <button class="restrict" type="button"><i class="ph ph-lock-simple" aria-hidden="true"></i>Restreindre cette page</button>
+    <p class="pop-note">Une restriction réduit les droits du volume, elle ne les élargit jamais.</p>
+  </div>
+</div>
+
+<script src="https://unpkg.com/mermaid@11.4.1/dist/mermaid.min.js"></script>
+<script>
+(function () {
+  var root = document.documentElement;
+  var main = document.getElementById('main');
+
+  function css(name) { return getComputedStyle(root).getPropertyValue(name).trim(); }
+
+  var renderCount = 0;
+  function renderMermaid() {
+    if (!window.mermaid) return;
+    var src = document.getElementById('seq').textContent;
+    var font = '"Atkinson Hyperlegible Next", system-ui, sans-serif';
+    mermaid.initialize({
+      startOnLoad: false,
+      securityLevel: 'strict',
+      theme: 'base',
+      fontFamily: font,
+      themeVariables: {
+        fontFamily: font,
+        fontSize: '14px',
+        background: css('--paper'),
+        primaryColor: css('--vol-tint'),
+        primaryBorderColor: css('--vol'),
+        primaryTextColor: css('--ink'),
+        textColor: css('--ink'),
+        lineColor: css('--ink-3'),
+        actorBkg: css('--vol-tint'),
+        actorBorder: css('--vol'),
+        actorTextColor: css('--ink'),
+        actorLineColor: css('--rule-2'),
+        signalColor: css('--ink-2'),
+        signalTextColor: css('--ink'),
+        sequenceNumberColor: css('--vol-on'),
+        labelBoxBkgColor: css('--paper'),
+        labelBoxBorderColor: css('--rule-2'),
+        noteBkgColor: css('--hl'),
+        noteBorderColor: css('--hl-line'),
+        activationBkgColor: css('--vol-tint'),
+        activationBorderColor: css('--vol')
+      },
+      sequence: { mirrorActors: false, diagramMarginX: 8, diagramMarginY: 8, actorMargin: 24, messageMargin: 34, boxMargin: 8, width: 112, height: 44, useMaxWidth: true }
+    });
+    renderCount += 1;
+    mermaid.render('seq-svg-' + renderCount, src).then(function (r) {
+      var out = document.getElementById('seq-out');
+      out.innerHTML = r.svg;
+      var svg = out.querySelector('svg');
+      var nat = parseFloat(svg.style.maxWidth) || (svg.viewBox && svg.viewBox.baseVal.width);
+      if (nat) svg.style.setProperty('--nat', nat + 'px');
+      syncScrollCues();
+    }).catch(function () {
+      document.getElementById('seq-out').textContent = 'Le diagramme n’a pas pu être rendu.';
+    });
+  }
+
+  function syncScrollCues() {
+    document.querySelectorAll('.frame').forEach(function (frame) {
+      var max = frame.scrollWidth - frame.clientWidth;
+      var fig = frame.closest('.fig');
+      frame.classList.toggle('scroll-l', max > 2 && frame.scrollLeft > 2);
+      frame.classList.toggle('scroll-r', max > 2 && frame.scrollLeft < max - 2);
+      if (fig) fig.classList.toggle('scrollable', max > 2);
+    });
+  }
+  document.querySelectorAll('.frame').forEach(function (frame) {
+    frame.addEventListener('scroll', syncScrollCues, { passive: true });
+  });
+  window.addEventListener('resize', syncScrollCues);
+  syncScrollCues();
+
+  document.querySelectorAll('.spine').forEach(function (spine) {
+    spine.addEventListener('click', function () {
+      root.dataset.vol = spine.dataset.vol;
+      document.querySelectorAll('.spine').forEach(function (s) { s.removeAttribute('aria-current'); });
+      spine.setAttribute('aria-current', 'true');
+      document.querySelectorAll('[data-bind="title"]').forEach(function (el) { el.textContent = spine.dataset.title; });
+      document.querySelectorAll('[data-bind="short"]').forEach(function (el) { el.textContent = spine.dataset.short; });
+      document.querySelectorAll('[data-bind="meta"]').forEach(function (el) { el.textContent = spine.dataset.meta; });
+      renderMermaid();
+    });
+  });
+
+  document.querySelectorAll('.measure > p:not(.lede), .measure > h2').forEach(function (el) {
+    el.classList.add('blk');
+    var h = document.createElement('span');
+    h.className = 'handle';
+    h.setAttribute('aria-hidden', 'true');
+    h.innerHTML = '<i class="ph ph-dots-six-vertical"></i>';
+    el.prepend(h);
+  });
+
+  document.querySelectorAll('.seg button').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      main.dataset.mode = btn.dataset.mode;
+      document.querySelectorAll('.seg button').forEach(function (b) { b.setAttribute('aria-pressed', String(b === btn)); });
+    });
+  });
+
+  document.querySelectorAll('[data-toggle-src]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var d = document.getElementById(btn.dataset.toggleSrc);
+      d.open = !d.open;
+      btn.setAttribute('aria-expanded', String(d.open));
+    });
+  });
+
+  var themeBtn = document.getElementById('theme');
+  function isDark() {
+    if (root.dataset.theme) return root.dataset.theme === 'dark';
+    return window.matchMedia('(prefers-color-scheme: dark)').matches;
+  }
+  function syncThemeBtn() {
+    var dark = isDark();
+    themeBtn.innerHTML = '<i class="ph ' + (dark ? 'ph-sun' : 'ph-moon') + '" aria-hidden="true"></i>';
+    themeBtn.setAttribute('aria-label', dark ? 'Passer en thème clair' : 'Passer en thème sombre');
+  }
+  try { var saved = localStorage.getItem('andal-theme'); if (saved) root.dataset.theme = saved; } catch (e) {}
+  themeBtn.addEventListener('click', function () {
+    root.dataset.theme = isDark() ? 'light' : 'dark';
+    try { localStorage.setItem('andal-theme', root.dataset.theme); } catch (e) {}
+    syncThemeBtn();
+    renderMermaid();
+  });
+  syncThemeBtn();
+
+  var app = document.getElementById('app');
+  var openNav = document.getElementById('open-nav');
+  function setNav(open) {
+    app.classList.toggle('nav-open', open);
+    openNav.setAttribute('aria-expanded', String(open));
+  }
+  openNav.addEventListener('click', function () { setNav(true); });
+  document.getElementById('scrim').addEventListener('click', function () { setNav(false); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') setNav(false); });
+
+  var params = new URLSearchParams(location.search);
+  if (params.get('mode') === 'edit') document.querySelector('.seg button[data-mode="edit"]').click();
+  if (params.get('theme')) root.dataset.theme = params.get('theme');
+  if (params.get('share') && document.getElementById('share').showPopover) document.getElementById('share').showPopover();
+  syncThemeBtn();
+
+  (document.fonts ? document.fonts.ready : Promise.resolve()).then(renderMermaid);
+})();
+</script>
+</body>
+</html>

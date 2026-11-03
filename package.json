@@ -1,0 +1,24 @@
+{
+  "name": "andal",
+  "private": true,
+  "packageManager": "pnpm@11.23.0",
+  "engines": {
+    "node": ">=22.12"
+  },
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "infra:up": "docker compose up -d",
+    "infra:down": "docker compose down",
+    "db:migrate": "pnpm --filter @andal/db migrate",
+    "db:seed": "pnpm --filter @andal/db seed",
+    "user:add": "pnpm --filter @andal/db user add",
+    "user:password": "pnpm --filter @andal/db user password"
+  },
+  "devDependencies": {
+    "turbo": "^2.5.0",
+    "typescript": "~5.9.2"
+  }
+}

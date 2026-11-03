@@ -1,0 +1,34 @@
+{
+  "name": "@andal/api",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "tsc -p tsconfig.json && node --watch-path=dist dist/main.js & tsc -p tsconfig.json -w --preserveWatchOutput",
+    "start": "node dist/main.js",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@andal/authz": "workspace:*",
+    "@andal/db": "workspace:*",
+    "@andal/editor": "workspace:*",
+    "@fastify/cookie": "^11.0.0",
+    "@nestjs/common": "^11.1.0",
+    "@nestjs/core": "^11.1.0",
+    "@nestjs/platform-fastify": "^11.1.0",
+    "bullmq": "^5.81.5",
+    "fastify": "^5.4.0",
+    "ioredis": "^5.6.0",
+    "kysely": "^0.28.0",
+    "nodemailer": "^10.3.1",
+    "openid-client": "^6.8.8",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.0",
+    "@types/nodemailer": "^8.0.2",
+    "typescript": "~5.9.2"
+  }
+}

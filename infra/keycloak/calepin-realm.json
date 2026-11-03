@@ -1,0 +1,58 @@
+{
+  "realm": "calepin",
+  "enabled": true,
+  "registrationAllowed": false,
+  "loginWithEmailAllowed": true,
+  "bruteForceProtected": true,
+  "clients": [
+    {
+      "clientId": "calepin",
+      "name": "Andal",
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "secret": "calepin-oidc-dev-secret",
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "redirectUris": ["http://localhost:5173/api/auth/callback"],
+      "webOrigins": ["http://localhost:5173"],
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "http://localhost:5173/*"
+      },
+      "protocolMappers": [
+        {
+          "name": "groups",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-group-membership-mapper",
+          "config": {
+            "claim.name": "groups",
+            "full.path": "false",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "true"
+          }
+        }
+      ]
+    }
+  ],
+  "users": [
+    {
+      "username": "thomas",
+      "email": "thomas@andal.test",
+      "emailVerified": true,
+      "enabled": true,
+      "firstName": "Thomas",
+      "lastName": "R.",
+      "credentials": [{ "type": "password", "value": "calepin-demo-2026", "temporary": false }]
+    },
+    {
+      "username": "inconnu",
+      "email": "inconnu@andal.test",
+      "emailVerified": true,
+      "enabled": true,
+      "firstName": "Personne",
+      "lastName": "Inconnue",
+      "credentials": [{ "type": "password", "value": "calepin-demo-2026", "temporary": false }]
+    }
+  ]
+}
