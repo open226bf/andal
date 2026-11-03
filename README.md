@@ -251,3 +251,7 @@ Avec la stack lancée : Aminata écrit sur « Glossaire » par une connexion ouv
 - **Enregistrement refusé** : quand le serveur collab rejette un contenu invalide, l'éditeur n'en est pas averti ; il faudrait le signaler à l'écran.
 - **Performance** : le bundle principal fait environ 1,1 Mo minifié ; charger l'éditeur à la demande en mode lecture.
 - **Choix à trancher** : la numérotation est calculée sur toutes les pages pour rester stable entre lecteurs. Une personne qui ne voit pas 4.1 voit donc « 4.2 Astreinte » et peut en déduire qu'une page 4.1 existe.
+
+## Licence
+
+Apache-2.0, voir [LICENSE](LICENSE).

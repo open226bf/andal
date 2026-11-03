@@ -38,7 +38,7 @@ Tout ce que Docmost et Confluence réservent aux offres payantes est dans le cœ
 - Liens publics en lecture seule, révocables, avec expiration.
 - Comptes locaux, SSO OIDC, MFA (TOTP et passkeys), journal d'audit.
 - Blocs Mermaid, OpenAPI/Redoc et draw.io dans l'éditeur, insérés par le menu `/`.
-- Non décidé: licence du projet (AGPL-3.0 ou Apache-2.0).
+- Licence: Apache-2.0, choisie par l'utilisateur.
 - Hypothèse non confirmée: interface en français, avec i18n prévue.
 
 ## Brand Commitments
