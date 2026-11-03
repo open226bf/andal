@@ -12,7 +12,7 @@ export const DocContext = createContext<DocContextValue>({ chapter: '', figureOf
 
 export const useDoc = () => useContext(DocContext);
 
-const FIGURES = new Set(['mermaid', 'drawio']);
+const FIGURES = new Set(['mermaid', 'drawio', 'image']);
 const LISTINGS = new Set(['openapi', 'codeBlock']);
 
 /** « Figure 3.2 » ou « Listing 3.1 »: numérotation continue sur tout le chapitre. */

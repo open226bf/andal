@@ -169,6 +169,7 @@ export class DocsService {
       access: await this.accessSummary(subject, project.id, pageId),
       prev: index > 0 ? neighbour(index - 1) : null,
       next: index >= 0 ? neighbour(index + 1) : null,
+      backlinks: await this.backlinks(subject, pageId),
     };
   }
 
@@ -265,6 +266,73 @@ export class DocsService {
       }
     }
     return results.slice(0, 20);
+  }
+
+  /**
+   * Pages à lier, par leur titre ou leur numéro, dans tous les volumes lisibles
+   * (archivés exclus). Le volume en cours vient en premier.
+   */
+  async lookup(subject: Subject, workspaceId: string, q: string, currentSlug?: string) {
+    const query = fold(q.trim()).slice(0, 120);
+    if (!query) return [];
+    const projects = (await this.listProjects(subject, workspaceId)).sort((a, b) => Number(b.slug === currentSlug) - Number(a.slug === currentSlug));
+    const results = [];
+    for (const project of projects) {
+      const [readable, numbers] = await Promise.all([readablePages(this.db, subject, project.id), this.numbering(project.id)]);
+      for (const page of readable) {
+        const number = numbers.get(page.id)?.number ?? '';
+        if (!fold(page.title).includes(query) && number !== query) continue;
+        results.push({ id: page.id, title: page.title, number, project: { slug: project.slug, shortName: project.shortName, cloth: project.cloth } });
+      }
+      if (results.length >= 12) break;
+    }
+    return results.slice(0, 12);
+  }
+
+  /** Aperçu d'une page au survol d'un lien: même règle que la page, 404 si elle est illisible. */
+  async preview(subject: Subject, pageId: string) {
+    const access = await this.require(subject, pageId, 'page.read');
+    const page = await this.db.selectFrom('pages').select(['id', 'title', 'summary', 'text_content', 'updated_at']).where('id', '=', pageId).executeTakeFirstOrThrow();
+    const project = await this.db.selectFrom('projects').select(['slug', 'name', 'short_name', 'cloth']).where('id', '=', access.projectId).executeTakeFirstOrThrow();
+    const numbers = await this.numbering(access.projectId);
+    const text = page.text_content.replace(/\s+/g, ' ').trim();
+    return {
+      id: page.id,
+      title: page.title,
+      number: numbers.get(page.id)?.number ?? '',
+      summary: page.summary,
+      excerpt: text.length > 220 ? `${text.slice(0, 219)}…` : text,
+      updatedAt: page.updated_at.toISOString(),
+      project: { slug: project.slug, name: project.name, shortName: project.short_name, cloth: project.cloth },
+    };
+  }
+
+  /** Les pages qui citent celle-ci, seulement celles que le sujet peut lire. */
+  private async backlinks(subject: Subject, pageId: string) {
+    const sources = await this.db
+      .selectFrom('page_links as l')
+      .innerJoin('pages as p', 'p.id', 'l.source_id')
+      .innerJoin('projects as pr', 'pr.id', 'p.project_id')
+      .select(['p.id', 'p.title', 'p.project_id', 'pr.slug', 'pr.short_name', 'pr.cloth'])
+      .where('l.target_id', '=', pageId)
+      .where('p.deleted_at', 'is', null)
+      .orderBy('p.title')
+      .limit(50)
+      .execute();
+    const numbering = new Map<string, Map<string, Ordered>>();
+    const result = [];
+    for (const source of sources) {
+      const access = await pageRoleFor(this.db, subject, source.id);
+      if (!access?.role || !can(access.role, 'page.read')) continue;
+      if (!numbering.has(source.project_id)) numbering.set(source.project_id, await this.numbering(source.project_id));
+      result.push({
+        id: source.id,
+        title: source.title,
+        number: numbering.get(source.project_id)!.get(source.id)?.number ?? '',
+        project: { slug: source.slug, shortName: source.short_name, cloth: source.cloth },
+      });
+    }
+    return result;
   }
 
   /** Charge le rôle et refuse en 404 si l'action n'est pas permise. */
@@ -387,6 +455,11 @@ export class DocsService {
     }
     return map;
   }
+}
+
+/** Sans accents ni casse: « cle » trouve « Clé ». */
+function fold(text: string): string {
+  return text.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 }
 
 function compareNumbers(a: string, b: string): number {

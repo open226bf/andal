@@ -1,12 +1,13 @@
 import type { QueryClient } from '@tanstack/react-query';
 import { Outlet, createRootRouteWithContext, createRoute, createRouter, redirect } from '@tanstack/react-router';
-import { ApiError, api, type Me, type Tree } from './lib/api';
+import { ApiError, api, type Me, type PagePreview, type Tree } from './lib/api';
 import { ForgotPasswordPage, InvitationPage, ResetPasswordPage } from './pages/AccountLinkPages';
 import { AdminPage } from './pages/AdminPage';
 import { DocPage } from './pages/DocPage';
 import { EmptyVolumePage } from './pages/EmptyVolumePage';
 import { LoginPage } from './pages/LoginPage';
 import { LibraryPage } from './pages/LibraryPage';
+import { MissingPage } from './pages/MissingPage';
 
 interface RouterContext {
   queryClient: QueryClient;
@@ -101,6 +102,22 @@ const pageRoute = createRoute({
   },
 });
 
+/** Adresse stable d'une page, utilisée par les liens de l'éditeur: elle suit la page où qu'elle soit. */
+const pageLinkRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: '/p/$pageId',
+  beforeLoad: async ({ context, params }) => {
+    let preview: PagePreview;
+    try {
+      preview = await context.queryClient.fetchQuery({ queryKey: ['preview', params.pageId], queryFn: () => api<PagePreview>(`/pages/${params.pageId}/preview`) });
+    } catch {
+      return; // Illisible ou inexistante: la route affiche un message, sans rien révéler de plus.
+    }
+    throw redirect({ to: '/v/$slug/$pageId', params: { slug: preview.project.slug, pageId: preview.id }, replace: true });
+  },
+  component: MissingPage,
+});
+
 const adminRoute = createRoute({ getParentRoute: () => appRoute, path: '/admin', component: () => <AdminPage section="comptes" /> });
 const groupsRoute = createRoute({ getParentRoute: () => appRoute, path: '/admin/groupes', component: () => <AdminPage section="groupes" /> });
 
@@ -109,7 +126,7 @@ const routeTree = rootRoute.addChildren([
   invitationRoute,
   resetRoute,
   forgotRoute,
-  appRoute.addChildren([homeRoute, volumeRoute, pageRoute, adminRoute, groupsRoute]),
+  appRoute.addChildren([homeRoute, volumeRoute, pageRoute, pageLinkRoute, adminRoute, groupsRoute]),
 ]);
 
 export function createAppRouter(queryClient: QueryClient) {

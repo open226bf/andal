@@ -9,7 +9,8 @@
     "start": "node dist/main.js",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "check:readonly": "tsx --env-file-if-exists=../../.env scripts/readonly-check.ts",
-    "check:live-access": "tsx --env-file-if-exists=../../.env scripts/live-access-check.ts"
+    "check:live-access": "tsx --env-file-if-exists=../../.env scripts/live-access-check.ts",
+    "check:deploy": "tsx scripts/deploy-smoke.ts"
   },
   "dependencies": {
     "@andal/authz": "workspace:*",

@@ -1,7 +1,8 @@
 import { randomUUID } from 'node:crypto';
 import { sql } from 'kysely';
+import { extractPageLinks, extractText, type JSONContent } from '@andal/editor';
 import { createDb, hashPassword, ltreeLabel, requireEnv, type Cloth } from '../index.js';
-import { authenticationPage, simplePage } from './demo-content.js';
+import { authenticationPage, runbookPage, simplePage } from './demo-content.js';
 
 /**
  * Jeu de données de démonstration. Efface tout le contenu existant:
@@ -10,9 +11,17 @@ import { authenticationPage, simplePage } from './demo-content.js';
 
 if (process.env.NODE_ENV === 'production') throw new Error('Le seed de démo ne tourne pas en production.');
 
+// Les données de démo remplacent TOUT le contenu de la base: jamais en production par accident.
+if (process.env.NODE_ENV === 'production' && !process.argv.includes('--force')) {
+  console.error('Refusé: NODE_ENV=production. Ce script efface toute la base; ajoutez --force si c’est vraiment voulu.');
+  process.exit(1);
+}
+
 const db = createDb(requireEnv('DATABASE_URL'), 1);
 
 try {
+  // Le truncate ne déclenche pas le trigger des pièces jointes: leurs objets partent à la corbeille du stockage ici.
+  await sql`insert into storage_trash (storage_key) select storage_key from attachments on conflict do nothing`.execute(db);
   await sql`truncate workspaces, users, groups, group_members, rayons, projects, project_members, project_pins, pages, page_restrictions, comment_threads, comments, comment_mentions, notifications, account_tokens cascade`.execute(db);
 
   const workspaceId = randomUUID();
@@ -159,7 +168,7 @@ try {
         { title: 'Conventions' },
         { title: 'Authentification', key: 'auth', summary: "Comment un service client obtient un jeton d'accès pour appeler l'API Paiements, et combien de temps ce jeton reste valable." },
         { title: 'Webhooks', key: 'webhooks' },
-        { title: 'Jetons utilisateur' },
+        { title: 'Jetons utilisateur', key: 'userTokens' },
       ],
     },
     { title: 'Exploitation', children: [{ title: 'Runbook incident', key: 'runbook' }, { title: 'Astreinte' }] },
@@ -193,8 +202,9 @@ try {
 
   const headerThread = randomUUID();
   const storageThread = randomUUID();
-  const authContent = authenticationPage({ header: headerThread, storage: storageThread });
+  const authContent = authenticationPage({ header: headerThread, storage: storageThread }, { userTokens: keys.userTokens!, runbook: keys.runbook! });
   await db.updateTable('pages').set({ content: JSON.stringify(authContent), version: 14 }).where('id', '=', keys.auth!).execute();
+  await db.updateTable('pages').set({ content: JSON.stringify(runbookPage({ auth: keys.auth! })) }).where('id', '=', keys.runbook!).execute();
   await db
     .insertInto('comment_threads')
     .values([
@@ -212,6 +222,14 @@ try {
       { thread_id: storageThread, author_id: users.thomas.id, body: "En 3.4: ce flux machine n'en émet pas.", created_at: minutesAgo(60) },
     ])
     .execute();
+  // Texte de recherche et liens entre pages, comme après un enregistrement.
+  for (const page of await db.selectFrom('pages').select(['id', 'content']).execute()) {
+    const content = page.content as JSONContent;
+    await db.updateTable('pages').set({ text_content: extractText(content) }).where('id', '=', page.id).execute();
+    const cited = extractPageLinks(content).filter((id) => id !== page.id);
+    if (cited.length) await db.insertInto('page_links').values(cited.map((target_id) => ({ source_id: page.id, target_id }))).execute();
+  }
+
   // Historique: l'état actuel de chaque page, et pour 3.2 une version 13 de Thomas, d'avant le schéma draw.io.
   await sql`
     insert into page_versions (page_id, version, title, content, authors, created_at, updated_at)

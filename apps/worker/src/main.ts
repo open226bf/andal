@@ -3,13 +3,14 @@
  *
  * - page.index: recalcule le texte indexé d'une page après une modification.
  * - notifications.email: envoie, après un délai, les notifications restées non lues.
+ * - trash.purge: vide la corbeille des pages, puis efface les fichiers devenus orphelins.
  *
  * Prochaines tâches prévues: export PDF (Gotenberg), miniatures.
  * Une tâche lancée pour un utilisateur garde son identité et revérifie ses droits.
  */
 import { can } from '@andal/authz';
-import { createDb, loadSubject, pageRoleFor, renderMail, requireEnv, type NotificationKind } from '@andal/db';
-import { extractText, type JSONContent } from '@andal/editor';
+import { createDb, emptyStorageTrash, loadSubject, pageRoleFor, renderMail, requireEnv, Storage, storageConfigFromEnv, type NotificationKind } from '@andal/db';
+import { extractPageLinks, extractText, type JSONContent } from '@andal/editor';
 import { Queue, Worker } from 'bullmq';
 import { Redis } from 'ioredis';
 import nodemailer from 'nodemailer';
@@ -28,6 +29,8 @@ const smtpUrl = process.env.SMTP_URL?.trim();
 const mailer = smtpUrl ? nodemailer.createTransport(smtpUrl) : null;
 const mailFrom = process.env.MAIL_FROM?.trim() || 'Andal <andal@localhost>';
 const queue = new Queue('andal', { connection: new Redis(valkeyUrl, { maxRetriesPerRequest: null }) });
+const storageConfig = storageConfigFromEnv();
+const storage = storageConfig ? new Storage(storageConfig) : null;
 
 interface IndexJob {
   pageId: string;
@@ -37,14 +40,18 @@ interface EmailJob {
   userId: string;
 }
 
+/** Texte de recherche et liens vers d'autres pages (rétroliens), recalculés après chaque modification. */
 async function indexPage({ pageId }: IndexJob) {
   const page = await db.selectFrom('pages').select(['id', 'content']).where('id', '=', pageId).executeTakeFirst();
   if (!page) return;
-  await db
-    .updateTable('pages')
-    .set({ text_content: extractText(page.content as JSONContent) })
-    .where('id', '=', page.id)
-    .execute();
+  const content = page.content as JSONContent;
+  const cited = extractPageLinks(content).filter((id) => id !== page.id);
+  await db.transaction().execute(async (trx) => {
+    await trx.updateTable('pages').set({ text_content: extractText(content) }).where('id', '=', page.id).execute();
+    await trx.deleteFrom('page_links').where('source_id', '=', page.id).execute();
+    const targets = cited.length ? await trx.selectFrom('pages').select('id').where('id', 'in', cited).execute() : [];
+    if (targets.length) await trx.insertInto('page_links').values(targets.map((t) => ({ source_id: page.id, target_id: t.id }))).execute();
+  });
 }
 
 /** Corbeille: au-delà de ce délai, une page supprimée l'est définitivement. */
@@ -74,6 +81,13 @@ async function purgeTrash() {
     )
     .execute();
   console.log(`Corbeille: ${purged.length} page(s) supprimée(s) définitivement.`);
+}
+
+/** Les fichiers des pages purgées et des volumes supprimés quittent aussi le stockage. */
+async function sweepStorage() {
+  if (!storage) return;
+  const removed = await emptyStorageTrash(db, storage);
+  if (removed) console.log(`Stockage: ${removed} fichier(s) orphelin(s) effacé(s).`);
 }
 
 const DIGEST_SIZE = 20;
@@ -145,7 +159,10 @@ const worker = new Worker<IndexJob | EmailJob>(
   async (job) => {
     if (job.name === 'page.index') await indexPage(job.data as IndexJob);
     else if (job.name === 'notifications.email') await emailNotifications(job.data as EmailJob);
-    else if (job.name === 'trash.purge') await purgeTrash();
+    else if (job.name === 'trash.purge') {
+      await purgeTrash();
+      await sweepStorage();
+    } else if (job.name === 'storage.sweep') await sweepStorage();
   },
   { connection, concurrency: 4 },
 );
@@ -157,11 +174,14 @@ const pending = await db.selectFrom('pages').select('id').where('text_content', 
 await queue.addBulk(pending.map((p) => ({ name: 'page.index', data: { pageId: p.id }, opts: { removeOnComplete: 100 } })));
 // Purge de la corbeille toutes les 6 heures (une seule planification, quel que soit le nombre de workers).
 await queue.upsertJobScheduler('trash-purge', { every: 6 * 60 * 60 * 1000 }, { name: 'trash.purge', opts: { removeOnComplete: 10, removeOnFail: 50 } });
+// Les fichiers d'une page purgée à la main (API) sont effacés dans l'heure.
+await queue.upsertJobScheduler('storage-sweep', { every: 60 * 60 * 1000 }, { name: 'storage.sweep', opts: { removeOnComplete: 10, removeOnFail: 50 } });
 console.log(`Worker Andal prêt (${pending.length} page(s) à indexer, emails ${mailer ? 'actifs' : 'désactivés'}).`);
 
 async function shutdown() {
   await worker.close();
   await queue.close();
+  storage?.destroy();
   await db.destroy();
   process.exit(0);
 }

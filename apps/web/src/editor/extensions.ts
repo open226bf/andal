@@ -1,4 +1,4 @@
-import { Callout, CommentMark, DrawioBlock, InlineCode, MermaidBlock, OpenApiBlock } from '@andal/editor';
+import { AttachmentBlock, Callout, CommentMark, DrawioBlock, ImageBlock, InlineCode, MermaidBlock, OpenApiBlock, structureExtensions } from '@andal/editor';
 import type { HocuspocusProvider } from '@hocuspocus/provider';
 import { Extension, type AnyExtension } from '@tiptap/core';
 import CodeBlock from '@tiptap/extension-code-block';
@@ -8,7 +8,8 @@ import { Plugin, PluginKey } from '@tiptap/pm/state';
 import { ReactNodeViewRenderer } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import { ySyncPluginKey } from '@tiptap/y-tiptap';
-import { CalloutView, CodeView, DrawioView, MermaidView, OpenApiView } from './nodes';
+import { AttachmentView, CalloutView, CodeView, DrawioView, ImageView, MermaidView, OpenApiView } from './nodes';
+import { FileDrop } from './uploads';
 
 /**
  * Paragraphe vide après un bloc final (figure, encadré…), pour pouvoir écrire
@@ -43,19 +44,36 @@ const TrailingParagraph = Extension.create({
 /** Les nœuds de la page et leurs vues React, sans synchronisation. */
 function documentExtensions(): AnyExtension[] {
   return [
-    StarterKit.configure({ heading: { levels: [2, 3] }, undoRedo: false, codeBlock: false, code: false, trailingNode: false }),
+    StarterKit.configure({
+      heading: { levels: [2, 3] },
+      undoRedo: false,
+      codeBlock: false,
+      code: false,
+      trailingNode: false,
+      // Les clics sur les liens sont routés par la page (liens internes dans l'application, externes dans un onglet).
+      link: { openOnClick: false, autolink: true, defaultProtocol: 'https', HTMLAttributes: { target: null, rel: 'noopener noreferrer nofollow' } },
+    }),
     InlineCode,
     CodeBlock.extend({ addNodeView: () => ReactNodeViewRenderer(CodeView) }),
     MermaidBlock.extend({ addNodeView: () => ReactNodeViewRenderer(MermaidView) }),
     OpenApiBlock.extend({ addNodeView: () => ReactNodeViewRenderer(OpenApiView) }),
     DrawioBlock.extend({ addNodeView: () => ReactNodeViewRenderer(DrawioView) }),
+    ImageBlock.extend({ addNodeView: () => ReactNodeViewRenderer(ImageView) }),
+    AttachmentBlock.extend({ addNodeView: () => ReactNodeViewRenderer(AttachmentView) }),
     Callout.extend({ addNodeView: () => ReactNodeViewRenderer(CalloutView) }),
     CommentMark,
+    ...structureExtensions({ resizable: true }),
   ];
 }
 
-export function webExtensions(provider: HocuspocusProvider, user: { name: string; color: string }): AnyExtension[] {
-  return [...documentExtensions(), TrailingParagraph, Collaboration.configure({ document: provider.document }), CollaborationCaret.configure({ provider, user })];
+export function webExtensions(provider: HocuspocusProvider, user: { name: string; color: string }, pageId: string): AnyExtension[] {
+  return [
+    ...documentExtensions(),
+    TrailingParagraph,
+    FileDrop.configure({ pageId }),
+    Collaboration.configure({ document: provider.document }),
+    CollaborationCaret.configure({ provider, user }),
+  ];
 }
 
 /** Une ancienne version, en lecture seule: même rendu que la page, sans connexion au serveur collab. */

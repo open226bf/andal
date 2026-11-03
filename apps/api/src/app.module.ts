@@ -15,6 +15,8 @@ import { CommentsController } from './comments/comments.controller.js';
 import { CommentsService } from './comments/comments.service.js';
 import { DocsController } from './docs/docs.controller.js';
 import { DocsService } from './docs/docs.service.js';
+import { FilesController } from './files/files.controller.js';
+import { FilesService } from './files/files.service.js';
 import { GroupsController } from './groups/groups.controller.js';
 import { GroupsService } from './groups/groups.service.js';
 import { HealthController } from './health.controller.js';
@@ -45,6 +47,7 @@ import { VersionsService } from './pages/versions.service.js';
     RayonsController,
     CommentsController,
     NotificationsController,
+    FilesController,
   ],
   providers: [
     AuditService,
@@ -58,6 +61,7 @@ import { VersionsService } from './pages/versions.service.js';
     VersionsService,
     CommentsService,
     NotificationsService,
+    FilesService,
     AccountsService,
     GroupsService,
     SessionsService,

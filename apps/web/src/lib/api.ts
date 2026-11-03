@@ -13,7 +13,8 @@ export async function api<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`/api${path}`, {
     credentials: 'same-origin',
     ...init,
-    headers: { accept: 'application/json', ...(init?.body ? { 'content-type': 'application/json' } : {}), ...init?.headers },
+    // Un FormData (envoi de fichier) fixe lui-même son type et sa frontière multipart.
+    headers: { accept: 'application/json', ...(typeof init?.body === 'string' ? { 'content-type': 'application/json' } : {}), ...init?.headers },
   });
   if (!response.ok) {
     // Les erreurs de l'API portent un message en français, affichable tel quel.
@@ -27,6 +28,21 @@ export async function api<T>(path: string, init?: RequestInit): Promise<T> {
     throw new ApiError(response.status, message);
   }
   return (response.status === 204 ? undefined : await response.json()) as T;
+}
+
+export interface UploadedFile {
+  id: string;
+  name: string;
+  contentType: string;
+  size: number;
+  image: boolean;
+}
+
+/** Envoie un fichier sur une page (droit d'écriture); il reste lisible par qui lit la page. */
+export function uploadFile(pageId: string, file: File): Promise<UploadedFile> {
+  const form = new FormData();
+  form.append('file', file, file.name);
+  return api<UploadedFile>(`/pages/${pageId}/files`, { method: 'POST', body: form });
 }
 
 export type Cloth = 'paiements' | 'identite' | 'donnees' | 'mobile' | 'plateforme' | 'design';
@@ -154,6 +170,27 @@ export interface PageDetail {
   access: AccessSummary;
   prev: PageRef | null;
   next: PageRef | null;
+  /** Pages lisibles qui citent celle-ci. */
+  backlinks: LinkedPage[];
+}
+
+/** Une page d'un volume, avec de quoi l'afficher hors de son sommaire (liens, rétroliens). */
+export interface LinkedPage {
+  id: string;
+  title: string;
+  number: string;
+  project: { slug: string; shortName: string; cloth: Cloth };
+}
+
+/** Aperçu d'une page au survol d'un lien. */
+export interface PagePreview {
+  id: string;
+  title: string;
+  number: string;
+  summary: string | null;
+  excerpt: string;
+  updatedAt: string;
+  project: { slug: string; name: string; shortName: string; cloth: Cloth };
 }
 
 export interface ThreadComment {
@@ -374,6 +411,15 @@ export const useSearch = (q: string) =>
     enabled: q.trim().length > 1,
     placeholderData: keepPreviousData,
   });
+export const usePageLookup = (q: string, volume: string) =>
+  useQuery({
+    queryKey: ['lookup', q, volume],
+    queryFn: () => api<LinkedPage[]>(`/pages/lookup?q=${encodeURIComponent(q)}&volume=${encodeURIComponent(volume)}`),
+    enabled: q.trim().length > 0,
+    placeholderData: keepPreviousData,
+  });
+export const usePagePreview = (id: string | null) =>
+  useQuery({ queryKey: ['preview', id], queryFn: () => api<PagePreview>(`/pages/${id}/preview`), enabled: id !== null, retry: false, staleTime: 30_000 });
 export const useAccounts = () => useQuery({ queryKey: ['admin', 'accounts'], queryFn: () => api<AccountsOverview>('/admin/accounts') });
 export const useLinkInfo = (token: string) => useQuery({ queryKey: ['link', token], queryFn: () => api<LinkInfo>(`/auth/links/${encodeURIComponent(token)}`), retry: false });
 export const useAuthConfig = () => useQuery({ queryKey: ['auth-config'], queryFn: () => api<AuthConfig>('/auth/config'), staleTime: Infinity });

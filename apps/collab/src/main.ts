@@ -67,7 +67,8 @@ function pageIdOf(documentName: string): string {
 const server = new Server({
   name: 'andal-collab',
   port: Number(process.env.COLLAB_PORT ?? 3002),
-  address: '127.0.0.1',
+  // 127.0.0.1 en dev; 0.0.0.0 dans un conteneur.
+  address: process.env.HOST?.trim() || '127.0.0.1',
   debounce: 2000,
   maxDebounce: 10000,
   quiet: true,

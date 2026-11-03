@@ -18,6 +18,7 @@ export function SearchDialog({ open, onOpenChange }: { open: boolean; onOpenChan
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      if (e.defaultPrevented) return;
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault();
         onOpenChange(true);

@@ -16,6 +16,17 @@ export class DocsController {
     return this.docs.tree(auth.subject, slug, auth.user.workspace_id);
   }
 
+  /** Pages à lier depuis l'éditeur: `?q=rotation&volume=paiements`. */
+  @Get('pages/lookup')
+  lookup(@CurrentAuth() auth: AuthContext, @Query('q') q = '', @Query('volume') volume?: string) {
+    return this.docs.lookup(auth.subject, auth.user.workspace_id, String(q), volume ? String(volume) : undefined);
+  }
+
+  @Get('pages/:id/preview')
+  preview(@CurrentAuth() auth: AuthContext, @Param('id', ParseUUIDPipe) id: string) {
+    return this.docs.preview(auth.subject, id);
+  }
+
   @Get('pages/:id')
   page(@CurrentAuth() auth: AuthContext, @Param('id', ParseUUIDPipe) id: string) {
     return this.docs.page(auth.subject, id);

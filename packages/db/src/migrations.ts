@@ -1,3 +1,4 @@
+import { extractPageLinks, type JSONContent } from '@andal/editor';
 import { Migrator, sql, type Kysely, type Migration, type MigrationProvider } from 'kysely';
 import type { Database } from './schema.js';
 
@@ -333,6 +334,62 @@ const rayons: Migration = {
   },
 };
 
+const attachments: Migration = {
+  async up(db) {
+    await db.schema
+      .createTable('attachments')
+      .addColumn('id', 'uuid', (c) => c.primaryKey().defaultTo(sql`gen_random_uuid()`))
+      .addColumn('page_id', 'uuid', (c) => c.notNull().references('pages.id').onDelete('cascade'))
+      .addColumn('name', 'text', (c) => c.notNull())
+      .addColumn('content_type', 'text', (c) => c.notNull())
+      .addColumn('size', 'integer', (c) => c.notNull())
+      .addColumn('storage_key', 'text', (c) => c.notNull().unique())
+      .addColumn('created_by', 'uuid', (c) => c.references('users.id').onDelete('set null'))
+      .addColumn('created_at', 'timestamptz', (c) => c.notNull().defaultTo(sql`now()`))
+      .execute();
+    await db.schema.createIndex('attachments_page').on('attachments').column('page_id').execute();
+    // Quelle que soit la cause (page purgée, volume supprimé), l'objet stocké part à la corbeille du worker.
+    await db.schema
+      .createTable('storage_trash')
+      .addColumn('storage_key', 'text', (c) => c.primaryKey())
+      .addColumn('created_at', 'timestamptz', (c) => c.notNull().defaultTo(sql`now()`))
+      .execute();
+    await sql`
+      create function attachments_to_storage_trash() returns trigger language plpgsql as $$
+      begin
+        insert into storage_trash (storage_key) values (old.storage_key) on conflict do nothing;
+        return old;
+      end $$`.execute(db);
+    await sql`create trigger attachments_deleted after delete on attachments for each row execute function attachments_to_storage_trash()`.execute(db);
+  },
+  async down(db) {
+    await sql`drop trigger attachments_deleted on attachments`.execute(db);
+    await sql`drop function attachments_to_storage_trash()`.execute(db);
+    await db.schema.dropTable('storage_trash').execute();
+    await db.schema.dropTable('attachments').execute();
+  },
+};
+
+const pageLinks: Migration = {
+  async up(db) {
+    await db.schema
+      .createTable('page_links')
+      .addColumn('source_id', 'uuid', (c) => c.notNull().references('pages.id').onDelete('cascade'))
+      .addColumn('target_id', 'uuid', (c) => c.notNull().references('pages.id').onDelete('cascade'))
+      .addPrimaryKeyConstraint('page_links_pk', ['source_id', 'target_id'])
+      .execute();
+    await db.schema.createIndex('page_links_target').on('page_links').column('target_id').execute();
+    // Les pages déjà écrites: leurs liens sont relevés une fois ici, ensuite à chaque enregistrement.
+    const pages = (await db.selectFrom('pages').select(['id', 'content']).execute()) as { id: string; content: JSONContent }[];
+    const existing = new Set(pages.map((p) => p.id));
+    const rows = pages.flatMap((p) => extractPageLinks(p.content).filter((t) => t !== p.id && existing.has(t)).map((target_id) => ({ source_id: p.id, target_id })));
+    if (rows.length) await db.insertInto('page_links').values(rows).execute();
+  },
+  async down(db) {
+    await db.schema.dropTable('page_links').execute();
+  },
+};
+
 const provider: MigrationProvider = {
   async getMigrations() {
     return {
@@ -345,6 +402,8 @@ const provider: MigrationProvider = {
       '0007_projects_archive': projectsArchive,
       '0008_project_pins': projectPins,
       '0009_rayons': rayons,
+      '0010_attachments': attachments,
+      '0011_page_links': pageLinks,
     };
   },
 };

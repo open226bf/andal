@@ -9,6 +9,8 @@ import { Colophon } from '../components/Colophon';
 import { CommentComposer } from '../components/CommentComposer';
 import { HistoryDialog } from '../components/HistoryDialog';
 import { InsertBar } from '../components/InsertBar';
+import { LinkDialog } from '../components/LinkDialog';
+import { LinkLayer } from '../components/LinkLayer';
 import { MarginNotes } from '../components/MarginNotes';
 import { SearchDialog } from '../components/SearchDialog';
 import { Shelf } from '../components/Shelf';
@@ -128,6 +130,7 @@ function Document({
   const refreshThreads = useCallback(() => void queryClient.invalidateQueries({ queryKey: ['threads', page.id] }), [queryClient, page.id]);
   const [editor, setEditor] = useState<Editor | null>(null);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [linkOpen, setLinkOpen] = useState(false);
   const measureRef = useRef<HTMLDivElement>(null);
   const notifications = useNotifications();
 
@@ -143,6 +146,20 @@ function Document({
     if (editing && !writable) onMode(false);
   }, [editing, writable, onMode]);
   const user = useMemo(() => ({ name: me.name, color: me.color }), [me.name, me.color]);
+
+  // ⌘K dans le texte en mode édition: un lien, et non la recherche (qui garde ⌘K partout ailleurs).
+  useEffect(() => {
+    if (!editing || !writable || !editor) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (!(event.metaKey || event.ctrlKey) || event.key.toLowerCase() !== 'k') return;
+      if (!(event.target instanceof Element) || !event.target.closest('.ProseMirror')) return;
+      event.preventDefault();
+      event.stopPropagation();
+      setLinkOpen(true);
+    };
+    window.addEventListener('keydown', onKey, { capture: true });
+    return () => window.removeEventListener('keydown', onKey, { capture: true });
+  }, [editing, writable, editor]);
   const context = useMemo(
     () => ({ chapter: page.numbering.chapter, figureOffset: page.numbering.figureOffset, listingOffset: page.numbering.listingOffset, editing }),
     [page.numbering, editing],
@@ -152,7 +169,12 @@ function Document({
     <>
       <Band page={page} editing={editing} canEdit={writable} presence={presence} onMode={onMode} />
       <HistoryDialog page={page} open={historyOpen} onOpenChange={setHistoryOpen} context={context} />
-      {editing && writable && editor && <InsertBar editor={editor} />}
+      {editing && writable && editor && (
+        <>
+          <InsertBar editor={editor} pageId={page.id} onLink={() => setLinkOpen(true)} />
+          <LinkDialog editor={editor} open={linkOpen} onOpenChange={setLinkOpen} volume={page.project.slug} />
+        </>
+      )}
       <article className="page" data-editing={editing}>
         <div className="sheet">
           <div className="measure" ref={measureRef}>
@@ -175,7 +197,25 @@ function Document({
             </DocContext.Provider>
             {editor && canComment(page.role) && <CommentComposer editor={editor} pageId={page.id} container={measureRef} onCreated={refreshThreads} />}
             <MarginNotes threads={threads.data ?? []} editor={editor} container={measureRef} pageId={page.id} focus={thread} onChanged={refreshThreads} />
+            <LinkLayer container={measureRef} editing={editing && writable} />
             <footer className="after">
+              {page.backlinks.length > 0 && (
+                <section className="backlinks" aria-labelledby="backlinks-title">
+                  <h2 id="backlinks-title">Citée dans</h2>
+                  <ul>
+                    {page.backlinks.map((b) => (
+                      <li key={b.id} data-vol={b.project.cloth}>
+                        <Link to="/v/$slug/$pageId" params={{ slug: b.project.slug, pageId: b.id }}>
+                          <span className="vol-swatch" aria-hidden />
+                          <span className="num">{b.number}</span>
+                          <span className="backlink-title">{b.title}</span>
+                          {b.project.slug !== page.project.slug && <small>{b.project.shortName}</small>}
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              )}
               <nav className="pager" aria-label="Pages voisines">
                 {page.prev && (
                   <Link to="/v/$slug/$pageId" params={{ slug: page.project.slug, pageId: page.prev.id }}>

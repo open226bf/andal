@@ -1,6 +1,7 @@
 import 'reflect-metadata';
 import { config } from './env.js';
 import fastifyCookie from '@fastify/cookie';
+import fastifyMultipart from '@fastify/multipart';
 import { NestFactory } from '@nestjs/core';
 import { FastifyAdapter, type NestFastifyApplication } from '@nestjs/platform-fastify';
 import { AppModule } from './app.module.js';
@@ -8,6 +9,8 @@ import { AppModule } from './app.module.js';
 const app = await NestFactory.create<NestFastifyApplication>(AppModule, new FastifyAdapter({ trustProxy: true, bodyLimit: 1_048_576 }));
 // Le cast absorbe l'écart de types entre la copie de fastify de Nest et la nôtre.
 await app.register(fastifyCookie as unknown as Parameters<NestFastifyApplication['register']>[0]);
+// Envoi de fichiers: un seul fichier par requête, taille plafonnée (UPLOAD_MAX_MB).
+await app.register(fastifyMultipart as unknown as Parameters<NestFastifyApplication['register']>[0], { limits: { fileSize: config.uploadMaxBytes, files: 1, fields: 4 } });
 
 const fastify = app.getHttpAdapter().getInstance();
 
@@ -25,11 +28,11 @@ fastify.addHook('onRequest', async (req, reply) => {
 fastify.addHook('onSend', async (_req, reply) => {
   reply.header('X-Content-Type-Options', 'nosniff');
   reply.header('Referrer-Policy', 'same-origin');
-  reply.header('Cache-Control', 'no-store');
+  if (!reply.hasHeader('Cache-Control')) reply.header('Cache-Control', 'no-store');
 });
 
 app.setGlobalPrefix('api');
 app.enableShutdownHooks();
-await app.listen(config.port, '127.0.0.1');
+await app.listen(config.port, config.host);
 const methods = [config.passwordLogin && 'mot de passe', config.oidc && `SSO ${config.oidc.label}`].filter(Boolean).join(' + ');
 console.log(`API Andal sur http://127.0.0.1:${config.port}/api (connexion: ${methods})`);

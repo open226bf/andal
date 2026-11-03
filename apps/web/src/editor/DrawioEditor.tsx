@@ -2,10 +2,10 @@ import { XIcon } from '@phosphor-icons/react';
 import { useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 
-/** draw.io auto-hébergé (docker compose, service drawio). */
-const DRAWIO_URL = import.meta.env.VITE_DRAWIO_URL ?? 'http://localhost:58081';
-const DRAWIO_ORIGIN = new URL(DRAWIO_URL).origin;
-const EMBED = `${DRAWIO_URL}/?embed=1&proto=json&spin=1&ui=min&lang=fr&saveAndExit=1&noExitBtn=0`;
+/** draw.io auto-hébergé: le service drawio du docker compose en dev, `/drawio` derrière Caddy en production. */
+const DRAWIO_URL = new URL(import.meta.env.VITE_DRAWIO_URL ?? 'http://localhost:58081', window.location.origin);
+const DRAWIO_ORIGIN = DRAWIO_URL.origin;
+const EMBED = `${DRAWIO_URL.href.replace(/\/+$/, '')}/?embed=1&proto=json&spin=1&ui=min&lang=fr&saveAndExit=1&noExitBtn=0`;
 
 interface Props {
   xml: string;

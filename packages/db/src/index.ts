@@ -11,6 +11,7 @@ export * from './profile.js';
 export * from './mail.js';
 export * from './mentions.js';
 export * from './versions.js';
+export * from './storage.js';
 export { migrateToLatest } from './migrations.js';
 
 export function createDb(connectionString: string, max = 10): Kysely<Database> {

@@ -212,6 +212,30 @@ export interface AuditEventsTable {
   created_at: Generated<Date>;
 }
 
+/** Fichier envoyé sur une page: qui lit la page lit le fichier. */
+export interface AttachmentsTable {
+  id: Generated<string>;
+  page_id: string;
+  name: string;
+  content_type: string;
+  size: number;
+  storage_key: string;
+  created_by: string | null;
+  created_at: Generated<Date>;
+}
+
+/** Objets à effacer du stockage, remplie par un trigger à la suppression d'une pièce jointe. */
+export interface StorageTrashTable {
+  storage_key: string;
+  created_at: Generated<Date>;
+}
+
+/** Lien d'une page vers une autre, recalculé à chaque enregistrement (rétroliens). */
+export interface PageLinksTable {
+  source_id: string;
+  target_id: string;
+}
+
 export interface Database {
   workspaces: WorkspacesTable;
   users: UsersTable;
@@ -230,6 +254,9 @@ export interface Database {
   notifications: NotificationsTable;
   audit_events: AuditEventsTable;
   account_tokens: AccountTokensTable;
+  attachments: AttachmentsTable;
+  storage_trash: StorageTrashTable;
+  page_links: PageLinksTable;
 }
 
 export type User = Selectable<UsersTable>;

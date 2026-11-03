@@ -156,6 +156,16 @@ Qui peut écrire sur une page peut la **tirer** dans le sommaire : vers le haut 
 - **Suppression définitive** : après `TRASH_RETENTION_DAYS` jours (30 par défaut), le worker vide la corbeille (il passe toutes les 6 heures) ; chaque page indique sa date. Un admin du volume peut aussi supprimer tout de suite, depuis la corbeille. Sous-pages, commentaires et historique partent avec la page.
 - Les numéros de section suivent tout de suite, chez tout le monde : le serveur collab prévient les navigateurs ouverts.
 
+### Écrire : fichiers, tableaux, tâches, liens
+
+La barre du mode Modifier insère, en plus du texte et des blocs techniques :
+
+- **Images et fichiers** : bouton Image ou Fichier, ou simplement coller une capture d'écran, ou déposer des fichiers dans la page. Une image devient une figure numérotée, avec légende et texte alternatif ; tout autre fichier devient une fiche à télécharger. Les fichiers vont dans le stockage S3 (RustFS en dev), 25 Mo au plus (`UPLOAD_MAX_MB`). Qui lit la page lit ses fichiers, personne d'autre : l'API vérifie la lecture à chaque téléchargement. Le type d'une image est lu dans le fichier, pas dans ce qu'annonce le navigateur ; tout fichier est servi sous `CSP: sandbox`, et ce qui n'est pas une image se télécharge sans jamais s'afficher. Les fichiers d'une page purgée quittent le stockage dans l'heure.
+- **Tableaux** : ligne d'en-tête, colonnes redimensionnables, Tab pour passer d'une cellule à l'autre ; les outils du tableau apparaissent dans la barre quand le curseur y est. Sur mobile, un tableau large défile dans son cadre.
+- **Listes de tâches** : des cases à cocher, en lecture seule pour qui ne peut pas modifier la page.
+- **Liens** (⌘K ou Ctrl K dans le texte) : chercher une page par son titre ou son numéro, dans tous les volumes que vous lisez, ou coller une adresse web. Un lien vers une page passe par son adresse stable `/p/<id>`, qui la retrouve même déplacée. Au survol, un aperçu montre le volume, le numéro, le titre et le début de la page ; une page que vous ne lisez pas reste « introuvable ». En mode Modifier, ⌘ ou Ctrl + clic suit le lien.
+- **Rétroliens** : en bas de chaque page, « Citée dans » liste les pages qui y renvoient, seulement celles que vous pouvez lire.
+
 ### Historique
 
 Le lien **Historique** du colophon liste les versions de la page, avec leurs auteurs, et montre chacune telle qu'elle était, schémas compris.
@@ -195,14 +205,16 @@ La page la plus complète est **Paiements → 3.2 Authentification** : notes en 
 ```
 apps/
   web/      React 19, Vite, Tailwind 4, TanStack Router et Query, TipTap 3
-  api/      NestJS 11 sur Fastify
+  api/      NestJS 11 sur Fastify; fichiers vers le stockage S3
   collab/   Hocuspocus 3 (Yjs), validation du schéma avant écriture
-  worker/   BullMQ: texte pour la recherche, emails de notifications, purge de la corbeille
+  worker/   BullMQ: texte et liens pour la recherche et les rétroliens, emails, purges (corbeille, fichiers)
 packages/
   authz/    Modèle de droits, pur et testé
-  db/       Kysely, migrations, seed, requêtes d'accès
-  editor/   Schéma TipTap partagé client / serveur (nœuds Mermaid, OpenAPI, draw.io, encadré, commentaire)
+  db/       Kysely, migrations, seed, requêtes d'accès, stockage S3
+  editor/   Schéma TipTap partagé client / serveur (Mermaid, OpenAPI, draw.io, image, pièce jointe, tableau, tâches, encadré, commentaire)
   ui/       Jetons de design (CSS) et composants de base
+deploy/     Images, compose de production, Caddy (voir deploy/README.md)
+tests/e2e/  Suites de bout en bout (Python, sans dépendance)
 infra/      Realm Keycloak de dev
 ```
 
@@ -224,6 +236,12 @@ pnpm test
 Lance les tests du modèle de droits et du schéma de l'éditeur.
 
 ```bash
+tests/e2e/run.sh
+```
+
+Avec la stack lancée : les suites de bout en bout (comptes, accès et notifications, pages, versions, volumes, fichiers et liens), puis les deux vérifications du serveur collab ci-dessous. Chaque suite repart des données de démo ; `tests/e2e/run.sh files_links_test` n'en lance qu'une. La CI GitHub les fait tourner à chaque commit, sur une stack complète.
+
+```bash
 pnpm --filter @andal/collab check:readonly
 ```
 
@@ -235,6 +253,16 @@ pnpm --filter @andal/collab check:live-access
 
 Avec la stack lancée : Aminata écrit sur « Glossaire » par une connexion ouverte, puis Camille lui retire l'écriture, puis la lecture. Vérifie que la même connexion passe en lecture seule, puis qu'elle est fermée. Ensuite Camille archive le volume Paiements pendant qu'Aminata a « Conventions » ouverte : la page passe en lecture seule, puis redevient modifiable au désarchivage. Relancez `pnpm db:seed` ensuite.
 
+## Déployer
+
+Images Docker, compose de production derrière Caddy (TLS automatique, CSP stricte), premier compte, sauvegardes et mises à jour : voir [deploy/README.md](deploy/README.md). La CI publie `ghcr.io/open226bf/andal-server` et `andal-web` à chaque commit sur `main` (étiquette `edge`) et à chaque version `v*`.
+
+```bash
+pnpm --filter @andal/collab check:deploy
+```
+
+Avec `ANDAL_URL`, `ANDAL_USER` et `ANDAL_PASSWORD` : vérifie une installation déployée, de HTTPS à la collaboration temps réel.
+
 ## Ce qui reste à faire
 
 - **Comptes** : double authentification pour les comptes locaux, liste des sessions ouvertes.
@@ -244,10 +272,10 @@ Avec la stack lancée : Aminata écrit sur « Glossaire » par une connexion ouv
 - **Notifications** : une notification qui arrive pendant l'envoi de l'email groupé attend l'email suivant ; pas encore de notification pour les modifications de pages suivies.
 - **Bibliothèque** : ordonner son étagère à la main (aujourd'hui par numéro de volume) ; glisser un volume d'un rayon à l'autre depuis la bibliothèque.
 - **Pages** : comparer deux versions (aujourd'hui on les regarde l'une après l'autre) ; replier les sections du sommaire.
-- **Fichiers** : envoi vers RustFS (images, specs OpenAPI, exports draw.io). Les schémas draw.io sont aujourd'hui stockés en data URI dans le document.
+- **Fichiers** : les schémas draw.io sont encore stockés en data URI dans le document, pas dans le stockage.
 - **Redoc** : le bouton « Ouvrir dans Redoc » est désactivé, faute de spec stockée.
 - **Export PDF** (Gotenberg), extension Redis de Hocuspocus pour lancer plusieurs instances collab.
-- **Durcissement** : RLS PostgreSQL en seconde barrière, CSP stricte, limitation de débit au-delà de la connexion, `trustProxy` à régler selon le proxy de production (aujourd'hui l'API fait confiance à `X-Forwarded-For`).
+- **Durcissement** : RLS PostgreSQL en seconde barrière, limitation de débit au-delà de la connexion, `trustProxy` à régler selon le proxy de production (aujourd'hui l'API fait confiance à `X-Forwarded-For`).
 - **Enregistrement refusé** : quand le serveur collab rejette un contenu invalide, l'éditeur n'en est pas averti ; il faudrait le signaler à l'écran.
 - **Performance** : le bundle principal fait environ 1,1 Mo minifié ; charger l'éditeur à la demande en mode lecture.
 - **Choix à trancher** : la numérotation est calculée sur toutes les pages pour rester stable entre lecteurs. Une personne qui ne voit pas 4.1 voit donc « 4.2 Astreinte » et peut en déduire qu'une page 4.1 existe.

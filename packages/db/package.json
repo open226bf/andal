@@ -20,6 +20,7 @@
   "dependencies": {
     "@andal/authz": "workspace:*",
     "@andal/editor": "workspace:*",
+    "@aws-sdk/client-s3": "^3.1161.0",
     "@node-rs/argon2": "^2.2.2",
     "kysely": "^0.28.0",
     "pg": "^8.16.0"

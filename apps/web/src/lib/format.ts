@@ -51,3 +51,12 @@ export const ROLE_HELP: Record<string, string> = {
 export function roleLabel(role: string): string {
   return ({ owner: 'propriétaire', admin: 'admin', member: 'membre', guest: 'invité' } as Record<string, string>)[role] ?? role;
 }
+
+const sizeFormat = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 1 });
+
+/** « 840 o », « 12 Ko », « 3,4 Mo »: le poids d'un fichier. */
+export function fileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} o`;
+  if (bytes < 1024 * 1024) return `${sizeFormat.format(Math.round(bytes / 1024))} Ko`;
+  return `${sizeFormat.format(bytes / 1024 / 1024)} Mo`;
+}

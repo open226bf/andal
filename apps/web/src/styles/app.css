@@ -755,6 +755,88 @@
   .dialog { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 50; max-height: calc(100dvh - 32px); overflow: auto; }
   .dialog-body { display: grid; gap: 14px; padding: 4px 18px 20px; }
 
+  /* Images envoyées: une figure numérotée, cadrée comme les schémas */
+  .image-frame { padding: 0; display: grid; place-items: center; background: var(--desk); overflow: hidden; }
+  .doc-img { display: block; max-width: 100%; height: auto; max-height: 72vh; object-fit: contain; }
+  .image-frame .fig-error { display: flex; align-items: center; gap: 8px; padding: 22px 16px; }
+  .alt-field { display: flex; align-items: baseline; gap: 10px; margin-top: 8px; font-size: .8125rem; color: var(--ink-3); }
+  .alt-field input { flex: 1; font: inherit; font-size: .875rem; color: var(--ink); background: transparent; border: 0; border-bottom: 1px dashed var(--rule-2); padding: 2px 0; }
+  .alt-field input:focus-visible { outline: none; border-bottom-color: var(--vol-deep); }
+
+  /* Pièces jointes: une fiche, pas une figure */
+  .file-card { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 14px; margin: 18px 0 22px; padding: 12px 14px 12px 12px; border: 1px solid var(--rule); border-radius: var(--r-l); background: var(--paper); }
+  .file-icon { display: grid; place-items: center; width: 44px; height: 44px; border-radius: var(--r); background: var(--vol-tint); color: var(--vol-deep); }
+  .file-meta { display: grid; gap: 2px; min-width: 0; }
+  .file-name { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .file-info { font-size: .8125rem; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+  .file-card .btn-line { text-decoration: none; display: inline-flex; align-items: center; gap: 6px; }
+  .ProseMirror-selectednode.file-card, .ProseMirror-selectednode .frame { outline: 2px solid var(--vol); outline-offset: 2px; }
+
+  /* Tableaux: filets fins, en-tête sur le bureau, défilement horizontal sur petit écran */
+  .ProseMirror .tableWrapper { margin: 24px 0 28px; overflow-x: auto; }
+  .ProseMirror table { width: 100%; border-collapse: collapse; table-layout: auto; font-size: .9375rem; line-height: 1.5; }
+  .ProseMirror th, .ProseMirror td { position: relative; min-width: 80px; padding: 8px 12px; border: 1px solid var(--rule); vertical-align: top; text-align: left; }
+  .ProseMirror th { background: var(--desk); font-weight: 650; color: var(--ink); }
+  .ProseMirror td p, .ProseMirror th p { margin: 0; font-size: inherit; line-height: inherit; }
+  .ProseMirror td p + p, .ProseMirror th p + p { margin-top: .5em; }
+  .ProseMirror .selectedCell::after { content: ""; position: absolute; inset: 0; background: color-mix(in srgb, var(--vol) 14%, transparent); pointer-events: none; }
+  .ProseMirror .column-resize-handle { position: absolute; top: 0; bottom: -1px; right: -2px; width: 4px; background: var(--vol); pointer-events: none; }
+  .ProseMirror.resize-cursor { cursor: col-resize; }
+
+  /* Listes de tâches: la case remplace la puce */
+  .ProseMirror ul[data-type="taskList"] { list-style: none; padding-left: 2px; }
+  .ProseMirror ul[data-type="taskList"] > li { display: flex; align-items: flex-start; gap: 10px; }
+  .ProseMirror ul[data-type="taskList"] > li > label { flex: none; margin-top: .3em; user-select: none; }
+  .ProseMirror ul[data-type="taskList"] > li > div { flex: 1; min-width: 0; }
+  .ProseMirror ul[data-type="taskList"] > li > div > p { margin-bottom: .45em; }
+  .ProseMirror ul[data-type="taskList"] input[type="checkbox"] { width: 17px; height: 17px; margin: 0; accent-color: var(--vol-deep); cursor: pointer; }
+  .ProseMirror ul[data-type="taskList"] > li[data-checked="true"] > div { color: var(--ink-3); text-decoration: line-through; text-decoration-color: var(--rule-2); }
+  .ProseMirror[contenteditable="false"] ul[data-type="taskList"] input { cursor: default; }
+
+  /* Barre d'insertion: outils du tableau et état des envois */
+  .tool-group { display: contents; }
+  .upload-state { display: inline-flex; align-items: center; gap: 6px; margin-left: auto; padding: 4px 6px 4px 10px; border-radius: 8px; font-size: .8125rem; color: var(--ink-2); background: var(--desk); }
+  .upload-state.error { color: var(--err); background: var(--err-tint); }
+  .spin { animation: spin 0.9s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Liens: boîte de choix, aperçu au survol, rétroliens */
+  .link-dialog .search-results li[role="option"] { padding: 10px 12px; border-radius: var(--r); cursor: pointer; }
+  .link-dialog .search-results li[aria-selected="true"] { background: var(--vol-tint); }
+  .link-option { display: flex; align-items: baseline; gap: 12px; color: var(--ink); }
+  .link-option > svg { align-self: center; color: var(--ink-3); flex: none; }
+  .link-option .num { color: var(--ink-3); font-variant-numeric: tabular-nums; min-width: 2.5em; }
+  .link-option[data-vol] .num { color: var(--vol-deep); }
+  .link-foot { display: flex; justify-content: flex-end; padding: 8px 10px 10px; border-top: 1px solid var(--rule); }
+  .link-foot .btn-line { display: inline-flex; align-items: center; gap: 6px; }
+  /* Soulignés, pas seulement colorés: un lien se repère sans la couleur. */
+  .ProseMirror a { text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: .18em; text-decoration-color: color-mix(in srgb, currentColor 45%, transparent); }
+  .ProseMirror a:hover { text-decoration-color: currentColor; }
+  .link-preview { position: fixed; z-index: 60; display: grid; gap: 6px; padding: 14px 16px 12px; animation: lift .16s cubic-bezier(.16, 1, .3, 1); }
+  .link-preview-vol { display: inline-flex; align-items: center; gap: 8px; font-size: .75rem; font-weight: 600; color: var(--ink-3); }
+  .link-preview-vol .vol-swatch { width: 10px; height: 13px; }
+  .link-preview-title { font-size: 1rem; line-height: 1.35; }
+  .link-preview-title .num { color: var(--vol-deep); font-variant-numeric: tabular-nums; margin-right: .2em; }
+  .link-preview p { margin: 0; font: 400 .875rem/1.5 var(--font-text); color: var(--ink-2); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+  .link-preview small { font-size: .75rem; color: var(--ink-3); }
+  .link-preview-missing { display: flex; align-items: center; gap: 8px; font-family: var(--font-ui) !important; }
+  .link-preview .doc-skeleton { gap: 8px; }
+  .link-preview .doc-skeleton span { height: 12px; }
+  @keyframes lift { from { opacity: 0; transform: translateY(4px); } }
+  .backlinks { margin: 0 0 26px; }
+  .backlinks h2 { margin: 0 0 10px; font-size: .8125rem; font-weight: 700; color: var(--ink-3); }
+  .backlinks ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+  .backlinks a { display: flex; align-items: center; gap: 10px; padding: 7px 8px; margin: 0 -8px; border-radius: var(--r); color: var(--ink); text-decoration: none; }
+  .backlinks a:hover, .backlinks a:focus-visible { background: var(--vol-tint); }
+  .backlinks .vol-swatch { width: 9px; height: 12px; }
+  .backlinks .num { color: var(--vol-deep); font-variant-numeric: tabular-nums; font-weight: 600; }
+  .backlink-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .backlinks small { margin-left: auto; color: var(--ink-3); font-size: .8125rem; white-space: nowrap; }
+  .missing-page { min-height: 100dvh; display: grid; place-content: center; justify-items: center; gap: 12px; padding: 24px; text-align: center; color: var(--ink-2); }
+  .missing-page h1 { margin: 0; font: 600 1.75rem/1.2 var(--font-text); color: var(--ink); }
+  .missing-page p { margin: 0 0 8px; max-width: 34ch; }
+  .missing-page .btn-line { display: inline-flex; align-items: center; gap: 8px; text-decoration: none; }
+
   /* Mobile */
   .topbar, .scrim { display: none; }
 }

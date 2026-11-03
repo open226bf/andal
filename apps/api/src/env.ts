@@ -1,3 +1,5 @@
+import { storageConfigFromEnv } from '@andal/db';
+
 // Charge le .env racine en développement; en production, l'environnement est fourni.
 try {
   process.loadEnvFile(new URL('../../../.env', import.meta.url));
@@ -54,6 +56,12 @@ export const config = {
   notifyEmailDelaySeconds: Math.max(0, Number(process.env.NOTIFY_EMAIL_DELAY ?? 300)),
   /** Jours passés à la corbeille avant suppression définitive par le worker. */
   trashRetentionDays: Math.max(1, Number(process.env.TRASH_RETENTION_DAYS ?? 30)),
+  /** Stockage S3 des fichiers envoyés; null: envoi désactivé. */
+  storage: storageConfigFromEnv(),
+  /** Taille maximale d'un fichier envoyé, en octets. */
+  uploadMaxBytes: Math.max(1, Number(process.env.UPLOAD_MAX_MB ?? 25)) * 1024 * 1024,
+  /** Adresse d'écoute: 127.0.0.1 en dev, 0.0.0.0 dans un conteneur. */
+  host: process.env.HOST?.trim() || '127.0.0.1',
 };
 
 if (!config.databaseUrl) throw new Error('DATABASE_URL manquant (copier .env.example en .env).');

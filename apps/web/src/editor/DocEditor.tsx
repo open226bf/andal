@@ -99,10 +99,11 @@ export function DocEditor({ pageId, user, editable, onPresence, onEditor, onThre
     );
   }
   if (!provider) return <Skeleton />;
-  return <CollabEditor key={pageId} provider={provider} user={user} editable={editable} synced={status !== 'connecting'} offline={status === 'offline'} onEditor={onEditor} />;
+  return <CollabEditor key={pageId} pageId={pageId} provider={provider} user={user} editable={editable} synced={status !== 'connecting'} offline={status === 'offline'} onEditor={onEditor} />;
 }
 
 function CollabEditor({
+  pageId,
   provider,
   user,
   editable,
@@ -110,6 +111,7 @@ function CollabEditor({
   offline,
   onEditor,
 }: {
+  pageId: string;
   provider: HocuspocusProvider;
   user: { name: string; color: string };
   editable: boolean;
@@ -119,7 +121,7 @@ function CollabEditor({
 }) {
   const editor = useEditor(
     {
-      extensions: webExtensions(provider, user),
+      extensions: webExtensions(provider, user, pageId),
       editable: false,
       immediatelyRender: true,
       shouldRerenderOnTransaction: false,

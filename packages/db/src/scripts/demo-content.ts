@@ -6,6 +6,14 @@ const text = (value: string, marks?: JSONContent['marks']): JSONContent => (mark
 const code = (value: string) => text(value, [{ type: 'code' }]);
 const p = (...content: JSONContent[]): JSONContent => ({ type: 'paragraph', content });
 const h2 = (value: string): JSONContent => ({ type: 'heading', attrs: { level: 2 }, content: [text(value)] });
+/** Lien vers une page d'Andal: adresse stable /p/<id>. */
+const pageLink = (value: string, pageId: string) => text(value, [{ type: 'link', attrs: { href: `/p/${pageId}` } }]);
+const cell = (kind: 'tableHeader' | 'tableCell', ...content: JSONContent[]): JSONContent => ({ type: kind, content: [p(...content)] });
+const row = (kind: 'tableHeader' | 'tableCell', ...cells: (string | JSONContent)[]): JSONContent => ({
+  type: 'tableRow',
+  content: cells.map((c) => cell(kind, typeof c === 'string' ? text(c) : c)),
+});
+const task = (checked: boolean, ...content: JSONContent[]): JSONContent => ({ type: 'taskItem', attrs: { checked }, content: [p(...content)] });
 
 export function simplePage(intro: string): JSONContent {
   return { type: 'doc', content: [p(text(intro))] };
@@ -30,7 +38,7 @@ const tokenOperation: ApiOperation = {
   ],
 };
 
-export function authenticationPage(threads: { header: string; storage: string }): JSONContent {
+export function authenticationPage(threads: { header: string; storage: string }, links: { userTokens: string; runbook: string }): JSONContent {
   return {
     type: 'doc',
     content: [
@@ -40,7 +48,7 @@ export function authenticationPage(threads: { header: string; storage: string })
         text('Authorization', [{ type: 'comment', attrs: { threadId: threads.header } }, { type: 'code' }]),
         text(' de chaque requête.'),
       ),
-      p(text("Ce flux ne concerne que les échanges entre machines. Les applications qui agissent au nom d'une personne utilisent des jetons utilisateur, décrits en 3.4.")),
+      p(text("Ce flux ne concerne que les échanges entre machines. Les applications qui agissent au nom d'une personne utilisent des "), pageLink('jetons utilisateur', links.userTokens), text(', décrits en 3.4.')),
       h2('Obtenir un jeton'),
       p(text('Le service client envoie ses identifiants à la passerelle, qui les transmet au service Auth. Celui-ci vérifie le secret dans le coffre, puis signe un jeton valable quinze minutes.')),
       {
@@ -101,6 +109,19 @@ export function authenticationPage(threads: { header: string; storage: string })
           caption: 'Extrait de paiements.yaml v2.3, publié par la CI.',
         },
       },
+      h2('Erreurs fréquentes'),
+      p(text("Le service Auth ne distingue pas un client inconnu d'un secret faux: les deux répondent 401, pour ne rien révéler.")),
+      {
+        type: 'table',
+        content: [
+          row('tableHeader', 'Code', 'Cause', 'Que faire'),
+          row('tableCell', text('400', [{ type: 'code' }]), text('grant_type', [{ type: 'code' }]), 'Envoyer client_credentials, rien d’autre.'),
+          row('tableCell', text('401', [{ type: 'code' }]), 'Client inconnu ou secret faux', 'Vérifier le secret dans le coffre, puis le faire tourner s’il a fuité.'),
+          row('tableCell', text('429', [{ type: 'code' }]), 'Plus de 10 jetons par minute', 'Garder le jeton en mémoire jusqu’à son expiration.'),
+          row('tableCell', text('503', [{ type: 'code' }]), 'Coffre injoignable', 'Réessayer avec un délai croissant; au-delà de 5 minutes, ouvrir le runbook.'),
+        ],
+      },
+      p(text('Une panne du service Auth se traite avec le '), pageLink('runbook incident', links.runbook), text('.')),
       h2('Où passe le trafic'),
       p(text('Le jeton ne sort jamais du réseau privé. Seule la passerelle est exposée, derrière Caddy, et chaque service vérifie la signature du jeton avant de répondre.')),
       {
@@ -111,6 +132,31 @@ export function authenticationPage(threads: { header: string; storage: string })
           alt: 'Topologie: Internet vers Caddy, puis la passerelle API dans le réseau privé, qui dessert le service Auth et le service Paiements.',
           caption: "Topologie réseau. Diagramme draw.io, modifiable dans l'éditeur intégré.",
         },
+      },
+    ],
+  };
+}
+
+/** Le runbook: une check-list que l'astreinte coche pendant l'incident. */
+export function runbookPage(links: { auth: string }): JSONContent {
+  return {
+    type: 'doc',
+    content: [
+      p(text("À suivre dès qu'une alerte « Paiements indisponibles » sonne. Cochez au fil de l'eau: l'équipe voit où vous en êtes.")),
+      h2('Premières minutes'),
+      {
+        type: 'taskList',
+        content: [
+          task(true, text('Prendre l’incident dans l’outil d’astreinte.')),
+          task(true, text('Ouvrir le canal '), code('#inc-paiements'), text(' et y annoncer la prise en charge.')),
+          task(false, text('Vérifier la passerelle, puis le service Auth (voir '), pageLink('l’authentification', links.auth), text(').')),
+          task(false, text('Prévenir le support si l’incident dure plus de 15 minutes.')),
+        ],
+      },
+      h2('Après l’incident'),
+      {
+        type: 'taskList',
+        content: [task(false, text('Rédiger le post-mortem sous 48 heures.')), task(false, text('Reporter les actions dans le backlog de l’équipe.'))],
       },
     ],
   };

@@ -1,9 +1,17 @@
-import type { ApiOperation } from '@andal/editor';
+import { fileUrl, type ApiOperation } from '@andal/editor';
 import {
+  ArrowSquareOutIcon,
   ArrowsLeftRightIcon,
   BookOpenTextIcon,
   CodeIcon,
   CopyIcon,
+  DownloadSimpleIcon,
+  FileIcon,
+  FilePdfIcon,
+  FileTextIcon,
+  FileXlsIcon,
+  FileZipIcon,
+  ImageBrokenIcon,
   LightbulbIcon,
   PencilSimpleIcon,
   FlowArrowIcon,
@@ -11,6 +19,7 @@ import {
 import { NodeViewContent, NodeViewWrapper, type NodeViewProps } from '@tiptap/react';
 import { useEffect, useRef, useState, type CSSProperties, type DependencyList } from 'react';
 import { useDoc, useNumber } from '../lib/doc-context';
+import { fileSize } from '../lib/format';
 import { renderMermaid } from '../lib/mermaid';
 import { usePaletteVersion } from '../lib/theme';
 import { DrawioEditor } from './DrawioEditor';
@@ -226,6 +235,83 @@ export function DrawioView({ node, editor, getPos, updateAttributes }: NodeViewP
           onSave={(svg, xml) => updateAttributes({ src: svg, xml })}
           onClose={() => setOpen(false)}
         />
+      )}
+    </NodeViewWrapper>
+  );
+}
+
+export function ImageView({ node, editor, getPos, updateAttributes }: NodeViewProps) {
+  const { editing } = useDoc();
+  const number = useNumber(editor, getPos, 'figure');
+  const src = fileUrl(String(node.attrs.fileId ?? ''));
+  const alt = String(node.attrs.alt ?? '');
+  const caption = String(node.attrs.caption ?? '');
+  const [broken, setBroken] = useState(false);
+
+  return (
+    <NodeViewWrapper as="figure" className="fig" data-block="Image">
+      <div className="frame image-frame" contentEditable={false}>
+        {src && !broken ? (
+          <img className="doc-img" src={src} alt={alt || caption} loading="lazy" onError={() => setBroken(true)} />
+        ) : (
+          <p className="fig-error">
+            <ImageBrokenIcon size={18} aria-hidden />
+            Image indisponible: supprimée, ou sur une page que vous ne lisez pas.
+          </p>
+        )}
+      </div>
+      <Caption label={`Figure ${number}`} caption={caption} editable={editing} onChange={(v) => updateAttributes({ caption: v || null })}>
+        {src && !broken && (
+          <a className="ghost" href={src} target="_blank" rel="noreferrer">
+            <ArrowSquareOutIcon size={16} aria-hidden />
+            Taille réelle
+          </a>
+        )}
+      </Caption>
+      {editing && (
+        <label className="alt-field" contentEditable={false}>
+          <span>Texte alternatif</span>
+          <input value={alt} placeholder="Ce que montre l'image, pour qui ne la voit pas" onChange={(e) => updateAttributes({ alt: e.target.value })} />
+        </label>
+      )}
+    </NodeViewWrapper>
+  );
+}
+
+function fileIcon(contentType: string, name: string) {
+  if (contentType === 'application/pdf') return <FilePdfIcon size={26} aria-hidden />;
+  if (/zip|compressed|tar|gzip|7z/.test(contentType) || /\.(zip|tgz|gz|7z|rar)$/i.test(name)) return <FileZipIcon size={26} aria-hidden />;
+  if (/^text\/|json|yaml|xml/.test(contentType) || /\.(md|txt|csv|ya?ml|json)$/i.test(name)) return <FileTextIcon size={26} aria-hidden />;
+  if (/sheet|excel|csv/.test(contentType)) return <FileXlsIcon size={26} aria-hidden />;
+  return <FileIcon size={26} aria-hidden />;
+}
+
+/** « PDF », « ZIP », « YAML »: le format, d'après l'extension du nom. */
+function fileKind(name: string): string {
+  const ext = /\.([a-z0-9]{1,6})$/i.exec(name)?.[1];
+  return ext ? ext.toUpperCase() : 'Fichier';
+}
+
+export function AttachmentView({ node }: NodeViewProps) {
+  const href = fileUrl(String(node.attrs.fileId ?? ''));
+  const name = String(node.attrs.name ?? 'fichier');
+  const contentType = String(node.attrs.contentType ?? '');
+  return (
+    <NodeViewWrapper className="file-card" data-block="Fichier" contentEditable={false}>
+      <span className="file-icon">{fileIcon(contentType, name)}</span>
+      <span className="file-meta">
+        <span className="file-name">{name}</span>
+        <span className="file-info">
+          {fileKind(name)} · {fileSize(Number(node.attrs.size ?? 0))}
+        </span>
+      </span>
+      {href ? (
+        <a className="btn-line sm" href={href} download={name}>
+          <DownloadSimpleIcon size={16} aria-hidden />
+          Télécharger
+        </a>
+      ) : (
+        <span className="file-info">Fichier indisponible</span>
       )}
     </NodeViewWrapper>
   );

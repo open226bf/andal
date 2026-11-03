@@ -1,0 +1,42 @@
+# Andal derrière Caddy: TLS automatique (Let's Encrypt) pour ANDAL_DOMAIN,
+# certificat local pour « localhost ». Un seul domaine: l'interface, l'API,
+# le WebSocket de collaboration et draw.io partagent la même origine.
+
+{$ANDAL_DOMAIN:localhost} {
+	encode zstd gzip
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options nosniff
+		Referrer-Policy same-origin
+		Permissions-Policy "camera=(), microphone=(), geolocation=()"
+		-Server
+	}
+
+	# API: elle pose ses propres en-têtes (fichiers servis sous CSP sandbox).
+	handle /api/* {
+		reverse_proxy api:3001
+	}
+
+	# Collaboration temps réel (WebSocket).
+	handle_path /collab* {
+		reverse_proxy collab:3002
+	}
+
+	# Éditeur draw.io auto-hébergé, ouvert dans une iframe de même origine.
+	handle_path /drawio/* {
+		reverse_proxy drawio:8080
+	}
+
+	handle {
+		root * /srv
+		# Politique stricte: aucun script ni style venu d'ailleurs.
+		header Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self'; frame-src 'self'; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'"
+		@assets path /assets/*
+		header @assets Cache-Control "public, max-age=31536000, immutable"
+		@html not path /assets/*
+		header @html Cache-Control "no-cache"
+		try_files {path} /index.html
+		file_server
+	}
+}

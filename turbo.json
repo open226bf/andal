@@ -1,7 +1,7 @@
 {
   "$schema": "https://turbo.build/schema.json",
   "globalEnv": ["NODE_ENV"],
-  "globalPassThroughEnv": ["DATABASE_URL", "VALKEY_URL", "AUTH_PASSWORD", "DEMO_PASSWORD", "OIDC_*", "SMTP_URL", "MAIL_FROM", "NOTIFY_EMAIL_DELAY", "TRASH_RETENTION_DAYS", "API_PORT", "COLLAB_PORT", "WEB_ORIGIN"],
+  "globalPassThroughEnv": ["DATABASE_URL", "VALKEY_URL", "AUTH_PASSWORD", "DEMO_PASSWORD", "OIDC_*", "SMTP_URL", "MAIL_FROM", "NOTIFY_EMAIL_DELAY", "TRASH_RETENTION_DAYS", "S3_*", "UPLOAD_MAX_MB", "API_PORT", "COLLAB_PORT", "WEB_ORIGIN"],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],

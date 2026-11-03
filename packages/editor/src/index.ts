@@ -8,6 +8,8 @@
 import { Mark, Node, getSchema, type AnyExtension, type JSONContent } from '@tiptap/core';
 import { Node as PMNode, type Schema } from '@tiptap/pm/model';
 import Code from '@tiptap/extension-code';
+import { TaskItem, TaskList } from '@tiptap/extension-list';
+import { TableKit } from '@tiptap/extension-table';
 import StarterKit from '@tiptap/starter-kit';
 
 export type { JSONContent };
@@ -100,6 +102,50 @@ export const DrawioBlock = Node.create({
   },
 });
 
+/**
+ * Image envoyée sur la page: le fichier vit dans le stockage (RustFS ou S3),
+ * le document n'en garde que l'identifiant. Numérotée comme une figure.
+ */
+export const ImageBlock = Node.create({
+  name: 'image',
+  group: 'block',
+  atom: true,
+  draggable: true,
+  addAttributes() {
+    return { fileId: dataAttr(''), alt: dataAttr(''), caption: dataAttr<string | null>(null) };
+  },
+  parseHTML() {
+    return [{ tag: 'figure[data-type="image"]' }];
+  },
+  renderHTML({ node }) {
+    return ['figure', { 'data-type': 'image' }, ['img', { src: fileUrl(String(node.attrs.fileId)), alt: String(node.attrs.alt) }]];
+  },
+});
+
+/** Pièce jointe: une fiche avec le nom, la taille et le lien de téléchargement. */
+export const AttachmentBlock = Node.create({
+  name: 'attachment',
+  group: 'block',
+  atom: true,
+  draggable: true,
+  addAttributes() {
+    return { fileId: dataAttr(''), name: dataAttr(''), size: dataAttr(0), contentType: dataAttr('') };
+  },
+  parseHTML() {
+    return [{ tag: 'div[data-type="attachment"]' }];
+  },
+  renderHTML({ node }) {
+    return ['div', { 'data-type': 'attachment' }, ['a', { href: fileUrl(String(node.attrs.fileId)) }, String(node.attrs.name)]];
+  },
+});
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+
+/** Adresse d'un fichier envoyé; vide si l'identifiant n'en est pas un (contenu forgé). */
+export function fileUrl(fileId: string): string {
+  return UUID.test(fileId) ? `/api/files/${fileId}` : '';
+}
+
 /** Encadré « À retenir », « Attention » ou « Astuce ». */
 export const Callout = Node.create({
   name: 'callout',
@@ -143,13 +189,23 @@ export const CommentMark = Mark.create({
  */
 export const InlineCode = Code.extend({ excludes: 'bold italic strike underline' });
 
-export const blockExtensions: AnyExtension[] = [MermaidBlock, OpenApiBlock, DrawioBlock, Callout, CommentMark, InlineCode];
+export const blockExtensions: AnyExtension[] = [MermaidBlock, OpenApiBlock, DrawioBlock, ImageBlock, AttachmentBlock, Callout, CommentMark, InlineCode];
+
+/** Tableaux et listes de tâches: mêmes nœuds partout, le navigateur ajoute le redimensionnement des colonnes. */
+export function structureExtensions(options: { resizable?: boolean } = {}): AnyExtension[] {
+  return [
+    TableKit.configure({ table: { resizable: options.resizable ?? false, cellMinWidth: 80 } }),
+    TaskList,
+    TaskItem.configure({ nested: true, a11y: { checkboxLabel: (node, checked) => `${checked ? 'Fait' : 'À faire'}: ${node.textContent || 'tâche vide'}` } }),
+  ];
+}
 
 /** Extensions du schéma, sans vue: à utiliser côté serveur. */
 export function serverExtensions(): AnyExtension[] {
   return [
     StarterKit.configure({ heading: { levels: [2, 3] }, undoRedo: false, code: false }),
     ...blockExtensions,
+    ...structureExtensions(),
   ];
 }
 
@@ -183,7 +239,7 @@ export function sameDoc(a: JSONContent, b: JSONContent): boolean {
   }
 }
 
-const FIGURE_TYPES = new Set(['mermaid', 'drawio']);
+const FIGURE_TYPES = new Set(['mermaid', 'drawio', 'image']);
 const LISTING_TYPES = new Set(['openapi', 'codeBlock']);
 
 /** Nombre de figures et de listings d'un document, pour numéroter « Figure 3.2 ». */
@@ -205,12 +261,38 @@ export function extractText(json: JSONContent): string {
     const attrs = node.attrs ?? {};
     if (typeof attrs.caption === 'string') parts.push(attrs.caption);
     if (node.type === 'callout' && typeof attrs.title === 'string') parts.push(attrs.title);
+    if (node.type === 'image' && typeof attrs.alt === 'string') parts.push(attrs.alt);
+    if (node.type === 'attachment' && typeof attrs.name === 'string') parts.push(attrs.name);
     if (node.type === 'openapi' && attrs.operation) {
       const op = attrs.operation as ApiOperation;
       parts.push(`${op.method} ${op.path} ${op.summary}`);
     }
   });
   return parts.join(' ').replace(/\s+/g, ' ').trim();
+}
+
+/**
+ * Lien vers une page d'Andal: `/p/<id>` (inséré par l'éditeur), ou l'adresse
+ * complète d'une page collée (`https://…/v/<volume>/<id>`).
+ */
+const PAGE_HREF = /^(?:https?:\/\/[^/]+)?\/(?:p|v\/[^/?#]+)\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})(?:[/?#].*)?$/i;
+
+/** L'identifiant de la page visée par un lien, ou null pour un lien externe. */
+export function pageIdFromHref(href: string): string | null {
+  return PAGE_HREF.exec(href.trim())?.[1]?.toLowerCase() ?? null;
+}
+
+/** Les pages citées par un document (liens internes), sans doublon. */
+export function extractPageLinks(json: JSONContent): string[] {
+  const ids = new Set<string>();
+  walk(json, (node) => {
+    for (const mark of node.marks ?? []) {
+      const href = mark.type === 'link' ? mark.attrs?.href : null;
+      const id = typeof href === 'string' ? pageIdFromHref(href) : null;
+      if (id) ids.add(id);
+    }
+  });
+  return [...ids];
 }
 
 function walk(node: JSONContent, visit: (node: JSONContent) => void): void {
