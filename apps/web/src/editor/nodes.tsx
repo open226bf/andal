@@ -21,7 +21,7 @@ import { Link } from '@tanstack/react-router';
 import { NodeViewContent, NodeViewWrapper, type NodeViewProps } from '@tiptap/react';
 import { useEffect, useRef, useState, type CSSProperties, type DependencyList } from 'react';
 import { useSpecOperation, useSpecOperations } from '../lib/api';
-import { useDoc, useNumber } from '../lib/doc-context';
+import { docFileUrl, useDoc, useNumber } from '../lib/doc-context';
 import { fileSize } from '../lib/format';
 import { t } from '../lib/i18n';
 import { renderMermaid } from '../lib/mermaid';
@@ -132,9 +132,10 @@ export function MermaidView({ node, editor, getPos, updateAttributes }: NodeView
 }
 
 export function OpenApiView({ node, editor, getPos, updateAttributes }: NodeViewProps) {
-  const { editing } = useDoc();
+  const { editing, share } = useDoc();
   const number = useNumber(editor, getPos, 'listing');
-  const specId = (node.attrs.specId as string | null) ?? null;
+  // Par un lien public, la spec du volume n'est pas lisible: la copie gardée dans la page suffit.
+  const specId = share ? null : ((node.attrs.specId as string | null) ?? null);
   const key = (node.attrs.operationKey as string | null) ?? null;
   const snapshot = node.attrs.operation as ApiOperation | null;
   const caption = String(node.attrs.caption ?? '');
@@ -173,7 +174,7 @@ export function OpenApiView({ node, editor, getPos, updateAttributes }: NodeView
                 </Link>
               )}
             </div>
-            {live.isError && (
+            {live.isError && !share && (
               <p className="api-stale" role="note">
                 <WarningCircleIcon size={16} aria-hidden />
                 {specId
@@ -327,9 +328,9 @@ export function DrawioView({ node, editor, getPos, updateAttributes }: NodeViewP
 }
 
 export function ImageView({ node, editor, getPos, updateAttributes }: NodeViewProps) {
-  const { editing } = useDoc();
+  const { editing, share } = useDoc();
   const number = useNumber(editor, getPos, 'figure');
-  const src = fileUrl(String(node.attrs.fileId ?? ''));
+  const src = docFileUrl(fileUrl(String(node.attrs.fileId ?? '')), share);
   const alt = String(node.attrs.alt ?? '');
   const caption = String(node.attrs.caption ?? '');
   const [broken, setBroken] = useState(false);
@@ -379,7 +380,8 @@ function fileKind(name: string): string {
 }
 
 export function AttachmentView({ node }: NodeViewProps) {
-  const href = fileUrl(String(node.attrs.fileId ?? ''));
+  const { share } = useDoc();
+  const href = docFileUrl(fileUrl(String(node.attrs.fileId ?? '')), share);
   const name = String(node.attrs.name ?? t('fichier'));
   const contentType = String(node.attrs.contentType ?? '');
   return (

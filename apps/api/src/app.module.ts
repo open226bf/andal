@@ -51,6 +51,12 @@ import { AuditController } from './security/audit.controller.js';
 import { AdminSecurityController, SecurityController } from './security/security.controller.js';
 import { VersionsService } from './pages/versions.service.js';
 import { RateLimitGuard } from './rate-limit.guard.js';
+import { ExportsController } from './exports/exports.controller.js';
+import { ExportsService } from './exports/exports.service.js';
+import { PublicController, PublicLinksController } from './public/public-links.controller.js';
+import { PublicLinksService } from './public/public-links.service.js';
+import { ImportsController } from './imports/imports.controller.js';
+import { ImportsService } from './imports/imports.service.js';
 
 @Module({
   imports: [InfraModule],
@@ -79,6 +85,10 @@ import { RateLimitGuard } from './rate-limit.guard.js';
     AuditController,
     ScimController,
     ScimAdminController,
+    ExportsController,
+    PublicLinksController,
+    PublicController,
+    ImportsController,
   ],
   providers: [
     AuditService,
@@ -108,6 +118,9 @@ import { RateLimitGuard } from './rate-limit.guard.js';
     OidcService,
     MfaService,
     ScimService,
+    ExportsService,
+    PublicLinksService,
+    ImportsService,
     // Dans cet ordre: on sait qui appelle avant de compter.
     { provide: APP_GUARD, useClass: AuthGuard },
     { provide: APP_GUARD, useClass: RateLimitGuard },

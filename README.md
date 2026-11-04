@@ -55,6 +55,7 @@ Everything listens on 127.0.0.1 only.
 | RustFS | 59000 / 59001 | S3 storage for attached files |
 | draw.io | 58081 | Embedded diagram editor |
 | Mailpit | 51025 / 58025 | Fake SMTP server for development; sent emails can be read at http://localhost:58025 |
+| Gotenberg | 53000 | PDF export (Chromium) |
 | Keycloak | 58080 | OIDC SSO, only with `docker compose --profile sso up -d` |
 
 ## Demo accounts
@@ -297,6 +298,44 @@ In a volume's settings (volume admins), **Git sync** links a folder in a reposit
 - **When**: on every push if the Git host calls the webhook shown (GitHub, GitLab, Gitea, Forgejo, signed with the secret shown), otherwise every 10 minutes, or on “Sync”.
 - `https://` repositories only; a private repository needs a read token, which is kept on the server. **Detach** leaves the pages in place, and editable again.
 
+## Templates, export and public links
+
+**Page templates.** Besides a blank page, the new page dialog offers four templates for tech teams: **Architecture decision** (context, options, decision, consequences), **RFC**, **Runbook** (symptoms, diagnosis, remediation) and **Post-mortem** (timeline, root cause, blameless actions). The title starts with the template's prefix (“Decision: ”, “Runbook: ”…), and the content is written in the language of whoever creates the page. Through the API: `"template": "adr"` (or `rfc`, `runbook`, `postmortem`) when creating a page.
+
+**Export.** The export button in the page header downloads the page:
+
+- **Markdown**: the same Markdown as the API (GFM, callouts, `mermaid` and `openapi` blocks), with links to pages and files made absolute, pointing to this instance.
+- **PDF**: laid out for print (A4) with its number and volume, numbered figures and listings, rendered Mermaid diagrams, draw.io diagrams and OpenAPI blocks, and page numbers in the footer. Comments are left out. The PDF is rendered by [Gotenberg](https://gotenberg.dev) (`GOTENBERG_URL`); without it, only Markdown is offered.
+
+**Export volume**, in the volume menu (the “⋯” next to its name), downloads a zip archive: one Markdown file per page (`title` and `position` in the front matter), one folder per page that has subpages (its content in `index.md`), relative links between pages, and the files the pages use in `_fichiers/`. Only the pages you can read go in. The archive imports back as is, here or into another Andal.
+
+**Public links.** In **Share**, a volume admin publishes a page (with or without its subpages) or the whole volume behind an unguessable address, `/s/…`. Anyone with the address can read it without an account: the published pages' content, numbering, diagrams and files; no comments, no history, no authors.
+
+- A page restricted for reading is never public, not even through its parent's or its volume's link; links to it stay plain text, like links to pages outside the share.
+- Removing the link cuts access immediately. Public pages are marked `noindex`. Every publication and removal goes to the audit log.
+- `PUBLIC_LINKS=false` turns the feature off on a server.
+
+## Import
+
+**Import pages…**, in the volume menu, brings in a whole tree of pages:
+
+- **Markdown**: a `.md` file, or a zipped folder: one folder per parent page (its `README.md` or `index.md`, or a `Page.md` next to a `Page/` folder), with images and files alongside. Titles and order work as in Git sync. An archive from “Export volume” imports back as is.
+- **Notion**: the “Markdown & CSV” export, with subpages. The hierarchy and callouts are kept, databases become tables, and the identifiers Notion appends to names are dropped.
+- **Confluence**: the HTML export of a space. The page tree comes from the export's index; info, note, warning and tip panels become callouts, code keeps its language, and tables, images and attachments come along. The XML export is not supported.
+
+Rules:
+
+- Importing creates pages, so it requires write permission where they land (the top level of the volume, or under a page). They take that place's permissions; nothing is replaced, they are added after the existing pages.
+- The worker processes the archive in the background. The dialog follows it, then shows the number of pages and files and any notes (a file too large, a page outside the schema). Links between imported pages become links between pages; images and files become attachments.
+- Limits: `IMPORT_MAX_MB` per archive (200 by default) and five times that once unpacked, 10,000 files, 2,000 pages, 2 MB of Markdown per page, `UPLOAD_MAX_MB` per attached file. The archive leaves storage once the import is over, whether it succeeded or not.
+
+```bash
+curl -X POST -H "Authorization: Bearer andal_…" -F parentId=<page> -F file=@export.zip \
+  "https://docs.example.com/api/projects/<volume>/imports"
+```
+
+This needs a write token; `parentId` is optional and must come before the file. `GET /api/imports/<id>` returns the progress.
+
 ## Assistant
 
 **⌘K** also answers questions: a query ending in “?”, or Shift + Enter. The answer streams in, cites its sources [1], [2], … and lists them below.
@@ -324,11 +363,11 @@ apps/
   web/      React 19, Vite, Tailwind 4, TanStack Router and Query, TipTap 3
   api/      NestJS 11 on Fastify; files to S3 storage
   collab/   Hocuspocus 3 (Yjs), schema validation before writing
-  worker/   BullMQ: text and links for search and backlinks, emails, purges (trash, files), webhooks, Git sync
+  worker/   BullMQ: text and links for search and backlinks, emails, purges (trash, files), webhooks, Git sync, imports
 packages/
   authz/    Permission model, pure and tested
   db/       Kysely, migrations, seed, access queries, S3 storage
-  editor/   TipTap schema shared by client and server (Mermaid, OpenAPI, draw.io, image, attachment, table, tasks, callout, comment), OpenAPI spec parsing, Markdown round-trip
+  editor/   TipTap schema shared by client and server (Mermaid, OpenAPI, draw.io, image, attachment, table, tasks, callout, comment), OpenAPI spec parsing, Markdown round-trip, page templates, HTML rendering for PDF
   ui/       Design tokens (CSS) and base components
 deploy/     Images, production compose, Caddy (see deploy/README.md)
 tests/e2e/  End-to-end suites (Python, no dependencies)
@@ -356,7 +395,7 @@ Runs the tests for the permission model, the editor schema (OpenAPI specs, Markd
 tests/e2e/run.sh
 ```
 
-With the stack running: the end-to-end suites (accounts, access and notifications, pages, versions, volumes, files and links, specs, public API and webhooks, Git sync, assistant, two-factor authentication, sessions and audit log, SCIM and SSO groups, rate limiting), then the three collab server checks below. Each suite starts from the demo data; `tests/e2e/run.sh files_links_test` runs just one. GitHub CI runs them on every commit, against a full stack.
+With the stack running: the end-to-end suites (accounts, access and notifications, pages, versions, volumes, files and links, specs, public API and webhooks, Git sync, templates, exports, public links and imports, assistant, two-factor authentication, sessions and audit log, SCIM and SSO groups, rate limiting), then the three collab server checks below. Each suite starts from the demo data; `tests/e2e/run.sh files_links_test` runs just one. GitHub CI runs them on every commit, against a full stack.
 
 ```bash
 pnpm --filter @andal/collab check:readonly
@@ -399,7 +438,8 @@ With `ANDAL_URL`, `ANDAL_USER` and `ANDAL_PASSWORD` set: checks a deployed insta
 - **Specs**: comparing two versions of a spec (added, removed and breaking routes); AsyncAPI or GraphQL specs.
 - **Git sync**: one-way only (repository → Andal); proposing a change from Andal would open a pull request.
 - **Assistant**: search is full-text (French); semantic search (embeddings, pgvector) would handle poorly worded questions better.
-- **PDF export** (Gotenberg); multiple API instances behind Caddy (the API is already stateless: sessions, rate limits and queues live in Valkey).
+- **Migration**: Confluence's XML export is not imported, nor are comments and history from Confluence or Notion; Notion databases arrive as static tables; a public link has neither an expiry date nor a password; no PDF of a whole volume yet.
+- **Scaling**: multiple API instances behind Caddy (the API is already stateless: sessions, rate limits and queues live in Valkey).
 - **Hardening**: PostgreSQL RLS as a second barrier; encrypting two-factor authentication secrets and integration keys in the database.
 - **Languages**: the demo content and the SCIM API messages remain in French; each additional language needs another catalog.
 - **Performance**: the main bundle is about 1.1 MB minified; load the editor on demand in Read mode.

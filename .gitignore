@@ -10,3 +10,4 @@ coverage/
 .DS_Store
 .impeccable/review/
 .impeccable/questions/
+__pycache__/

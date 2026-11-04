@@ -4,6 +4,29 @@
 
 Docker images: `ghcr.io/open226bf/andal-server` and `ghcr.io/open226bf/andal-web`, tagged with the version (`0.1.0`), its minor line (`0.1`) and `latest`. To upgrade, see [deploy/README.md](deploy/README.md#upgrading).
 
+## Unreleased
+
+Moving in from another tool, and back out.
+
+### Templates and export
+
+- **Page templates**: architecture decision, RFC, runbook and post-mortem, written in the language of whoever creates the page; also available through the API (`template`).
+- **Page export** to Markdown, or to PDF laid out for print (numbered figures, rendered diagrams, page numbers), through Gotenberg.
+- **Volume export**: a zip archive of Markdown files with front matter, relative links and attached files, limited to the pages you can read.
+
+### Public sharing
+
+- **Public links** to a page, a page and its subpages, or a whole volume: read without an account, without comments or history, marked `noindex`. A page restricted for reading is never public. Volume admins only; `PUBLIC_LINKS=false` turns the feature off.
+
+### Import
+
+- **Import** from Markdown (a file, or a zipped tree, volume exports included), Notion (“Markdown & CSV” export) and Confluence (HTML export of a space): hierarchy, callouts, code, tables, images, attachments and links between pages. It runs in the background, ends with a summary and notes, and is also available through the API.
+
+### Deployment
+
+- New `gotenberg` service in the production compose file, and new settings `GOTENBERG_URL`, `IMPORT_MAX_MB` and `PUBLIC_LINKS` (see [deploy/README.md](deploy/README.md#variants)).
+- Migration `0017` adds the public links and imports tables; it runs automatically at startup.
+
 ## 0.1.0 (2026-11-03)
 
 The first release. It covers writing, permissions, security and self-hosting; migrating from another tool (import, export, templates, public sharing) comes next.

@@ -10,6 +10,7 @@ import { EmptyVolumePage } from './pages/EmptyVolumePage';
 import { LoginPage } from './pages/LoginPage';
 import { LibraryPage } from './pages/LibraryPage';
 import { MissingPage } from './pages/MissingPage';
+import { PublicPage } from './pages/PublicPage';
 import { SpecPage } from './pages/SpecPage';
 
 interface RouterContext {
@@ -56,6 +57,25 @@ const resetRoute = createRoute({
 });
 
 const forgotRoute = createRoute({ getParentRoute: () => rootRoute, path: '/mot-de-passe-oublie', component: ForgotPasswordPage });
+
+/* Partage public en lecture: aucune session, aucune donnée en dehors des pages publiées. */
+const publicRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/s/$token',
+  component: function PublicRoute() {
+    const { token } = publicRoute.useParams();
+    return <PublicPage token={token} />;
+  },
+});
+
+const publicPageRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/s/$token/$pageId',
+  component: function PublicPageRoute() {
+    const { token, pageId } = publicPageRoute.useParams();
+    return <PublicPage token={token} pageId={pageId} />;
+  },
+});
 
 let localeSynced = false;
 
@@ -156,6 +176,8 @@ const routeTree = rootRoute.addChildren([
   invitationRoute,
   resetRoute,
   forgotRoute,
+  publicRoute,
+  publicPageRoute,
   appRoute.addChildren([homeRoute, volumeRoute, pageRoute, pageLinkRoute, specRoute, adminRoute, groupsRoute, integrationsRoute, assistantRoute, directoryRoute, journalRoute, accountRoute]),
 ]);
 

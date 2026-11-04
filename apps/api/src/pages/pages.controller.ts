@@ -33,7 +33,10 @@ export class PagesController {
     return this.content.replace(auth, id, (typeof body === 'string' ? body : (body ?? {})) as ContentInput, req.ip);
   }
 
-  /** `{ title, parentId, markdown?, content? }`: parentId absent ou nul, la page va au premier niveau du volume. */
+  /**
+   * `{ title, parentId, markdown?, content?, template? }`: parentId absent ou nul, la page va au premier niveau du volume.
+   * `template` (adr, rfc, runbook, postmortem): le contenu du modèle, dans la langue de l'auteur.
+   */
   @Post('projects/:id/pages')
   create(@CurrentAuth() auth: AuthContext, @Param('id', ParseUUIDPipe) id: string, @Body() body: Record<string, unknown> | undefined, @Req() req: FastifyRequest) {
     return this.pages.create(auth, id, body ?? {}, req.ip);

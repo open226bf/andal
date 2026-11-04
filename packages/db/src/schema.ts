@@ -400,6 +400,43 @@ export interface AiSettingsTable {
   updated_at: Generated<Date>;
 }
 
+/** Lien public en lecture: une page (et ses sous-pages), ou tout le volume si page_id est nul. */
+export interface PublicLinksTable {
+  id: Generated<string>;
+  /** Partie secrète de l'adresse /s/<token>. */
+  token: string;
+  workspace_id: string;
+  project_id: string;
+  page_id: string | null;
+  subpages: Generated<boolean>;
+  created_by: string | null;
+  created_at: Generated<Date>;
+}
+
+export type ImportStatus = 'pending' | 'running' | 'done' | 'failed';
+export type ImportSource = 'markdown' | 'notion' | 'confluence' | 'html';
+
+/** Import d'une archive dans un volume, fait par le worker. */
+export interface ImportsTable {
+  id: Generated<string>;
+  workspace_id: string;
+  project_id: string;
+  /** Page sous laquelle ranger les pages importées; nulle: premier niveau du volume. */
+  parent_id: string | null;
+  created_by: string | null;
+  file_name: string;
+  storage_key: string;
+  status: Generated<ImportStatus>;
+  source: ImportSource | null;
+  pages: Generated<number>;
+  files: Generated<number>;
+  first_page_id: string | null;
+  warnings: ColumnType<string[], string | undefined, string>;
+  error: string | null;
+  created_at: Generated<Date>;
+  finished_at: Date | null;
+}
+
 export interface Database {
   workspaces: WorkspacesTable;
   users: UsersTable;
@@ -431,6 +468,8 @@ export interface Database {
   ai_settings: AiSettingsTable;
   recovery_codes: RecoveryCodesTable;
   scim_tokens: ScimTokensTable;
+  public_links: PublicLinksTable;
+  imports: ImportsTable;
 }
 
 export type User = Selectable<UsersTable>;

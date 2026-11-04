@@ -3,11 +3,10 @@
 Le modèle est un faux serveur compatible OpenAI (comme Ollama ou LM Studio), local: il enregistre ce qu'il reçoit.
 """
 import json
-import subprocess
 import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-from harness import API, ORIGIN, check, finish, login, msg, sql
+from harness import API, ORIGIN, bull, check, finish, login, msg, sql
 
 requests = []
 
@@ -93,7 +92,7 @@ check('une question trop courte est refusée', status == 400, (status, body))
 
 print('— Quota et extinction')
 key = sql("select id from users where username = 'aminata'")
-subprocess.run(['docker', 'compose', 'exec', '-T', 'valkey', 'valkey-cli', 'eval', f"for _, k in ipairs(redis.call('keys', 'andal:ask:{key}:*')) do redis.call('set', k, 40) end return 1", '0'], capture_output=True)
+bull(f"const c = await q.client; await c.eval(\"for _, k in ipairs(redis.call('keys', 'andal:ask:{key}:*')) do redis.call('set', k, 40) end return 1\", 0);")
 status, body = ask(aminata, 'Combien de temps dure un jeton ?')
 check('au-delà de 40 questions par heure: 429', status == 429, (status, body))
 status, _ = camille.call('PUT', '/admin/ai', {'provider': 'openai', 'model': 'llama3.1', 'baseUrl': MODEL_URL, 'enabled': False})

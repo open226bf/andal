@@ -83,6 +83,12 @@ export const config = {
   storage: storageConfigFromEnv(),
   /** Taille maximale d'un fichier envoyé, en octets. */
   uploadMaxBytes: Math.max(1, Number(process.env.UPLOAD_MAX_MB ?? 25)) * 1024 * 1024,
+  /** Liens publics en lecture (page, branche ou volume, sans compte). PUBLIC_LINKS=false les interdit, et coupe ceux qui existent. */
+  publicLinks: flag('PUBLIC_LINKS', true),
+  /** Taille maximale d'une archive à importer (Markdown, Notion, Confluence), en octets. */
+  importMaxBytes: Math.max(1, Number(process.env.IMPORT_MAX_MB ?? 200)) * 1024 * 1024,
+  /** Export PDF par Gotenberg (Chromium); vide: l'export PDF n'est pas proposé. */
+  gotenbergUrl: process.env.GOTENBERG_URL?.trim().replace(/\/+$/, '') || null,
   trustProxy: trustProxyFromEnv(),
   /**
    * Limite de débit par minute: lectures et écritures d'une session, d'un jeton

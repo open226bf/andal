@@ -6,7 +6,7 @@
 set -u
 cd "$(dirname "$0")/../.."
 
-suites=(accounts_test access_notify_test pages_test versions_test projects_test files_links_test specs_test public_api_test git_sync_test ask_test security_test scim_test limits_test i18n_test)
+suites=(accounts_test access_notify_test pages_test versions_test projects_test files_links_test specs_test public_api_test git_sync_test migrate_test ask_test security_test scim_test limits_test i18n_test)
 [ $# -gt 0 ] && suites=("$@")
 failed=()
 

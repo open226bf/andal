@@ -32,6 +32,33 @@ export async function api<T>(path: string, init?: RequestInit): Promise<T> {
   return (response.status === 204 ? undefined : await response.json()) as T;
 }
 
+/**
+ * Télécharge un export (Markdown, PDF, archive): le fichier arrive par fetch,
+ * pour qu'une erreur s'affiche dans l'interface au lieu d'ouvrir une page JSON.
+ */
+export async function download(path: string, fallbackName: string): Promise<void> {
+  const response = await fetch(`/api${path}`, { credentials: 'same-origin', headers: { 'accept-language': locale } });
+  if (!response.ok) {
+    let message = `${response.status} ${response.statusText}`;
+    try {
+      const body = (await response.json()) as { message?: unknown };
+      if (typeof body.message === 'string') message = body.message;
+    } catch {
+      // Corps absent ou non JSON: on garde le statut.
+    }
+    throw new ApiError(response.status, message);
+  }
+  const header = response.headers.get('content-disposition') ?? '';
+  const encoded = /filename\*=UTF-8''([^;]+)/i.exec(header)?.[1];
+  const name = encoded ? decodeURIComponent(encoded) : fallbackName;
+  const url = URL.createObjectURL(await response.blob());
+  const link = Object.assign(document.createElement('a'), { href: url, download: name });
+  document.body.append(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 10_000);
+}
+
 export interface UploadedFile {
   id: string;
   name: string;
@@ -153,6 +180,8 @@ export type Cloth = 'paiements' | 'identite' | 'donnees' | 'mobile' | 'plateform
 export interface Me {
   user: { id: string; name: string; initials: string; color: string; email: string; username: string | null; workspaceRole: string; hasPassword: boolean; mfa: boolean; locale: 'fr' | 'en' };
   auth: { method: 'password' | 'oidc' };
+  /** Ce que ce serveur propose: export PDF (Gotenberg), liens publics, import d'archives (stockage S3). */
+  features: { pdf: boolean; publicLinks: boolean; imports: boolean; importMaxMb: number };
 }
 
 /** Modes de connexion proposés par ce serveur. */
@@ -504,6 +533,67 @@ export const useTree = (slug: string) => useQuery({ queryKey: ['tree', slug], qu
 export const usePage = (id: string) => useQuery({ queryKey: ['page', id], queryFn: () => api<PageDetail>(`/pages/${id}`) });
 export const useThreads = (id: string) => useQuery({ queryKey: ['threads', id], queryFn: () => api<Thread[]>(`/pages/${id}/comments`) });
 export const useSharing = (id: string, enabled: boolean) => useQuery({ queryKey: ['sharing', id], queryFn: () => api<Sharing>(`/pages/${id}/sharing`), enabled });
+
+export interface PublicLink {
+  id: string;
+  token: string;
+  url: string;
+  /** null: tout le volume. */
+  page: { id: string; title: string } | null;
+  subpages: boolean;
+  createdAt: string;
+  createdBy: string | null;
+}
+
+/** Les liens publics qui couvrent une page: le sien, celui d'une parente avec ses sous-pages, celui du volume. */
+export interface PublicLinks {
+  enabled: boolean;
+  canManage: boolean;
+  /** Restreinte en lecture (elle ou une parente): jamais publique. */
+  restricted: boolean;
+  links: PublicLink[];
+}
+
+/** Un import d'archive, fait par le worker. */
+export interface ImportState {
+  id: string;
+  status: 'pending' | 'running' | 'done' | 'failed';
+  source: 'markdown' | 'notion' | 'confluence' | 'html' | null;
+  fileName: string;
+  pages: number;
+  files: number;
+  firstPageId: string | null;
+  warnings: string[];
+  error: string | null;
+  createdAt: string;
+  finishedAt: string | null;
+}
+
+export const usePublicLinks = (pageId: string, enabled: boolean) => useQuery({ queryKey: ['public-links', pageId], queryFn: () => api<PublicLinks>(`/pages/${pageId}/public-links`), enabled });
+
+/** Un partage public, lu sans compte. */
+export interface PublicShare {
+  title: string;
+  kind: 'page' | 'volume';
+  project: { name: string; shortName: string; cloth: Cloth; volumeNumber: number };
+  root: string;
+  pages: { id: string; parentId: string | null; number: string; title: string }[];
+}
+
+export interface PublicPage {
+  id: string;
+  title: string;
+  summary: string | null;
+  number: string;
+  updatedAt: string;
+  content: JSONContent;
+  numbering: { chapter: string; figureOffset: number; listingOffset: number };
+  prev: { id: string; number: string; title: string } | null;
+  next: { id: string; number: string; title: string } | null;
+}
+
+export const usePublicShare = (token: string) => useQuery({ queryKey: ['public', token], queryFn: () => api<PublicShare>(`/public/${token}`), retry: false });
+export const usePublicPage = (token: string, pageId: string) => useQuery({ queryKey: ['public', token, pageId], queryFn: () => api<PublicPage>(`/public/${token}/pages/${pageId}`), retry: false });
 export const useMentionable = (pageId: string, enabled: boolean) =>
   useQuery({ queryKey: ['mentionable', pageId], queryFn: () => api<Mentionable[]>(`/pages/${pageId}/mentionable`), enabled, staleTime: 60_000 });
 /** Relue toutes les minutes, au retour sur l'onglet, et aussitôt que le serveur collab signale du nouveau. */

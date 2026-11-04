@@ -4,7 +4,7 @@ import { type AuthContext, CurrentAuth } from '../auth/auth.guard.js';
 import { FilesService } from './files.service.js';
 
 /** En-tête Content-Disposition qui garde les accents (RFC 6266) avec un repli ASCII. */
-function disposition(inline: boolean, name: string): string {
+export function disposition(inline: boolean, name: string): string {
   const ascii = name.normalize('NFD').replace(/[^\x20-\x7e]/g, '').replace(/["\\]/g, '_') || 'fichier';
   return `${inline ? 'inline' : 'attachment'}; filename="${ascii}"; filename*=UTF-8''${encodeURIComponent(name)}`;
 }

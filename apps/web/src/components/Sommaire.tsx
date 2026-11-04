@@ -3,12 +3,14 @@ import { BracketsCurlyIcon, GearSixIcon, LockSimpleIcon, MagnifyingGlassIcon, Pl
 import { useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate } from '@tanstack/react-router';
 import { useState, type DragEvent } from 'react';
-import { api, canEdit, errorMessage, useProjects, useProjectSpecs, type Tree, type TreePage } from '../lib/api';
+import { api, canEdit, errorMessage, useMe, useProjects, useProjectSpecs, type Tree, type TreePage } from '../lib/api';
 import { age } from '../lib/format';
 import { t } from '../lib/i18n';
 import { useTogglePin } from '../lib/volumes';
 import { descendants, PageDialogs, PageMenu, type PageDialog } from './PageActions';
 import { VolumeSettingsDialog } from './VolumeDialogs';
+import { ImportDialog } from './ImportDialog';
+import { VolumeMenu } from './VolumeMenu';
 import { VolumeSwitcher } from './VolumeSwitcher';
 
 /** Où lâcher la page tirée: juste avant la page survolée, juste après, ou dedans. */
@@ -25,6 +27,8 @@ export function Sommaire({ tree, currentPageId, onSearch }: { tree: Tree; curren
   const navigate = useNavigate();
   const [dialog, setDialog] = useState<PageDialog | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
+  const features = useMe().data?.features;
   // Le volume tel que l'étagère le connaît (absent s'il est archivé).
   const shelved = useProjects().data?.find((p) => p.id === tree.project.id);
   const togglePin = useTogglePin();
@@ -195,6 +199,7 @@ export function Sommaire({ tree, currentPageId, onSearch }: { tree: Tree; curren
               <PlusIcon size={18} aria-hidden />
             </button>
           )}
+          <VolumeMenu tree={tree} onImport={features?.imports && (writer || tree.pages.some((p) => canEdit(p.role))) ? () => setImportOpen(true) : null} />
           {tree.project.canManage && (
             <button type="button" className="icon-btn sm" aria-label={t('Réglages du volume {name}', { name: tree.project.name })} title={t('Réglages du volume')} onClick={() => setSettingsOpen(true)}>
               <GearSixIcon size={18} aria-hidden />
@@ -203,6 +208,7 @@ export function Sommaire({ tree, currentPageId, onSearch }: { tree: Tree; curren
         </span>
       </div>
       {tree.project.canManage && <VolumeSettingsDialog tree={tree} open={settingsOpen} onOpenChange={setSettingsOpen} />}
+      <ImportDialog tree={tree} open={importOpen} onOpenChange={setImportOpen} />
       {error && (
         <p className="toc-error" role="alert">
           {error}

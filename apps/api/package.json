@@ -4,8 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "tsc -p tsconfig.json",
-    "dev": "tsc -p tsconfig.json && node --watch-path=dist dist/main.js & tsc -p tsconfig.json -w --preserveWatchOutput",
+    "build": "tsc -p tsconfig.json && node scripts/vendor.mjs",
+    "dev": "tsc -p tsconfig.json && node scripts/vendor.mjs && node --watch-path=dist dist/main.js & tsc -p tsconfig.json -w --preserveWatchOutput",
     "start": "node dist/main.js",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
@@ -21,6 +21,7 @@
     "@nestjs/platform-fastify": "^11.1.0",
     "bullmq": "^5.81.5",
     "fastify": "^5.4.0",
+    "fflate": "^0.8.2",
     "ioredis": "^5.6.0",
     "kysely": "^0.28.0",
     "nodemailer": "^10.3.1",
@@ -31,9 +32,13 @@
     "yaml": "^2.9.1"
   },
   "devDependencies": {
+    "@fontsource-variable/atkinson-hyperlegible-next": "^5.2.0",
+    "@fontsource-variable/literata": "^5.2.0",
+    "@fontsource/atkinson-hyperlegible-mono": "^5.2.0",
     "@types/node": "^22.15.0",
     "@types/nodemailer": "^8.0.2",
     "@types/qrcode": "1.5.5",
+    "mermaid": "^11.9.0",
     "typescript": "~5.9.2"
   }
 }

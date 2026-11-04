@@ -31,6 +31,9 @@ x-server: &server
     S3_ACCESS_KEY: ${S3_ACCESS_KEY:?S3_ACCESS_KEY manquant}
     S3_SECRET_KEY: ${S3_SECRET_KEY:?S3_SECRET_KEY manquant}
     UPLOAD_MAX_MB: ${UPLOAD_MAX_MB:-25}
+    IMPORT_MAX_MB: ${IMPORT_MAX_MB:-200}
+    GOTENBERG_URL: ${GOTENBERG_URL-http://gotenberg:3000}
+    PUBLIC_LINKS: ${PUBLIC_LINKS:-true}
     WEBHOOK_ALLOW_PRIVATE: ${WEBHOOK_ALLOW_PRIVATE:-false}
     WEBHOOK_UPDATE_DELAY: ${WEBHOOK_UPDATE_DELAY:-120}
     GITHUB_TOKEN: ${GITHUB_TOKEN:-}
@@ -92,6 +95,11 @@ services:
 
   drawio:
     image: jgraph/drawio:${DRAWIO_VERSION:-latest}
+    restart: unless-stopped
+
+  # Export PDF: Chromium derrière une API HTTP, joignable seulement par l'API.
+  gotenberg:
+    image: gotenberg/gotenberg:${GOTENBERG_VERSION:-8}
     restart: unless-stopped
 
   # Met la base à jour, puis s'arrête; les services attendent qu'il ait réussi.

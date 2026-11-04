@@ -26,7 +26,7 @@ export interface DirectoryEntry extends PrincipalView {
 
 const ROLE_RANK: Record<ProjectRole, number> = { admin: 4, editor: 3, commenter: 2, reader: 1 };
 
-interface Ordered {
+export interface Ordered {
   id: string;
   number: string;
   depth: number;
@@ -376,7 +376,7 @@ export class DocsService {
   }
 
   /** Numéros de section (1, 3.2, 4.1…) sur TOUTES les pages, pour qu'ils ne changent pas selon le lecteur. */
-  private async numbering(projectId: string): Promise<Map<string, Ordered>> {
+  async numbering(projectId: string): Promise<Map<string, Ordered>> {
     const pages = await this.db.selectFrom('pages').select(['id', 'parent_id', 'position']).where('project_id', '=', projectId).where('deleted_at', 'is', null).orderBy('position').orderBy('created_at').execute();
     const children = new Map<string | null, typeof pages>();
     for (const p of pages) children.set(p.parent_id, [...(children.get(p.parent_id) ?? []), p]);
@@ -411,7 +411,7 @@ export class DocsService {
   }
 
   /** Figures et listings déjà numérotés dans les pages précédentes du même chapitre. */
-  private async offsets(projectId: string, chapter: string, pageId: string, numbers: Map<string, Ordered>) {
+  async offsets(projectId: string, chapter: string, pageId: string, numbers: Map<string, Ordered>) {
     const before = [...numbers.values()]
       .filter((n) => n.number.split('.')[0] === chapter && compareNumbers(n.number, numbers.get(pageId)?.number ?? '') < 0)
       .map((n) => n.id);
@@ -495,7 +495,7 @@ function fold(text: string): string {
   return text.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 }
 
-function compareNumbers(a: string, b: string): number {
+export function compareNumbers(a: string, b: string): number {
   const pa = a.split('.').map(Number);
   const pb = b.split('.').map(Number);
   for (let i = 0; i < Math.max(pa.length, pb.length); i += 1) {

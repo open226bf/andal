@@ -228,6 +228,41 @@ export const en: Record<string, string> = {
   'Dossier invalide.': 'Invalid folder.',
   'Signature invalide.': 'Invalid signature.',
 
+  /* ---------- Modèles et exports ---------- */
+  'Modèle inconnu. Modèles: {list}.': 'Unknown template. Templates: {list}.',
+  'Format inconnu: « markdown » ou « pdf ».': 'Unknown format: “markdown” or “pdf”.',
+  "L'export PDF n'est pas configuré sur ce serveur (GOTENBERG_URL).": 'PDF export isn’t configured on this server (GOTENBERG_URL).',
+  'Le moteur PDF ne répond pas. Réessayez dans un instant.': 'The PDF engine isn’t responding. Try again in a moment.',
+  'Le moteur PDF n’a pas pu produire ce document.': 'The PDF engine couldn’t produce this document.',
+
+  /* ---------- Liens publics ---------- */
+  'Les liens publics sont désactivés sur ce serveur (PUBLIC_LINKS).': 'Public links are disabled on this server (PUBLIC_LINKS).',
+  'Seuls les admins du volume publient un lien public.': 'Only volume admins publish a public link.',
+  'Seuls les admins du volume retirent un lien public.': 'Only volume admins remove a public link.',
+  'Cette page est restreinte en lecture : elle ne peut pas être publique. Levez d’abord la restriction.': 'This page has restricted read access: it can’t be public. Lift the restriction first.',
+  'Indiquez la page (pageId) ou le volume (projectId) à publier.': 'Give the page (pageId) or the volume (projectId) to publish.',
+
+  /* ---------- Imports ---------- */
+  "L'import demande le stockage des fichiers (S3_BUCKET), absent sur ce serveur.": 'Importing needs file storage (S3_BUCKET), which this server doesn’t have.',
+  'Envoyez l’archive en multipart/form-data.': 'Send the archive as multipart/form-data.',
+  'Ce volume est archivé: rien ne s’y ajoute.': 'This volume is archived: nothing can be added to it.',
+  'Archive trop lourde: {n} Mo au plus.': 'Archive too large: {n} MB at most.',
+  'Formats acceptés : archive .zip (Markdown, Notion, Confluence), fichier .md ou page .html.': 'Accepted formats: .zip archive (Markdown, Notion, Confluence), .md file or .html page.',
+  'Page de destination invalide.': 'Invalid destination page.',
+  'La page de destination est dans un autre volume.': 'The destination page is in another volume.',
+  'Il faut le droit d’écriture sur la page de destination.': 'You need write access to the destination page.',
+  'Il faut le droit d’écriture sur le volume pour y importer des pages.': 'You need write access to the volume to import pages into it.',
+  'L’archive contient plus de {n} fichiers.': 'The archive contains more than {n} files.',
+  'L’archive déballée dépasse la taille permise.': 'The unpacked archive exceeds the allowed size.',
+  'Format non reconnu: envoyez une archive .zip, un fichier .md ou une page .html.': 'Unrecognized format: send a .zip archive, a .md file or an .html page.',
+  'Aucune page à importer: l’archive ne contient ni Markdown, ni page HTML.': 'Nothing to import: the archive contains neither Markdown nor HTML pages.',
+  'Le stockage des fichiers n’est pas configuré.': 'File storage isn’t configured.',
+  'Import interrompu (le worker s’est arrêté). Relancez-le.': 'Import interrupted (the worker stopped). Start it again.',
+  'Plus de {n} fichiers Markdown: choisissez un dossier plus précis.': 'More than {n} Markdown files: choose a narrower folder.',
+  'La page de destination a disparu: les pages sont au premier niveau du volume.': 'The destination page is gone: the pages are at the top level of the volume.',
+  'Aucune page HTML lisible dans l’archive.': 'No readable HTML page in the archive.',
+  '{path}: trop lourd, laissé de côté.': '{path}: too large, left out.',
+
   /* ---------- Journal d'audit ---------- */
   '{field}: une date AAAA-MM-JJ.': '{field}: a YYYY-MM-DD date.',
   '{field}: date invalide.': '{field}: invalid date.',

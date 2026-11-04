@@ -2,13 +2,13 @@
 
 **Français** · [English](README.md)
 
-Un serveur Linux avec Docker suffit : Caddy obtient le certificat TLS, sert l'interface, et relaie l'API, la collaboration temps réel et draw.io sur le même domaine. Postgres, Valkey et RustFS tournent à côté, chacun avec son volume.
+Un serveur Linux avec Docker suffit : Caddy obtient le certificat TLS, sert l'interface, et relaie l'API, la collaboration temps réel et draw.io sur le même domaine. Postgres, Valkey et RustFS tournent à côté, chacun avec son volume, ainsi que Gotenberg, qui rend les exports PDF.
 
 ```
 navigateur ──HTTPS──▶ web (Caddy) ──▶ /api      api      ─┐
                                    ──▶ /collab   collab   ─┼─▶ postgres, valkey, rustfs
                                    ──▶ /drawio   drawio    │
-                                                 worker   ─┘   (indexation, emails, purges, webhooks, synchro Git)
+                                                 worker   ─┘   (indexation, emails, purges, webhooks, synchro Git, imports)
 ```
 
 ## Installer
@@ -87,10 +87,14 @@ Les migrations passent toutes seules avant le redémarrage des services. Sauvega
 - **Aperçus GitHub et Jira** : `GITHUB_TOKEN` (lecture seule suffit), `JIRA_BASE_URL`, `JIRA_EMAIL`, `JIRA_API_TOKEN`.
 - **Webhooks vers le réseau interne** (Mattermost sur le LAN, par exemple) : `WEBHOOK_ALLOW_PRIVATE=true`. Par défaut, Andal refuse d'appeler une adresse privée, pour qu'un webhook ne serve pas à sonder le réseau du serveur.
 - **Synchro Git** : le worker clone les dépôts en `https://` ; il lui faut une sortie vers la forge (GitHub, GitLab, Gitea…). Pour une synchro à chaque push, la forge doit joindre `https://<ANDAL_DOMAIN>/api/git/hooks/…`.
+- **Export PDF** : le service `gotenberg` rend les PDF pour l'API, sans port publié. Pour s'en passer, mettez `GOTENBERG_URL=` (vide) dans `deploy/.env` et retirez le service ; le menu d'export ne propose alors que le Markdown.
+- **Imports** : `IMPORT_MAX_MB` (200 par défaut) plafonne chaque archive. Le worker la déballe dans son dossier temporaire : prévoyez jusqu'à cinq fois cette taille d'espace disque libre.
+- **Liens publics** : `PUBLIC_LINKS=false` les interdit, et ceux déjà publiés cessent aussitôt de répondre.
 
 ## Sécurité
 
 - Seul Caddy est exposé ; les autres services n'ont aucun port publié.
 - Limite de débit sur toute l'API (`RATE_LIMIT_*`), freins dédiés sur la connexion et la double authentification ; l'API ne croit `X-Forwarded-For` que venant de `TRUST_PROXY`.
 - Cookies de session `Secure` et `HttpOnly`, CSP stricte sur l'interface, fichiers envoyés servis sous `CSP: sandbox`.
+- Les liens publics (`/s/…`) reposent sur un jeton aléatoire de 144 bits, ne montrent jamais une page restreinte en lecture, et sont servis en `noindex`.
 - Les secrets ne vivent que dans `deploy/.env`, jamais dans les images. Les jetons d'API ne sont gardés qu'en empreinte ; les clés de l'assistant et les jetons des dépôts restent côté serveur, jamais renvoyés au navigateur.

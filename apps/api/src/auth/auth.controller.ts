@@ -76,7 +76,12 @@ export class AuthController {
 
   @Get('me')
   me(@CurrentAuth() auth: AuthContext) {
-    return { user: publicUser(auth.user), auth: { method: auth.session.method } };
+    return {
+      user: publicUser(auth.user),
+      auth: { method: auth.session.method },
+      // Ce que ce serveur propose: l'interface masque le reste.
+      features: { pdf: config.gotenbergUrl !== null, publicLinks: config.publicLinks, imports: config.storage !== null, importMaxMb: Math.round(config.importMaxBytes / 1024 / 1024) },
+    };
   }
 
   /** Langue de l'interface et des emails de ce compte. */

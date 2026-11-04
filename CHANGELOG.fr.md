@@ -4,6 +4,29 @@
 
 Images Docker : `ghcr.io/open226bf/andal-server` et `ghcr.io/open226bf/andal-web`, étiquetées avec la version (`0.1.0`), sa branche mineure (`0.1`) et `latest`. Pour mettre à jour, voir [deploy/README.fr.md](deploy/README.fr.md#mettre-à-jour).
 
+## À venir
+
+Arriver d'un autre outil, et pouvoir en repartir.
+
+### Modèles et export
+
+- **Modèles de page** : décision d'architecture, RFC, runbook et post-mortem, rédigés dans la langue de qui crée la page ; aussi par l'API (`template`).
+- **Export d'une page** en Markdown, ou en PDF mis en page pour l'impression (figures numérotées, schémas rendus, numéros de page), par Gotenberg.
+- **Export d'un volume** : une archive zip de fichiers Markdown avec en-tête, liens relatifs et fichiers joints, limitée aux pages que vous lisez.
+
+### Partage public
+
+- **Liens publics** vers une page, une page et ses sous-pages, ou tout un volume : lecture sans compte, sans commentaires ni historique, marquée `noindex`. Une page restreinte en lecture n'est jamais publique. Réservés aux admins du volume ; `PUBLIC_LINKS=false` coupe la fonction.
+
+### Import
+
+- **Import** depuis Markdown (un fichier, ou une arborescence zippée, exports de volume compris), Notion (export « Markdown & CSV ») et Confluence (export HTML d'un espace) : arborescence, encadrés, code, tableaux, images, pièces jointes et liens entre pages. Il tourne en tâche de fond, se termine par un bilan et des remarques, et passe aussi par l'API.
+
+### Déploiement
+
+- Nouveau service `gotenberg` dans le compose de production, et nouveaux réglages `GOTENBERG_URL`, `IMPORT_MAX_MB` et `PUBLIC_LINKS` (voir [deploy/README.fr.md](deploy/README.fr.md#variantes)).
+- La migration `0017` ajoute les tables des liens publics et des imports ; elle passe toute seule au démarrage.
+
 ## 0.1.0 (2026-11-03)
 
 Première version. Elle couvre l'écriture, les droits, la sécurité et l'auto-hébergement ; la migration depuis un autre outil (import, export, modèles, partage public) vient ensuite.

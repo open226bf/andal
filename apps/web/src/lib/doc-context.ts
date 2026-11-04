@@ -6,9 +6,16 @@ export interface DocContextValue {
   figureOffset: number;
   listingOffset: number;
   editing: boolean;
+  /** Lecture par un lien public: les fichiers passent par le lien, les specs ne se relisent pas en direct. */
+  share?: string;
 }
 
 export const DocContext = createContext<DocContextValue>({ chapter: '', figureOffset: 0, listingOffset: 0, editing: false });
+
+/** Adresse d'un fichier de la page: par l'API, ou par le lien public qui la sert. */
+export function docFileUrl(fileUrl: string, share: string | undefined): string {
+  return fileUrl && share ? fileUrl.replace(/^\/api\/files\//, `/api/public/${share}/files/`) : fileUrl;
+}
 
 export const useDoc = () => useContext(DocContext);
 

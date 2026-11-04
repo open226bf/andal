@@ -40,8 +40,8 @@ jobs:
           node-version-file: .nvmrc
           cache: pnpm
       - run: cp .env.example .env
-      - name: Infra (Postgres, Valkey, RustFS, Mailpit)
-        run: docker compose up -d --wait postgres valkey rustfs mailpit
+      - name: Infra (Postgres, Valkey, RustFS, Mailpit, Gotenberg)
+        run: docker compose up -d --wait postgres valkey rustfs mailpit gotenberg
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
       - run: pnpm db:migrate && pnpm db:seed

@@ -17,10 +17,11 @@ import { sql, type Kysely } from 'kysely';
 import { execFile } from 'node:child_process';
 import { createHash, randomUUID } from 'node:crypto';
 import { lookup } from 'node:dns/promises';
-import { lstat, mkdtemp, readdir, readFile, rm } from 'node:fs/promises';
+import { lstat, mkdtemp, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { basename, dirname, extname, join, posix, relative, resolve, sep } from 'node:path';
+import { basename, extname, join, relative, resolve, sep } from 'node:path';
 import { promisify } from 'node:util';
+import { entries, frontMatter, markdownDirs, rewriteLinks, stripLeadingTitle, walk } from './markdown-tree.js';
 
 const run = promisify(execFile);
 
@@ -28,7 +29,6 @@ const MAX_FILES = 1000;
 const MAX_MARKDOWN_BYTES = 1024 * 1024;
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
 const EMPTY_DOC: JSONContent = { type: 'doc', content: [{ type: 'paragraph' }] };
-const INDEX_FILES = new Set(['readme.md', 'index.md', '_index.md']);
 const IMAGE_TYPES: Record<string, string> = { '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.gif': 'image/gif', '.webp': 'image/webp', '.avif': 'image/avif', '.svg': 'image/svg+xml' };
 
 export interface GitSyncContext {
@@ -47,38 +47,6 @@ export interface GitSyncResult {
   updated: number;
   removed: number;
   errors: string[];
-}
-
-interface Entry {
-  /** Chemin dans le dossier synchronisé: « api/auth.md », ou « api » pour un dossier. */
-  key: string;
-  parentKey: string | null;
-  /** Fichier Markdown du contenu (absolu); null: dossier sans README. */
-  file: string | null;
-  title: string;
-  position: number;
-}
-
-/** « 02-premiers-pas.md » → « Premiers pas ». */
-function prettify(name: string): string {
-  const bare = name.replace(/\.(md|markdown)$/i, '').replace(/^\d+[-_. ]+/, '').replace(/[-_]+/g, ' ').trim();
-  return bare ? bare.charAt(0).toUpperCase() + bare.slice(1) : name;
-}
-
-/** En-tête YAML minimal (« title: … », « position: 3 »), puis le reste du fichier. */
-function frontMatter(text: string): { meta: Record<string, string>; body: string } {
-  const match = /^﻿?---\r?\n([\s\S]*?)\r?\n---\r?\n?/.exec(text);
-  if (!match) return { meta: {}, body: text.replace(/^﻿/, '') };
-  const meta: Record<string, string> = {};
-  for (const line of match[1]!.split(/\r?\n/)) {
-    const kv = /^([A-Za-z_][\w-]*):\s*(.*)$/.exec(line);
-    if (kv) meta[kv[1]!.toLowerCase()] = kv[2]!.trim().replace(/^["']|["']$/g, '');
-  }
-  return { meta, body: text.slice(match[0].length) };
-}
-
-function leadingTitle(body: string): string | null {
-  return /^\s*#\s+(.+?)\s*#*\s*$/m.exec(body.split(/\r?\n/).find((l) => l.trim()) ?? '')?.[1] ?? null;
 }
 
 async function checkRemote(url: string, allowLocal: boolean): Promise<void> {
@@ -121,65 +89,6 @@ async function clone(url: string, branch: string, token: string | null, target: 
   return stdout.trim();
 }
 
-/** Les fichiers Markdown du dossier, sans suivre les liens symboliques ni les dossiers cachés. */
-async function walk(root: string): Promise<string[]> {
-  const out: string[] = [];
-  const visit = async (dir: string) => {
-    for (const entry of await readdir(dir, { withFileTypes: true })) {
-      if (entry.name.startsWith('.') || entry.name === 'node_modules') continue;
-      const full = join(dir, entry.name);
-      if (entry.isSymbolicLink()) continue;
-      if (entry.isDirectory()) await visit(full);
-      else if (entry.isFile() && /\.(md|markdown)$/i.test(entry.name)) {
-        out.push(full);
-        if (out.length > MAX_FILES) throw new Error(`Plus de ${MAX_FILES} fichiers Markdown: choisissez un dossier plus précis.`);
-      }
-    }
-  };
-  await visit(root);
-  return out;
-}
-
-/** Fichiers → entrées (pages), dossiers compris, avec titres et positions. */
-async function entries(root: string, files: string[]): Promise<Entry[]> {
-  const byKey = new Map<string, Entry & { order: string }>();
-  const ensureDir = (dirKey: string) => {
-    if (!dirKey || byKey.has(dirKey)) return;
-    const parent = posix.dirname(dirKey);
-    ensureDir(parent === '.' ? '' : parent);
-    byKey.set(dirKey, { key: dirKey, parentKey: parent === '.' ? null : parent, file: null, title: prettify(posix.basename(dirKey)), position: Number.NaN, order: posix.basename(dirKey) });
-  };
-  for (const file of files) {
-    const rel = relative(root, file).split(sep).join('/');
-    const dirKey = posix.dirname(rel) === '.' ? '' : posix.dirname(rel);
-    const isIndex = INDEX_FILES.has(posix.basename(rel).toLowerCase()) && dirKey !== '';
-    const key = isIndex ? dirKey : rel;
-    ensureDir(dirKey);
-    const parentKey = isIndex ? (posix.dirname(dirKey) === '.' ? null : posix.dirname(dirKey)) : dirKey || null;
-    const text = (await readFile(file, 'utf8')).slice(0, MAX_MARKDOWN_BYTES);
-    const { meta, body } = frontMatter(text);
-    const name = isIndex ? posix.basename(dirKey) : posix.basename(rel);
-    const existing = byKey.get(key);
-    byKey.set(key, {
-      key,
-      parentKey,
-      file,
-      title: (meta.title || leadingTitle(body) || prettify(name)).slice(0, 200),
-      position: meta.position !== undefined || meta.order !== undefined ? Number(meta.position ?? meta.order) : Number.NaN,
-      order: existing?.order ?? name,
-    });
-  }
-  // Ordre: position explicite, puis nom de fichier (« 01-… » d'abord), à chaque niveau.
-  const list = [...byKey.values()];
-  const siblings = new Map<string | null, typeof list>();
-  for (const e of list) siblings.set(e.parentKey, [...(siblings.get(e.parentKey) ?? []), e]);
-  for (const group of siblings.values()) {
-    group.sort((a, b) => (Number.isNaN(a.position) ? 1e9 : a.position) - (Number.isNaN(b.position) ? 1e9 : b.position) || a.order.localeCompare(b.order, 'fr', { numeric: true }));
-    group.forEach((e, i) => (e.position = i + 1));
-  }
-  return list.sort((a, b) => a.key.split('/').length - b.key.split('/').length || a.position - b.position);
-}
-
 /** Envoie la commande « replace » au serveur collab et attend sa réponse. */
 async function replaceLive(valkey: Redis, pageId: string, content: JSONContent, userId: string | null): Promise<string> {
   const requestId = randomUUID();
@@ -212,7 +121,9 @@ export async function syncRepository(ctx: GitSyncContext, syncId: string, option
     const exists = await lstat(root).catch(() => null);
     if (!exists?.isDirectory()) throw new Error(`Le dossier « ${sync.path || '/'} » n’existe pas sur la branche ${sync.branch}.`);
 
-    const list = await entries(root, await walk(root));
+    const files = await walk(root, MAX_FILES);
+    const list = await entries(root, files, { maxFiles: MAX_FILES, maxBytes: MAX_MARKDOWN_BYTES });
+    const dirs = markdownDirs(root, files);
     const author = sync.created_by;
     const existing = await db.selectFrom('pages').select(['id', 'git_path', 'parent_id', 'path', 'title', 'position', 'content', 'deleted_at']).where('git_sync_id', '=', sync.id).execute();
     const byKey = new Map(existing.map((p) => [p.git_path!, p]));
@@ -259,8 +170,11 @@ export async function syncRepository(ctx: GitSyncContext, syncId: string, option
       let doc: JSONContent = EMPTY_DOC;
       if (entry.file) {
         const { body } = frontMatter((await readFile(entry.file, 'utf8')).slice(0, MAX_MARKDOWN_BYTES));
-        const text = body.replace(/^\s*#\s+[^\n]*\n+/, (line) => (line.replace(/^\s*#\s+/, '').trim() === entry.title ? '' : line));
-        const markdown = await rewrite(ctx, sync.id, root, entry.file, text, page.id, pageOf);
+        const markdown = await rewriteLinks(
+          { root, assets: root, pageOf, dirs, siblingIndex: false, image: (target) => uploadAsset(ctx, sync.id, root, target, page.id) },
+          entry.file,
+          stripLeadingTitle(body, entry.title),
+        );
         doc = await linkSpecBlocks(db, sync.project_id, fromMarkdown(markdown));
         const problem = validateDoc(doc);
         if (problem) {
@@ -300,37 +214,6 @@ export async function syncRepository(ctx: GitSyncContext, syncId: string, option
   } finally {
     await rm(work, { recursive: true, force: true });
   }
-}
-
-/** Réécrit les liens relatifs du Markdown: fichiers .md → /p/<id>, images du dépôt → /api/files/<id>. */
-async function rewrite(ctx: GitSyncContext, syncId: string, root: string, file: string, text: string, pageId: string, pageOf: Map<string, { id: string }>): Promise<string> {
-  const dir = dirname(file);
-  const inside = (target: string) => target === root || target.startsWith(root + sep);
-  const keyOf = (target: string) => {
-    const rel = relative(root, target).split(sep).join('/');
-    const name = posix.basename(rel).toLowerCase();
-    return INDEX_FILES.has(name) && posix.dirname(rel) !== '.' ? posix.dirname(rel) : rel;
-  };
-
-  // Images: ![alt](chemin "titre")
-  const images = [...text.matchAll(/!\[([^\]]*)\]\(\s*<?([^)\s>]+)>?(\s+"[^"]*")?\s*\)/g)];
-  for (const match of images) {
-    const href = match[2]!;
-    if (/^[a-z]+:|^\/\//i.test(href)) continue;
-    const target = resolve(dir, decodeURIComponent(href.split('#')[0]!.split('?')[0]!));
-    if (!inside(target)) continue;
-    const fileId = await uploadAsset(ctx, syncId, root, target, pageId).catch(() => null);
-    if (fileId) text = text.replace(match[0], `![${match[1]}](/api/files/${fileId}${match[3] ?? ''})`);
-  }
-
-  // Liens vers d'autres fichiers Markdown: [texte](../api/auth.md#ancre)
-  return text.replace(/(?<!!)\[([^\]]*)\]\(\s*<?([^)\s>]+\.(?:md|markdown))(#[^)\s>]*)?>?\s*\)/gi, (whole, label: string, href: string) => {
-    if (/^[a-z]+:|^\/\//i.test(href)) return whole;
-    const target = resolve(dir, decodeURIComponent(href));
-    if (!inside(target)) return label;
-    const page = pageOf.get(keyOf(target));
-    return page ? `[${label}](/p/${page.id})` : label;
-  });
 }
 
 async function uploadAsset(ctx: GitSyncContext, syncId: string, root: string, target: string, pageId: string): Promise<string | null> {

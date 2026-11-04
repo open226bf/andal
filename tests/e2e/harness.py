@@ -58,10 +58,12 @@ class Client:
         except ValueError:
             return status, raw.decode(errors='replace')
 
-    def upload(self, path, name, content, content_type='application/octet-stream'):
+    def upload(self, path, name, content, content_type='application/octet-stream', fields=None):
         boundary = f'----andal{uuid.uuid4().hex}'
+        # Les champs avant le fichier: le serveur les lit au fil du flux.
+        head = ''.join(f'--{boundary}\r\nContent-Disposition: form-data; name="{k}"\r\n\r\n{v}\r\n' for k, v in (fields or {}).items())
         body = (
-            f'--{boundary}\r\nContent-Disposition: form-data; name="file"; filename="{name}"\r\nContent-Type: {content_type}\r\n\r\n'.encode()
+            f'{head}--{boundary}\r\nContent-Disposition: form-data; name="file"; filename="{name}"\r\nContent-Type: {content_type}\r\n\r\n'.encode()
             + content
             + f'\r\n--{boundary}--\r\n'.encode()
         )

@@ -2,13 +2,13 @@
 
 [Français](README.fr.md) · **English**
 
-A Linux server with Docker is all you need: Caddy obtains the TLS certificate, serves the UI, and proxies the API, real-time collaboration and draw.io on the same domain. Postgres, Valkey and RustFS run alongside, each with its own volume.
+A Linux server with Docker is all you need: Caddy obtains the TLS certificate, serves the UI, and proxies the API, real-time collaboration and draw.io on the same domain. Postgres, Valkey and RustFS run alongside, each with its own volume, along with Gotenberg, which renders PDF exports.
 
 ```
 browser ──HTTPS──▶ web (Caddy) ──▶ /api      api      ─┐
                                 ──▶ /collab   collab   ─┼─▶ postgres, valkey, rustfs
                                 ──▶ /drawio   drawio    │
-                                              worker   ─┘   (indexing, emails, purges, webhooks, Git sync)
+                                              worker   ─┘   (indexing, emails, purges, webhooks, Git sync, imports)
 ```
 
 ## Install
@@ -87,10 +87,14 @@ Migrations run automatically before the services restart. Back up before a major
 - **GitHub and Jira previews**: `GITHUB_TOKEN` (read-only is enough), `JIRA_BASE_URL`, `JIRA_EMAIL`, `JIRA_API_TOKEN`.
 - **Webhooks to the internal network** (Mattermost on the LAN, for example): `WEBHOOK_ALLOW_PRIVATE=true`. By default, Andal refuses to call a private address, so that a webhook cannot be used to probe the server's network.
 - **Git sync**: the worker clones repositories over `https://`, so it needs outbound access to the Git host (GitHub, GitLab, Gitea, …). For a sync on every push, the Git host must be able to reach `https://<ANDAL_DOMAIN>/api/git/hooks/…`.
+- **PDF export**: the `gotenberg` service renders PDFs for the API and publishes no port. To do without it, set `GOTENBERG_URL=` (empty) in `deploy/.env` and remove the service; the export menu then offers only Markdown.
+- **Imports**: `IMPORT_MAX_MB` (200 by default) caps each archive. The worker unpacks it in its temporary folder, so allow up to five times that much free disk space.
+- **Public links**: `PUBLIC_LINKS=false` turns them off, and links already published stop working immediately.
 
 ## Security
 
 - Only Caddy is exposed; the other services publish no ports.
 - Rate limiting on the whole API (`RATE_LIMIT_*`), with dedicated limits on sign-in and two-factor authentication; the API trusts `X-Forwarded-For` only from `TRUST_PROXY`.
 - `Secure` and `HttpOnly` session cookies, strict CSP on the UI, uploaded files served under `CSP: sandbox`.
+- Public links (`/s/…`) rest on a random 144-bit token, never show a page restricted for reading, and are served with `noindex`.
 - Secrets live only in `deploy/.env`, never in the images. API tokens are stored only as hashes; assistant keys and repository tokens stay on the server and are never sent back to the browser.

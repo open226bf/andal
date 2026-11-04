@@ -6,6 +6,7 @@ import type { PresenceUser } from '../editor/DocEditor';
 import type { PageDetail } from '../lib/api';
 import { t, tn } from '../lib/i18n';
 import { useTheme } from '../lib/theme';
+import { ExportMenu } from './ExportMenu';
 import { SharePanel } from './SharePanel';
 
 interface Props {
@@ -61,6 +62,7 @@ export function Band({ page, editing, canEdit, presence, onMode }: Props) {
           </ToggleGroup.Item>
         </ToggleGroup.Root>
         <SharePanel page={page} />
+        <ExportMenu page={page} />
         <button type="button" className="icon-btn on-band" onClick={toggle} aria-label={theme === 'dark' ? t('Passer en thème clair') : t('Passer en thème sombre')}>
           {theme === 'dark' ? <SunIcon size={18} aria-hidden /> : <MoonIcon size={18} aria-hidden />}
         </button>

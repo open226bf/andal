@@ -1,6 +1,7 @@
 import { BadRequestException, ConflictException, ForbiddenException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { can } from '@andal/authz';
 import { ltreeLabel, pageRoleFor, projectRoleFor, recordVersion, type Database } from '@andal/db';
+import { findTemplate, PAGE_TEMPLATES, templateDoc } from '@andal/editor/templates';
 import { randomUUID } from 'node:crypto';
 import { sql, type Kysely } from 'kysely';
 import { AuditService } from '../audit.service.js';
@@ -86,11 +87,18 @@ export class PagesService {
     return Number(row.max) + 1;
   }
 
-  async create(auth: AuthContext, projectId: string, input: { title?: unknown; parentId?: unknown; markdown?: unknown; content?: unknown }, ip: string) {
+  async create(auth: AuthContext, projectId: string, input: { title?: unknown; parentId?: unknown; markdown?: unknown; content?: unknown; template?: unknown }, ip: string) {
     const name = title(input.title);
     const parent = await this.destination(auth, projectId, parentId(input.parentId));
+    const template = input.template === undefined || input.template === null || input.template === '' ? null : findTemplate(String(input.template));
+    if (input.template && !template) throw new BadRequestException(`Modèle inconnu. Modèles: ${PAGE_TEMPLATES.map((t) => t.id).join(', ')}.`);
     // Créée par l'API avec son contenu: personne ne l'a encore ouverte, il s'écrit directement.
-    const initial = input.markdown !== undefined || input.content !== undefined ? (await this.content.prepare(projectId, { markdown: input.markdown, content: input.content })).doc : EMPTY_DOC;
+    const initial =
+      input.markdown !== undefined || input.content !== undefined
+        ? (await this.content.prepare(projectId, { markdown: input.markdown, content: input.content })).doc
+        : template
+          ? templateDoc(template.id, auth.user.locale === 'en' ? 'en' : 'fr')
+          : EMPTY_DOC;
     const id = randomUUID();
     await this.db
       .insertInto('pages')
@@ -109,7 +117,7 @@ export class PagesService {
     await this.db.insertInto('page_versions').values({ page_id: id, version: 1, title: name, content: JSON.stringify(initial), authors: JSON.stringify([auth.user.id]) }).execute();
     if (initial !== EMPTY_DOC) await this.content.indexLater(id);
     await this.events.emit({ event: 'page.created', workspaceId: auth.user.workspace_id, projectId, actorId: auth.user.id, pageId: id });
-    await this.audit.record({ workspaceId: auth.user.workspace_id, actorId: auth.user.id, action: 'page.created', targetType: 'page', targetId: id, ip, metadata: { title: name, parentId: parent?.id ?? null } });
+    await this.audit.record({ workspaceId: auth.user.workspace_id, actorId: auth.user.id, action: 'page.created', targetType: 'page', targetId: id, ip, metadata: { title: name, parentId: parent?.id ?? null, ...(template ? { template: template.id } : {}) } });
     await this.bridge.treeChanged();
     return { id };
   }

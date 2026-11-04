@@ -1,9 +1,10 @@
-import { ArrowDownIcon, ArrowUpIcon, ArrowsDownUpIcon, DotsThreeIcon, FilePlusIcon, PencilSimpleIcon, TrashIcon } from '@phosphor-icons/react';
+import { PAGE_TEMPLATES, type TemplateId } from '@andal/editor/templates';
+import { ArrowDownIcon, ArrowUpIcon, ArrowsDownUpIcon, ChatsCircleIcon, DotsThreeIcon, FileDashedIcon, FilePlusIcon, LifebuoyIcon, PencilSimpleIcon, SignpostIcon, SirenIcon, TrashIcon, type Icon } from '@phosphor-icons/react';
 import * as Popover from '@radix-ui/react-popover';
-import { useState, type FormEvent } from 'react';
+import { useRef, useState, type FormEvent } from 'react';
 import { api, canEdit, errorMessage, useTrash, type Tree, type TreePage } from '../lib/api';
 import { date, relative } from '../lib/format';
-import { t, tn } from '../lib/i18n';
+import { locale, t, tn } from '../lib/i18n';
 import { FormError } from './AuthCard';
 import { ConfirmDialog, Modal } from './Dialog';
 
@@ -142,11 +143,10 @@ export function PageDialogs({
   return (
     <Modal open={dialog !== null} onOpenChange={(open) => !open && onClose()} title={title}>
       {dialog?.kind === 'create' && (
-        <TitleForm
-          submitLabel={t('Créer la page')}
+        <CreateForm
           hint={dialog.parent ? t('Elle hérite des restrictions de sa page parente.') : t('Elle prend les droits du volume.')}
-          onSubmit={async ({ title: name }) => {
-            const { id } = await api<{ id: string }>(`/projects/${tree.project.id}/pages`, { method: 'POST', body: JSON.stringify({ title: name, parentId: dialog.parent?.id ?? null }) });
+          onSubmit={async ({ title: name, template }) => {
+            const { id } = await api<{ id: string }>(`/projects/${tree.project.id}/pages`, { method: 'POST', body: JSON.stringify({ title: name, parentId: dialog.parent?.id ?? null, template }) });
             await onChanged();
             onCreated(id);
           }}
@@ -176,6 +176,86 @@ export function PageDialogs({
       )}
       {dialog?.kind === 'trash' && <TrashList projectId={tree.project.id} onRestored={onRestored} />}
     </Modal>
+  );
+}
+
+const TEMPLATE_ICONS: Record<TemplateId, Icon> = { adr: SignpostIcon, rfc: ChatsCircleIcon, runbook: LifebuoyIcon, postmortem: SirenIcon };
+
+/**
+ * Nouvelle page: un titre, et de quoi partir. Choisir un modèle propose son
+ * début de titre (« Décision : ») tant que le champ est vide ou n'a pas été retouché.
+ */
+function CreateForm({ hint, onSubmit }: { hint: string; onSubmit: (values: { title: string; template: TemplateId | null }) => Promise<void> }) {
+  const [value, setValue] = useState('');
+  const [template, setTemplate] = useState<TemplateId | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [pending, setPending] = useState(false);
+  const input = useRef<HTMLInputElement>(null);
+  const prefix = (id: TemplateId | null) => (id ? (PAGE_TEMPLATES.find((p) => p.id === id)?.title[locale] ?? '') : '');
+
+  const choose = (id: TemplateId | null) => {
+    if (!value.trim() || value === prefix(template)) setValue(prefix(id));
+    setTemplate(id);
+  };
+  const submit = async (event: FormEvent) => {
+    event.preventDefault();
+    setPending(true);
+    setError(null);
+    try {
+      await onSubmit({ title: value, template });
+    } catch (err) {
+      setError(errorMessage(err));
+      setPending(false);
+    }
+  };
+  const options: { id: TemplateId | null; name: string; description: string; icon: Icon }[] = [
+    { id: null, name: t('Page vide'), description: t('Une page blanche, à écrire de zéro.'), icon: FileDashedIcon },
+    ...PAGE_TEMPLATES.map((p) => ({ id: p.id, name: p.name[locale], description: p.description[locale], icon: TEMPLATE_ICONS[p.id] })),
+  ];
+
+  return (
+    <form className="dialog-body" onSubmit={(e) => void submit(e)}>
+      {error && <FormError>{error}</FormError>}
+      <div className="field">
+        <label htmlFor="page-title">{t('Titre')}</label>
+        <input ref={input} id="page-title" className="input" required autoFocus maxLength={120} value={value} onChange={(e) => setValue(e.target.value)} />
+      </div>
+      <fieldset className="field">
+        <legend>{t('Partir de')}</legend>
+        <div className="templates">
+          {options.map((option) => {
+            const OptionIcon = option.icon;
+            return (
+              <label key={option.id ?? 'blank'} className="template">
+                <input
+                  type="radio"
+                  name="template"
+                  checked={template === option.id}
+                  onChange={() => {
+                    choose(option.id);
+                    // Le titre proposé se complète: curseur à la fin.
+                    requestAnimationFrame(() => {
+                      const el = input.current;
+                      el?.focus();
+                      el?.setSelectionRange(el.value.length, el.value.length);
+                    });
+                  }}
+                />
+                <OptionIcon size={20} aria-hidden />
+                <span>
+                  <b>{option.name}</b>
+                  <small>{option.description}</small>
+                </span>
+              </label>
+            );
+          })}
+        </div>
+      </fieldset>
+      <p className="form-hint">{hint}</p>
+      <button type="submit" className="btn-ink" disabled={pending || !value.trim() || value.trim() === prefix(template).trim()}>
+        {t('Créer la page')}
+      </button>
+    </form>
   );
 }
 

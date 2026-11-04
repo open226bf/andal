@@ -55,6 +55,7 @@ Tout écoute sur 127.0.0.1 uniquement.
 | RustFS | 59000 / 59001 | Stockage S3 des fichiers joints |
 | draw.io | 58081 | Éditeur de schémas embarqué |
 | Mailpit | 51025 / 58025 | Faux serveur SMTP de dev ; les emails envoyés se lisent sur http://localhost:58025 |
+| Gotenberg | 53000 | Export PDF (Chromium) |
 | Keycloak | 58080 | SSO OIDC, uniquement avec `docker compose --profile sso up -d` |
 
 ## Comptes de démo
@@ -297,6 +298,44 @@ Dans les réglages d'un volume (admins du volume), **Synchro Git** relie un doss
 - **Quand** : à chaque push si la forge appelle le webhook affiché (GitHub, GitLab, Gitea, Forgejo, signé avec le secret affiché), sinon toutes les 10 minutes, ou sur « Synchroniser ».
 - Dépôts en `https://` seulement ; un dépôt privé demande un jeton de lecture, gardé côté serveur. **Détacher** laisse les pages en place, et modifiables de nouveau.
 
+## Modèles, export et liens publics
+
+**Modèles de page.** En plus de la page vide, la fenêtre de nouvelle page propose quatre modèles pour équipes tech : **Décision d'architecture** (contexte, options, décision, conséquences), **RFC**, **Runbook** (symptômes, diagnostic, remédiation) et **Post-mortem** (chronologie, cause racine, actions, sans reproche). Le titre commence par le préfixe du modèle (« Décision : », « Runbook : »…), et le contenu est rédigé dans la langue de qui crée la page. Par l'API : `"template": "adr"` (ou `rfc`, `runbook`, `postmortem`) à la création d'une page.
+
+**Exporter.** Le bouton d'export, dans le bandeau de la page, la télécharge :
+
+- **Markdown** : le même Markdown que l'API (GFM, encadrés, blocs `mermaid` et `openapi`), avec des liens vers les pages et les fichiers rendus absolus, vers cette installation.
+- **PDF** : mis en page pour l'impression (A4) avec son numéro et son volume, figures et listings numérotés, schémas Mermaid rendus, schémas draw.io et blocs OpenAPI, et numéros de page en pied. Les commentaires restent à l'écart. Le PDF est rendu par [Gotenberg](https://gotenberg.dev) (`GOTENBERG_URL`) ; sans lui, seul le Markdown est proposé.
+
+**Exporter le volume**, dans le menu du volume (le « ⋯ » à côté de son nom), télécharge une archive zip : un fichier Markdown par page (`title` et `position` dans l'en-tête), un dossier par page qui a des sous-pages (son contenu dans `index.md`), des liens relatifs entre pages, et les fichiers utilisés par les pages dans `_fichiers/`. N'y entrent que les pages que vous lisez. L'archive se réimporte telle quelle, ici ou dans un autre Andal.
+
+**Liens publics.** Dans **Partager**, un admin du volume publie une page (avec ou sans ses sous-pages) ou tout le volume derrière une adresse impossible à deviner, `/s/…`. Qui a l'adresse lit sans compte : le contenu des pages publiées, leur numérotation, leurs schémas et leurs fichiers ; ni commentaires, ni historique, ni auteurs.
+
+- Une page restreinte en lecture n'est jamais publique, même par le lien de sa parente ou de son volume ; les liens qui y mènent restent en texte simple, comme ceux vers des pages hors du partage.
+- Retirer le lien coupe l'accès aussitôt. Les pages publiques sont marquées `noindex`. Chaque publication et chaque retrait passent au journal d'audit.
+- `PUBLIC_LINKS=false` coupe la fonction sur un serveur.
+
+## Importer
+
+**Importer des pages…**, dans le menu du volume, fait entrer toute une arborescence :
+
+- **Markdown** : un fichier `.md`, ou un dossier zippé : un dossier par page parente (son `README.md` ou `index.md`, ou un `Page.md` à côté d'un dossier `Page/`), images et fichiers à côté. Titres et ordre comme pour la synchro Git. L'archive de « Exporter le volume » se réimporte telle quelle.
+- **Notion** : l'export « Markdown & CSV », avec les sous-pages. L'arborescence et les encadrés suivent, les bases deviennent des tableaux, et les identifiants que Notion ajoute aux noms disparaissent.
+- **Confluence** : l'export HTML d'un espace. L'arborescence vient de l'index de l'export ; les encadrés info, note, avertissement et astuce deviennent des encadrés, le code garde son langage, et tableaux, images et pièces jointes suivent. L'export XML n'est pas pris en charge.
+
+Règles :
+
+- Importer, c'est créer des pages : il faut le droit d'écriture là où elles arrivent (premier niveau du volume, ou sous une page). Elles prennent les droits de cet endroit ; rien n'est remplacé, elles s'ajoutent après les pages existantes.
+- Le worker traite l'archive en tâche de fond. La fenêtre suit l'avancée, puis donne le nombre de pages et de fichiers, et les remarques éventuelles (un fichier trop lourd, une page hors schéma). Les liens entre pages importées deviennent des liens entre pages ; images et fichiers deviennent des pièces jointes.
+- Limites : `IMPORT_MAX_MB` par archive (200 par défaut) et cinq fois plus une fois déballée, 10 000 fichiers, 2 000 pages, 2 Mo de Markdown par page, `UPLOAD_MAX_MB` par fichier joint. L'archive quitte le stockage une fois l'import terminé, réussi ou non.
+
+```bash
+curl -X POST -H "Authorization: Bearer andal_…" -F parentId=<page> -F file=@export.zip \
+  "https://docs.example.com/api/projects/<volume>/imports"
+```
+
+Avec un jeton en écriture ; `parentId` est facultatif et doit venir avant le fichier. `GET /api/imports/<id>` donne l'avancée.
+
 ## Assistant
 
 **⌘K** répond aussi aux questions : une question qui finit par « ? », ou Maj + Entrée. La réponse arrive au fil de l'eau, cite ses sources [1], [2]… et les liste en dessous.
@@ -324,11 +363,11 @@ apps/
   web/      React 19, Vite, Tailwind 4, TanStack Router et Query, TipTap 3
   api/      NestJS 11 sur Fastify; fichiers vers le stockage S3
   collab/   Hocuspocus 3 (Yjs), validation du schéma avant écriture
-  worker/   BullMQ: texte et liens pour la recherche et les rétroliens, emails, purges (corbeille, fichiers), webhooks, synchro Git
+  worker/   BullMQ: texte et liens pour la recherche et les rétroliens, emails, purges (corbeille, fichiers), webhooks, synchro Git, imports
 packages/
   authz/    Modèle de droits, pur et testé
   db/       Kysely, migrations, seed, requêtes d'accès, stockage S3
-  editor/   Schéma TipTap partagé client / serveur (Mermaid, OpenAPI, draw.io, image, pièce jointe, tableau, tâches, encadré, commentaire), lecture des specs OpenAPI, Markdown aller-retour
+  editor/   Schéma TipTap partagé client / serveur (Mermaid, OpenAPI, draw.io, image, pièce jointe, tableau, tâches, encadré, commentaire), lecture des specs OpenAPI, Markdown aller-retour, modèles de page, rendu HTML pour le PDF
   ui/       Jetons de design (CSS) et composants de base
 deploy/     Images, compose de production, Caddy (voir deploy/README.fr.md)
 tests/e2e/  Suites de bout en bout (Python, sans dépendance)
@@ -356,7 +395,7 @@ Lance les tests du modèle de droits, du schéma de l'éditeur (specs OpenAPI, M
 tests/e2e/run.sh
 ```
 
-Avec la stack lancée : les suites de bout en bout (comptes, accès et notifications, pages, versions, volumes, fichiers et liens, specs, API publique et webhooks, synchro Git, assistant, double authentification, sessions et journal, SCIM et groupes SSO, limite de débit), puis les trois vérifications du serveur collab ci-dessous. Chaque suite repart des données de démo ; `tests/e2e/run.sh files_links_test` n'en lance qu'une. La CI GitHub les fait tourner à chaque commit, sur une stack complète.
+Avec la stack lancée : les suites de bout en bout (comptes, accès et notifications, pages, versions, volumes, fichiers et liens, specs, API publique et webhooks, synchro Git, modèles, exports, liens publics et imports, assistant, double authentification, sessions et journal, SCIM et groupes SSO, limite de débit), puis les trois vérifications du serveur collab ci-dessous. Chaque suite repart des données de démo ; `tests/e2e/run.sh files_links_test` n'en lance qu'une. La CI GitHub les fait tourner à chaque commit, sur une stack complète.
 
 ```bash
 pnpm --filter @andal/collab check:readonly
@@ -399,7 +438,8 @@ Avec `ANDAL_URL`, `ANDAL_USER` et `ANDAL_PASSWORD` : vérifie une installation d
 - **Specs** : comparer deux versions d'une spec (routes ajoutées, retirées, cassées) ; des specs AsyncAPI ou GraphQL.
 - **Synchro Git** : dans un seul sens (dépôt → Andal) ; proposer une modification depuis Andal ouvrirait une pull request.
 - **Assistant** : la recherche est plein texte (français) ; une recherche sémantique (embeddings, pgvector) trouverait mieux les questions mal formulées.
-- **Export PDF** (Gotenberg) ; plusieurs instances de l'API derrière Caddy (elle est déjà sans état : sessions, freins et files dans Valkey).
+- **Migration** : l'export XML de Confluence ne s'importe pas, ni les commentaires et l'historique venus de Confluence ou de Notion ; les bases Notion arrivent en tableaux figés ; un lien public n'a ni date d'expiration ni mot de passe ; pas encore de PDF d'un volume entier.
+- **Montée en charge** : plusieurs instances de l'API derrière Caddy (elle est déjà sans état : sessions, freins et files dans Valkey).
 - **Durcissement** : RLS PostgreSQL en seconde barrière ; chiffrer en base les secrets de double authentification et les clés des intégrations.
 - **Langues** : le contenu de démo et les messages de l'API SCIM restent en français ; d'autres langues demandent un catalogue de plus.
 - **Performance** : le bundle principal fait environ 1,1 Mo minifié ; charger l'éditeur à la demande en mode lecture.

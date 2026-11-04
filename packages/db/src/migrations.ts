@@ -585,6 +585,52 @@ const userLocale: Migration = {
   },
 };
 
+/** Palier 2: liens publics en lecture et imports d'archives (Markdown, Notion, Confluence). */
+const publicLinksAndImports: Migration = {
+  async up(db) {
+    await db.schema
+      .createTable('public_links')
+      .addColumn('id', 'uuid', (c) => c.primaryKey().defaultTo(sql`gen_random_uuid()`))
+      .addColumn('token', 'text', (c) => c.notNull().unique())
+      .addColumn('workspace_id', 'uuid', (c) => c.notNull().references('workspaces.id').onDelete('cascade'))
+      .addColumn('project_id', 'uuid', (c) => c.notNull().references('projects.id').onDelete('cascade'))
+      // Nulle: tout le volume.
+      .addColumn('page_id', 'uuid', (c) => c.references('pages.id').onDelete('cascade'))
+      .addColumn('subpages', 'boolean', (c) => c.notNull().defaultTo(true))
+      .addColumn('created_by', 'uuid', (c) => c.references('users.id').onDelete('set null'))
+      .addColumn('created_at', 'timestamptz', (c) => c.notNull().defaultTo(sql`now()`))
+      .execute();
+    // Un lien par page, un par volume.
+    await sql`create unique index public_links_page on public_links (page_id) where page_id is not null`.execute(db);
+    await sql`create unique index public_links_volume on public_links (project_id) where page_id is null`.execute(db);
+
+    await db.schema
+      .createTable('imports')
+      .addColumn('id', 'uuid', (c) => c.primaryKey().defaultTo(sql`gen_random_uuid()`))
+      .addColumn('workspace_id', 'uuid', (c) => c.notNull().references('workspaces.id').onDelete('cascade'))
+      .addColumn('project_id', 'uuid', (c) => c.notNull().references('projects.id').onDelete('cascade'))
+      .addColumn('parent_id', 'uuid', (c) => c.references('pages.id').onDelete('set null'))
+      .addColumn('created_by', 'uuid', (c) => c.references('users.id').onDelete('set null'))
+      .addColumn('file_name', 'text', (c) => c.notNull())
+      .addColumn('storage_key', 'text', (c) => c.notNull())
+      .addColumn('status', 'text', (c) => c.notNull().defaultTo('pending').check(sql`status in ('pending', 'running', 'done', 'failed')`))
+      .addColumn('source', 'text')
+      .addColumn('pages', 'integer', (c) => c.notNull().defaultTo(0))
+      .addColumn('files', 'integer', (c) => c.notNull().defaultTo(0))
+      .addColumn('first_page_id', 'uuid', (c) => c.references('pages.id').onDelete('set null'))
+      .addColumn('warnings', 'jsonb', (c) => c.notNull().defaultTo(sql`'[]'::jsonb`))
+      .addColumn('error', 'text')
+      .addColumn('created_at', 'timestamptz', (c) => c.notNull().defaultTo(sql`now()`))
+      .addColumn('finished_at', 'timestamptz')
+      .execute();
+    await sql`create index imports_project on imports (project_id, created_at desc)`.execute(db);
+  },
+  async down(db) {
+    await db.schema.dropTable('imports').execute();
+    await db.schema.dropTable('public_links').execute();
+  },
+};
+
 const provider: MigrationProvider = {
   async getMigrations() {
     return {
@@ -604,6 +650,7 @@ const provider: MigrationProvider = {
       '0014_git_ai': gitAndAi,
       '0015_security': security,
       '0016_user_locale': userLocale,
+      '0017_public_links_imports': publicLinksAndImports,
     };
   },
 };

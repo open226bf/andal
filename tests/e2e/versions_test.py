@@ -40,7 +40,7 @@ def login(user):
 
 
 def sql(query):
-    out = subprocess.run(['docker', 'compose', 'exec', '-T', 'postgres', 'psql', '-U', 'calepin', '-d', 'calepin', '-Atc', query], cwd=ROOT, capture_output=True, text=True, check=True)
+    out = subprocess.run(['docker', 'compose', 'exec', '-T', 'postgres', 'psql', '-U', 'calepin', '-d', os.environ.get('POSTGRES_DB', 'calepin'), '-Atc', query], cwd=ROOT, capture_output=True, text=True, check=True)
     return out.stdout.strip()
 
 
@@ -163,7 +163,7 @@ sql(f"update pages set deleted_at = now() - interval '31 days' where id = '{old[
 
 def bull(code):
     return subprocess.run(['pnpm', '--filter', '@andal/worker', 'exec', 'node', '--input-type=module', '-e',
-                           "import { Queue } from 'bullmq'; const q = new Queue('andal', { connection: { host: '127.0.0.1', port: 56379 } }); " + code + " await q.close();"],
+                           f"import {{ Queue }} from 'bullmq'; const q = new Queue('andal', {{ connection: {{ host: '127.0.0.1', port: {os.environ.get('VALKEY_PORT', '56379')} }} }}); " + code + " await q.close();"],
                           cwd=ROOT, check=True, capture_output=True, text=True).stdout
 
 

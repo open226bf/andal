@@ -7,8 +7,9 @@
  * - webhook.event: trouve les intégrations abonnées à un événement, et leur prépare un envoi.
  * - webhook.deliver: envoie, signe, et réessaie avec un délai croissant (6 tentatives).
  * - git.sync: synchronise un dossier de dépôt Git vers un volume (toutes les 10 minutes, ou sur push).
+ * - import.run: importe une archive (Markdown, Notion, Confluence) dans un volume.
  *
- * Prochaines tâches prévues: export PDF (Gotenberg), miniatures.
+ * Prochaine tâche prévue: miniatures.
  * Une tâche lancée pour un utilisateur garde son identité et revérifie ses droits.
  */
 import { can } from '@andal/authz';
@@ -34,6 +35,7 @@ import { extractPageLinks, extractText, type JSONContent } from '@andal/editor';
 import { Queue, UnrecoverableError, Worker } from 'bullmq';
 import { randomUUID } from 'node:crypto';
 import { syncRepository } from './git-sync.js';
+import { abandonStaleImports, runImport } from './import.js';
 import { sql } from 'kysely';
 import { Redis } from 'ioredis';
 import nodemailer from 'nodemailer';
@@ -61,6 +63,14 @@ const webhookAllowPrivate = process.env.WEBHOOK_ALLOW_PRIVATE === 'true';
 const PAGE_UPDATED_DELAY_MS = Math.max(0, Number(process.env.WEBHOOK_UPDATE_DELAY ?? 120)) * 1000;
 /** Dépôts Git sur le réseau interne ou en file:// (forge interne, tests). Désactivé par défaut. */
 const gitAllowLocal = process.env.GIT_ALLOW_LOCAL === 'true';
+
+/** Fichiers repris par un import: même plafond qu'un envoi; l'archive déballée, cinq fois celui de l'archive (1 Go au moins). */
+const fileMaxBytes = Math.max(1, Number(process.env.UPLOAD_MAX_MB ?? 25)) * 1024 * 1024;
+const unpackedMaxBytes = Math.max(1024, 5 * Math.max(1, Number(process.env.IMPORT_MAX_MB ?? 200))) * 1024 * 1024;
+
+interface ImportJob {
+  importId: string;
+}
 
 interface GitSyncJob {
   syncId: string;
@@ -307,7 +317,7 @@ async function emailNotifications({ userId }: EmailJob) {
   await db.updateTable('notifications').set({ emailed_at: new Date() }).where('id', 'in', items.map((r) => r.id)).execute();
 }
 
-const worker = new Worker<IndexJob | EmailJob | WebhookEventJob | DeliverJob | GitSyncJob>(
+const worker = new Worker<IndexJob | EmailJob | WebhookEventJob | DeliverJob | GitSyncJob | ImportJob>(
   'andal',
   async (job) => {
     if (job.name === 'page.index') await indexPage(job.data as IndexJob);
@@ -315,6 +325,7 @@ const worker = new Worker<IndexJob | EmailJob | WebhookEventJob | DeliverJob | G
     else if (job.name === 'webhook.deliver') await deliver(job.data as DeliverJob, job.attemptsMade + 1);
     else if (job.name === 'git.sync') await gitSync(job.data as GitSyncJob);
     else if (job.name === 'git.sync.all') await gitSyncAll();
+    else if (job.name === 'import.run') await runImport({ db, valkey: cache, queue, storage, fileMaxBytes, unpackedMaxBytes }, (job.data as ImportJob).importId);
     else if (job.name === 'notifications.email') await emailNotifications(job.data as EmailJob);
     else if (job.name === 'trash.purge') {
       await purgeTrash();
@@ -326,6 +337,8 @@ const worker = new Worker<IndexJob | EmailJob | WebhookEventJob | DeliverJob | G
 
 worker.on('failed', (job, error) => console.error(`Tâche ${job?.name} échouée:`, error.message));
 
+// Un import coupé par un arrêt du worker ne reprendra pas: il est marqué en échec.
+await abandonStaleImports(db);
 // Au démarrage, indexe les pages jamais indexées (données de démo, import…).
 const pending = await db.selectFrom('pages').select('id').where('text_content', '=', '').execute();
 await queue.addBulk(pending.map((p) => ({ name: 'page.index', data: { pageId: p.id }, opts: { removeOnComplete: 100 } })));

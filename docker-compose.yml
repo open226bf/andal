@@ -48,6 +48,12 @@ services:
     ports:
       - "127.0.0.1:58081:8080"
 
+  # Export PDF: Chromium derrière une API HTTP. L'API lui envoie la page en HTML.
+  gotenberg:
+    image: gotenberg/gotenberg:8
+    ports:
+      - "127.0.0.1:53000:3000"
+
   # Boîte aux lettres de développement: attrape les emails (invitations,
   # réinitialisations) sans rien envoyer dehors. Interface: http://localhost:58025
   mailpit:

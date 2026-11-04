@@ -40,7 +40,7 @@ def login(user):
 
 
 def sql(query):
-    out = subprocess.run(['docker', 'compose', 'exec', '-T', 'postgres', 'psql', '-U', 'calepin', '-d', 'calepin', '-Atc', query], cwd=ROOT, capture_output=True, text=True, check=True)
+    out = subprocess.run(['docker', 'compose', 'exec', '-T', 'postgres', 'psql', '-U', 'calepin', '-d', os.environ.get('POSTGRES_DB', 'calepin'), '-Atc', query], cwd=ROOT, capture_output=True, text=True, check=True)
     return out.stdout.strip()
 
 

@@ -1,12 +1,13 @@
 import { AccessMark, accessLevel, accessLabel, type Role } from '@andal/ui';
-import { LockSimpleIcon, LockSimpleOpenIcon, UsersThreeIcon, XIcon } from '@phosphor-icons/react';
+import { GlobeHemisphereWestIcon, LockSimpleIcon, LockSimpleOpenIcon, UsersThreeIcon, XIcon } from '@phosphor-icons/react';
 import * as Popover from '@radix-ui/react-popover';
 import { useQueryClient } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import { useState } from 'react';
-import { api, errorMessage, useSharing, type DirectoryEntry, type PageDetail, type PrincipalView, type Sharing } from '../lib/api';
+import { api, errorMessage, useMe, usePublicLinks, useSharing, type DirectoryEntry, type PageDetail, type PrincipalView, type PublicLink, type Sharing } from '../lib/api';
 import { t, tn, tx } from '../lib/i18n';
 import { FormError } from './AuthCard';
+import { CopyField } from './CopyField';
 import { EntryMark, Picker } from './Picker';
 
 const GRANT_ROLES: { role: Role; label: string }[] = [
@@ -106,9 +107,87 @@ function ShareContent({ page }: { page: PageDetail }) {
         <>
           <VolumeSection data={data} act={act} />
           <PageSection data={data} act={act} pageId={page.id} slug={page.project.slug} />
+          <PublicSection page={page} act={act} />
         </>
       )}
     </>
+  );
+}
+
+/** Lien public en lecture: la page (avec ses sous-pages ou non) ou tout le volume, sans compte. */
+function PublicSection({ page, act }: { page: PageDetail; act: (run: () => Promise<unknown>) => Promise<boolean> }) {
+  const me = useMe();
+  const enabled = me.data?.features.publicLinks ?? false;
+  const { data } = usePublicLinks(page.id, enabled);
+  const queryClient = useQueryClient();
+  const [subpages, setSubpages] = useState(true);
+  if (!enabled || !data) return null;
+
+  const run = async (call: () => Promise<unknown>) => {
+    await act(call);
+    await queryClient.invalidateQueries({ queryKey: ['public-links'] });
+  };
+  const own = data.links.find((l) => l.page?.id === page.id);
+  const volume = data.links.find((l) => l.page === null);
+  const describe = (link: PublicLink) =>
+    link.page === null
+      ? t('Tout le volume est public.')
+      : link.page.id === page.id
+        ? link.subpages
+          ? t('Cette page et ses sous-pages sont publiques.')
+          : t('Cette page est publique, sans ses sous-pages.')
+        : t('Publique avec « {title} » et ses sous-pages.', { title: link.page.title });
+
+  return (
+    <section className="share-sec" aria-labelledby="share-public">
+      <h3 id="share-public">
+        {t('Lien public')}
+        <small>{t('Lisible sans compte, par quiconque a l’adresse. Ni commentaires, ni historique.')}</small>
+      </h3>
+      {data.restricted ? (
+        <p className="share-inherited">
+          <LockSimpleIcon size={16} aria-hidden />
+          <span>{t('Lecture réservée: cette page ne peut pas être publique, même par un lien de sa parente ou du volume.')}</span>
+        </p>
+      ) : (
+        data.links.map((link) => (
+          <div key={link.id} className="public-link">
+            <p>
+              <GlobeHemisphereWestIcon size={16} aria-hidden />
+              {describe(link)}
+            </p>
+            <CopyField label={t('Adresse publique')} value={link.url} />
+            {data.canManage && (
+              <button type="button" className="ghost danger" onClick={() => void run(() => api(`/public-links/${link.id}`, { method: 'DELETE' }))}>
+                {link.page ? t('Retirer ce lien') : t('Retirer le lien du volume')}
+              </button>
+            )}
+          </div>
+        ))
+      )}
+      {data.canManage && !data.restricted && (!own || !volume) && (
+        <div className="public-actions">
+          {!own && (
+            <>
+              <label className="check">
+                <input type="checkbox" checked={subpages} onChange={(e) => setSubpages(e.target.checked)} />
+                {t('Avec ses sous-pages')}
+              </label>
+              <button type="button" className="btn-paper" onClick={() => void run(() => api('/public-links', { method: 'POST', body: JSON.stringify({ pageId: page.id, subpages }) }))}>
+                {t('Publier cette page')}
+              </button>
+            </>
+          )}
+          {!volume && (
+            <button type="button" className="ghost" onClick={() => void run(() => api('/public-links', { method: 'POST', body: JSON.stringify({ projectId: page.project.id }) }))}>
+              {t('Publier tout le volume')}
+            </button>
+          )}
+        </div>
+      )}
+      {!data.canManage && data.links.length === 0 && !data.restricted && <p className="share-note">{t('Seuls les admins du volume publient un lien public.')}</p>}
+      {data.canManage && !data.restricted && <p className="share-note">{t('Une page restreinte en lecture n’est jamais publique, même dans un volume publié. Retirer un lien le coupe aussitôt.')}</p>}
+    </section>
   );
 }
 
