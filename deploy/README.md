@@ -77,6 +77,7 @@ Migrations run automatically before the services restart. Back up before a major
 
 ## Variants
 
+- **Docker Swarm**: a stack for a cluster, with data pinned to one node: see [swarm/README.md](swarm/README.md).
 - **External S3** (MinIO, Garage, Scaleway, R2, …): set `S3_ENDPOINT`, `S3_REGION`, `S3_BUCKET` and the keys, then remove the `rustfs` service from the compose file.
 - **SSO**: `OIDC_ISSUER`, `OIDC_CLIENT_ID`, `OIDC_CLIENT_SECRET`. The redirect URI to register with the provider is `https://<ANDAL_DOMAIN>/api/auth/callback`. To keep the provider's groups in sync on every sign-in: `OIDC_GROUPS_CLAIM=groups` (plus `OIDC_GROUPS_SCOPE=groups` for Okta).
 - **SCIM** (accounts and groups pushed by Okta, Entra ID, …): create the token in Administration → Directory, and register `https://<ANDAL_DOMAIN>/api/scim/v2` with the provider.

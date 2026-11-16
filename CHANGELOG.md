@@ -25,6 +25,7 @@ Moving in from another tool, and back out.
 ### Deployment
 
 - New `gotenberg` service in the production compose file, and new settings `GOTENBERG_URL`, `IMPORT_MAX_MB` and `PUBLIC_LINKS` (see [deploy/README.md](deploy/README.md#variants)).
+- **Docker Swarm**: a stack for a cluster ([deploy/swarm/stack.yaml](deploy/swarm/stack.yaml)) and its guide: data pinned to one node, migration as a job, ports in host mode, upgrades with the migration first ([deploy/swarm/README.md](deploy/swarm/README.md)).
 - Migration `0017` adds the public links and imports tables; it runs automatically at startup.
 
 ## 0.1.0 (2026-11-03)

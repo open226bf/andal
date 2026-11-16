@@ -417,7 +417,7 @@ Avec la stack lancée : démarre une seconde instance collab (port 3012) et vér
 
 ## Déployer
 
-Images Docker, compose de production derrière Caddy (TLS automatique, CSP stricte), premier compte, sauvegardes et mises à jour : voir [deploy/README.fr.md](deploy/README.fr.md). La CI publie `ghcr.io/open226bf/andal-server` et `andal-web` à chaque commit sur `main` (étiquette `edge`) et à chaque version `v*` (étiquettes `0.1.0`, `0.1` et `latest` pour `v0.1.0`).
+Images Docker, compose de production derrière Caddy (TLS automatique, CSP stricte), premier compte, sauvegardes et mises à jour : voir [deploy/README.fr.md](deploy/README.fr.md) ; sur un cluster Docker Swarm, [deploy/swarm/README.fr.md](deploy/swarm/README.fr.md). La CI publie `ghcr.io/open226bf/andal-server` et `andal-web` à chaque commit sur `main` (étiquette `edge`) et à chaque version `v*` (étiquettes `0.1.0`, `0.1` et `latest` pour `v0.1.0`).
 
 ```bash
 pnpm --filter @andal/collab check:deploy

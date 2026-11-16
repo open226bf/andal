@@ -77,6 +77,7 @@ Les migrations passent toutes seules avant le redémarrage des services. Sauvega
 
 ## Variantes
 
+- **Docker Swarm** : une stack pour un cluster, les données attachées à un nœud : voir [swarm/README.fr.md](swarm/README.fr.md).
 - **S3 externe** (MinIO, Garage, Scaleway, R2…) : renseignez `S3_ENDPOINT`, `S3_REGION`, `S3_BUCKET` et les clés, puis supprimez le service `rustfs` du compose.
 - **SSO** : `OIDC_ISSUER`, `OIDC_CLIENT_ID`, `OIDC_CLIENT_SECRET`. L'URL de retour à déclarer chez le fournisseur est `https://<ANDAL_DOMAIN>/api/auth/callback`. Pour que les groupes du fournisseur suivent à chaque connexion : `OIDC_GROUPS_CLAIM=groups` (et `OIDC_GROUPS_SCOPE=groups` chez Okta).
 - **SCIM** (comptes et groupes poussés par Okta, Entra ID…) : créez le jeton dans Administration → Annuaire, et déclarez `https://<ANDAL_DOMAIN>/api/scim/v2` chez le fournisseur.

@@ -3,6 +3,7 @@
 
 name: andal
 
+# Variables reprises dans deploy/swarm/stack.yaml: une variable ajoutée ici s'y ajoute aussi.
 x-server: &server
   image: ${ANDAL_IMAGE:-ghcr.io/open226bf/andal-server}:${ANDAL_VERSION:-latest}
   build: { context: .., target: server }

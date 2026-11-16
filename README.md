@@ -417,7 +417,7 @@ With the stack running: starts a second collab instance (port 3012) and checks t
 
 ## Deployment
 
-Docker images, production compose behind Caddy (automatic TLS, strict CSP), first account, backups and upgrades: see [deploy/README.md](deploy/README.md). CI publishes `ghcr.io/open226bf/andal-server` and `andal-web` on every commit to `main` (tag `edge`) and on every `v*` release (tags `0.1.0`, `0.1` and `latest` for `v0.1.0`).
+Docker images, production compose behind Caddy (automatic TLS, strict CSP), first account, backups and upgrades: see [deploy/README.md](deploy/README.md); on a Docker Swarm cluster, [deploy/swarm/README.md](deploy/swarm/README.md). CI publishes `ghcr.io/open226bf/andal-server` and `andal-web` on every commit to `main` (tag `edge`) and on every `v*` release (tags `0.1.0`, `0.1` and `latest` for `v0.1.0`).
 
 ```bash
 pnpm --filter @andal/collab check:deploy
